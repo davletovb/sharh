@@ -33,8 +33,11 @@ try {
   for (const dir of ['chromium/NativeMessagingHosts','google-chrome-for-testing/NativeMessagingHosts']) {
     await mkdir(join(world.env.XDG_CONFIG_HOME,dir),{recursive:true}); await cp(chromeManifest,join(world.env.XDG_CONFIG_HOME,dir,'com.seatline.host.json'));
   }
+  // Native-host discovery follows Chromium's --user-data-dir (the isolated profile).
+  await mkdir(join(profile,'NativeMessagingHosts'),{recursive:true});
+  await cp(chromeManifest,join(profile,'NativeMessagingHosts/com.seatline.host.json'));
   const extension=resolve('dist/probe');
-  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:{...process.env,...world.env},args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});
+  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:{...process.env,...world.env},args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
   const page=await context.newPage();
   await page.goto(`chrome-extension://${world.contract.development_extension_id}/probe.html`);
   await page.waitForFunction(()=>typeof window.checkAuthorization==='function');
@@ -46,6 +49,7 @@ try {
   // Remove the allowed origin from Chrome's host manifest and reload a fresh native port.
   const denied=JSON.parse(await readFile(chromeManifest)); denied.allowed_origins=[];
   for (const dir of ['google-chrome','chromium','google-chrome-for-testing']) await writeFile(join(world.env.XDG_CONFIG_HOME,dir,'NativeMessagingHosts/com.seatline.host.json'),JSON.stringify(denied));
+  await writeFile(join(profile,'NativeMessagingHosts/com.seatline.host.json'),JSON.stringify(denied));
   report.forbiddenOrigin=await page.evaluate(()=>window.checkAuthorization());
   assert.match(report.forbiddenOrigin.error,/forbidden/i);
   report.passed=true;

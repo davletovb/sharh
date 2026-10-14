@@ -65,7 +65,8 @@ export async function resolvePDFAnchor(pdf, anchor, scale = 1) {
   const items = anchor.items.map(i => content.items[i]);
   if (items.some(i => !i?.str)) return null;
   return {page: anchor.page, text: normalizeText(items.map(i => i.str).join('\n')), rects: items.map(i => {
-    const [x1, y1, x2, y2] = viewport.convertToViewportRectangle([i.transform[4], i.transform[5], i.transform[4] + i.width, i.transform[5] + i.height]);
+    const [x1, y1] = viewport.convertToViewportPoint(i.transform[4], i.transform[5]);
+    const [x2, y2] = viewport.convertToViewportPoint(i.transform[4] + i.width, i.transform[5] + i.height);
     return {x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1)};
   })};
 }
