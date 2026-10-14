@@ -6,6 +6,7 @@ import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {chromium} from 'playwright';
 import {serveRepository,browserOptions} from '../../scripts/lib/browser-fixtures.mjs';
+import {installBrowserTestAPI} from '../helpers/browser-api-loader.mjs';
 const id='npmhefooiolfpmhicinblelaideeejcm', base=`chrome-extension://${id}`;
 test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, storage reload, export/import and cascades',async()=> {
   const profile=await mkdtemp(join(tmpdir(),'sharh-c-reader-')), server=await serveRepository(), report={checks:{},errors:[]}; let context;
@@ -46,24 +47,26 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     const rect=await reader.locator('.pdf-highlight').first().boundingBox(); assert.ok(rect.width>0 && rect.height>0);
     await reader.screenshot({path:'test-results/c-reader.png'});
     report.checks.renderedSelectablePDF=true; report.checks.pdfHighlight=true; report.checks.pageScope=true;
-    const archive=await reader.evaluate(async()=> { const {openDocumentStore}=await import('../documents.mjs'),store=await openDocumentStore(); try{return await store.exportData();}finally{store.close();} });
-    assert.equal(archive.stores.docs.length,2); assert.ok(archive.stores.sources.some(s=>s.bytes?.length>0));
+    await installBrowserTestAPI(reader);
+    const archive=await reader.evaluate(async()=> { const {openDocumentStore}=SharhTest,store=await openDocumentStore(); try{return await store.exportData();}finally{store.close();} });
+    assert.equal(archive.stores.docs.length,2); assert.ok(archive.stores.sources.some(s=>s.bytes?.data?.length>0));
     await reader.reload(); await reader.locator('#saved-documents article').filter({hasText:'footnotes-injection.pdf'}).getByRole('button',{name:'Open',exact:true}).click();
     await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.persistedPDFReload=true;
+    await installBrowserTestAPI(reader);
     const roundTrip=await reader.evaluate(async archive=> {
-      const {openDocumentStore}=await import('../documents.mjs'),store=await openDocumentStore({name:'round-trip'});
+      const {openDocumentStore}=SharhTest,store=await openDocumentStore({name:'round-trip'});
       try { await store.importData(archive); return await store.exportData(); } finally {store.close();}
     },archive);
     assert.deepEqual(roundTrip,archive); report.checks.browserIndexedDBRoundTrip=true;
     const cascade=await reader.evaluate(async archive=> {
-      const {openDocumentStore}=await import('../documents.mjs'), store=await openDocumentStore({name:'round-trip'}), docId=archive.stores.docs[0].id;
+      const {openDocumentStore}=SharhTest, store=await openDocumentStore({name:'round-trip'}), docId=archive.stores.docs[0].id;
       try {
         await store.put('runs',{id:'fixture-run',docId,target:{path:'seatline',provider:'codex'},session:{handle:'fixture-handle'},cleanupGroup:'fixture-group'});
         await store.put('records',{runId:'fixture-run',sequence:0,record:{t:'note',text:'Stored record'}});
         await store.put('chats',{id:'fixture-chat',docId,messages:[]});
         await store.deleteDocument(docId);
         const after=await store.exportData();
-        return {deleted:await store.getDocument(docId),docs:after.stores.docs.length,runs:after.stores.runs.length,records:after.stores.records.length,chats:after.stores.chats.length,maintenance:after.stores.maintenance.length};
+        return {deleted:await store.getDocument(docId),docs:after.stores.docs.length,runs:after.stores.runs.length,records:after.stores.records.length,chats:after.stores.chats.length,maintenance:(await store.all('maintenance')).length};
       }finally{store.close();}
     },archive);
     assert.deepEqual(cascade,{deleted:null,docs:1,runs:0,records:0,chats:0,maintenance:2}); report.checks.browserIndexedDBCascade=true;

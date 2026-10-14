@@ -4,7 +4,8 @@ import {pdfItem, extractPDFBlocks, outlineSections} from './pdf-layout.mjs';
 export async function openPDF(data, {workerSrc = '/pdf.worker.mjs', standardFontDataUrl = '/standard_fonts/', wasmUrl} = {}) {
   GlobalWorkerOptions.workerSrc = workerSrc;
   // PDF.js transfers its input; preserve the caller's bytes for storage and reload.
-  return getDocument({data: new Uint8Array(data).slice(), isEvalSupported: false, standardFontDataUrl, ...(wasmUrl ? {wasmUrl} : {}), useSystemFonts: true}).promise;
+  const task=getDocument({data: new Uint8Array(data).slice(), isEvalSupported: false, standardFontDataUrl, ...(wasmUrl ? {wasmUrl} : {}), useSystemFonts: true});
+  try{return await task.promise;}catch(error){await task.destroy().catch(()=>{});throw error;}
 }
 export async function extractPDF(pdf, identity = 'local-pdf', {sourceHash = null} = {}) {
   const pages = [], labels = await pdf.getPageLabels();

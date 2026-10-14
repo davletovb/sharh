@@ -4,19 +4,25 @@ export function pdfItem(item, index, viewport) {
   return {...item, index, x, y, size: Math.hypot(item.transform[2], item.transform[3]) || item.height};
 }
 function linesOf(items, headingThreshold) {
-  const rows = [];
-  for (const item of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
-    const row = rows.at(-1);
-    if (row && Math.abs(row.y - item.y) <= Math.max(2, item.size * .2)) row.items.push(item);
-    else rows.push({y: item.y, items: [item]});
+  const rows = [], buckets=new Map(),maxSize=items.reduce((size,item)=>Math.max(size,item.size),0);
+  // Establish rows from the larger glyphs first, then attach raised/lowered small markers.
+  for (const item of [...items].sort((a, b) => b.size - a.size || a.y - b.y || a.x - b.x)) {
+    const nearby=[];
+    const radius=Math.min(maxSize*.5+2,64);
+    for(let at=Math.floor((item.y-radius)/2);at<=Math.floor((item.y+radius)/2);at++)nearby.push(...(buckets.get(at)||[]));
+    const row = nearby.filter(r => Math.abs(r.y-item.y)<=Math.max(2,r.size*.2) ||
+      item.size<r.size*.9 && Math.abs(r.y-item.y)<=r.size*.5).sort((a,b)=>Math.abs(a.y-item.y)-Math.abs(b.y-item.y))[0];
+    if (row) row.items.push(item);
+    else {const created={y:item.y,size:item.size,items:[item]},at=Math.floor(item.y/2);rows.push(created);if(!buckets.has(at))buckets.set(at,[]);buckets.get(at).push(created);}
   }
   const lines = [];
-  for (const row of rows) {
+  for (const row of rows.sort((a,b)=>a.y-b.y)) {
     let line;
     for (const item of row.items.sort((a, b) => a.x - b.x)) {
-      const heading = item.size >= headingThreshold;
+      const raised=item.size<row.size*.9 && Math.abs(item.y-row.y)>Math.max(2,row.size*.2);
+      const heading = (raised ? row.size : item.size) >= headingThreshold;
       if (!line || item.x - line.right > item.size * 2 || heading !== line.heading) {
-        line = {x: item.x, y: item.y, right: item.x, size: item.size, heading, items: []}; lines.push(line);
+        line = {x: item.x, y: row.y, right: item.x, size: raised ? row.size : item.size, heading, items: []}; lines.push(line);
       }
       line.items.push(item); line.right = Math.max(line.right, item.x + item.width); line.size = Math.max(line.size, item.size);
     }
@@ -51,7 +57,9 @@ export function extractPDFBlocks(pages) {
     let current, lastLine;
     for (const line of ordered) {
       const column = twoColumns ? Number(line.x >= split) : 0;
-      if (!current || current.kind !== line.kind || line.heading || column !== lastLine.column || line.y < lastLine.y || line.y - lastLine.y > line.size * 1.85) {
+      const wrappedHeading=line.heading && current?.kind==='heading' && current.level===line.level &&
+        Math.abs(line.size-lastLine.size)<1 && line.y-lastLine.y<=line.size*1.5;
+      if (!current || current.kind !== line.kind || line.heading && !wrappedHeading || column !== lastLine.column || line.y < lastLine.y || line.y - lastLine.y > line.size * 1.85) {
         current = {n: blocks.length + 1, kind: line.kind, ...(line.heading ? {level: line.level} : {}), text: '', page: page.index, pageLabel: page.label,
           top: line.y - line.size, bottom: line.y, anchor: {type: 'pdf', page: page.index, items: [], separators: []}}; blocks.push(current);
       }
@@ -63,8 +71,13 @@ export function extractPDFBlocks(pages) {
       current.bottom = line.y; lastLine = {...line, column};
     }
   }
-  for (const block of blocks) block.text = normalizePDFText(block.text);
-  return {blocks, removed};
+  const readable=blocks.filter(block=> {
+    block.text=normalizePDFText(block.text);
+    if(block.text)return true;
+    removed.push({page:block.page,cause:'empty-normalized-block'}); return false;
+  });
+  readable.forEach((block,index)=>{block.n=index+1;});
+  return {blocks:readable, removed};
 }
 export async function outlineSections(pdf, blocks, pages) {
   const chapters = [], warnings = []; let outline;
@@ -99,11 +112,19 @@ export async function outlineSections(pdf, blocks, pages) {
     } else c.last = next ? next.first - 1 : blocks.at(-1).n;
     c.lastPage = blocks.find(b => b.n === c.last)?.page ?? c.firstPage;
   }
-  if (!chapters.some(c => c.first !== null)) return {sections: makeSections(blocks), warnings};
+  const valid=chapters.filter(c=>c.first!==null && c.last!==null && c.level<=64), byId=new Map(valid.map(c=>[c.id,c]));
+  if (!valid.length) return {sections: makeSections(blocks), warnings};
+  for(const chapter of valid) {
+    let parent=byId.get(chapter.parent);
+    while(parent && (parent.first>chapter.first || parent.last<chapter.last))parent=byId.get(parent.parent);
+    const parentId=parent?.id ?? null;
+    if(parentId!==chapter.parent)warnings.push({id:chapter.id,cause:'outline-reparented',detail:'The bookmark destination lies outside its parent range.'});
+    chapter.parent=parentId;
+  }
   for (const block of blocks) {
-    const candidates = chapters.filter(c => c.first !== null && block.n >= c.first && block.n <= c.last);
+    const candidates = valid.filter(c => block.n >= c.first && block.n <= c.last);
     candidates.sort((a, b) => b.level - a.level || b.first - a.first || Number(b.id.slice(1)) - Number(a.id.slice(1)));
     block.section = candidates[0]?.id ?? null;
   }
-  return {sections: chapters, warnings};
+  return {sections: valid, warnings};
 }

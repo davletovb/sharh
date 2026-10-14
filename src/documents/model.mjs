@@ -1,21 +1,24 @@
 import {sha256} from '@noble/hashes/sha2.js';
-export const EXTRACTOR_VERSION = 'reader-1';
+export const EXTRACTOR_VERSION = 'reader-2';
 export const contentHash = data => Array.from(sha256(data), b => b.toString(16).padStart(2, '0')).join('');
 const hash = text => contentHash(new TextEncoder().encode(text));
-export const normalizeText = text => text.normalize('NFC').replace(/\u00ad/g, '').replace(/\s+/gu, ' ').trim();
+export const cleanText = text => text.toWellFormed().replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/gu, '');
+export const normalizeText = text => cleanText(text).normalize('NFC').replace(/\u00ad/g, '').replace(/\s+/gu, ' ').trim();
 export function normalizePDFText(text) {
   return normalizeText(text.replace(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu, '$1$2').replace(/\u00ad[ \t]*\n[ \t]*/gu, ''));
 }
-export function pdfTextOffsets(raw) {
+export function textOffsets(raw,{pdf=false}={}) {
+  raw=raw.toWellFormed();
   // Map original PDF item offsets through exactly the same dehyphenation/NFC/space normalization.
   const deleted=new Uint8Array(raw.length);
-  for (const match of raw.matchAll(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu)) deleted.fill(1,match.index+match[1].length,match.index+match[0].length-match[2].length);
-  for (const match of raw.matchAll(/\u00ad(?:[ \t]*\n[ \t]*)?/gu)) deleted.fill(1,match.index,match.index+match[0].length);
+  for(let i=0;i<raw.length;i++) if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(raw[i])) deleted[i]=1;
+  if(pdf)for (const match of raw.matchAll(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu)) deleted.fill(1,match.index+match[1].length,match.index+match[0].length-match[2].length);
+  for (const match of raw.matchAll(pdf ? /\u00ad(?:[ \t]*\n[ \t]*)?/gu : /\u00ad/gu)) deleted.fill(1,match.index,match.index+match[0].length);
   let kept=''; const original=[];
   for(let i=0;i<raw.length;i++) if(!deleted[i]) { kept+=raw[i]; original.push(i); }
   const starts=[],ends=[],chars=[];
   for(const {segment,index} of new Intl.Segmenter('und',{granularity:'grapheme'}).segment(kept)) {
-    for(const char of segment.normalize('NFC')) {
+    for(const char of segment.toWellFormed().normalize('NFC')) {
       const start=original[index], end=original[index+segment.length-1]+1;
       if (/\s/u.test(char)) {
         if(!chars.length)continue;
@@ -25,12 +28,17 @@ export function pdfTextOffsets(raw) {
     }
   }
   if(chars.at(-1)===' ') { chars.pop();starts.pop();ends.pop(); }
-  return {text:chars.join(''), range(start,end) {
-    const a=ends.findIndex(position=>position>start); let b=starts.length;
-    while(b>0 && starts[b-1]>=end)b--;
+  function offset(rawIndex,end=false) {
+    const values=end?starts:ends; let lo=0,hi=values.length;
+    while(lo<hi){const mid=(lo+hi)>>1; if(end?values[mid]<rawIndex:values[mid]<=rawIndex)lo=mid+1;else hi=mid;}
+    return lo;
+  }
+  return {text:chars.join(''), starts,ends,offset, range(start,end) {
+    const a=offset(start), b=offset(end,true);
     return a<0 || b<=a ? null : {start:a,end:b};
   }};
 }
+export const pdfTextOffsets=raw=>textOffsets(raw,{pdf:true});
 export async function versionOf(identity, content) {
   return hash(`${EXTRACTOR_VERSION}\n${identity}\n${content}`);
 }

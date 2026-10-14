@@ -29,24 +29,55 @@ export async function openCurrentPDF(chrome, tab, source = tab?.url) {
   return chrome.tabs.update(tab.id, {url:readerURL(chrome.runtime,{source,tabId:tab.id})});
 }
 export function installOpening(chrome) {
-  const pending = new Set(), bypass = new Map();
+  const pending = new Set(), bypass = new Map(), navigation=new Map(), queues=new Map();
+  const key=tabId=>`sharh:reader-navigation:${tabId}`;
+  async function navigationFor(tabId) {
+    if(!navigation.has(tabId)) {
+      const saved=await chrome.storage.session?.get(key(tabId));
+      navigation.set(tabId,saved?.[key(tabId)] || {sources:[],fromReader:false});
+    }
+    return navigation.get(tabId);
+  }
+  async function saveNavigation(tabId,state) {
+    navigation.set(tabId,state);
+    await chrome.storage.session?.set({[key(tabId)]:state}).catch(()=>{});
+  }
   const maybeOpen = async (tabId, change, tab) => {
     const url = change.url || tab.url;
+    if(!url)return;
+    const history=await navigationFor(tabId);
+    if(url.startsWith(chrome.runtime.getURL('ui/reader.html'))) {
+      history.fromReader=true;await saveNavigation(tabId,history);return;
+    }
+    if(history.fromReader) {
+      history.fromReader=false;
+      if(isPDFAddress(url) && !history.sources.includes(url))history.sources.push(url);
+      await saveNavigation(tabId,history);
+      // Back/forward and explicit reader exits must not hand the same navigation back to Sharh.
+      if(isPDFAddress(url))return;
+    }
     if (bypass.get(tabId) === url) return;
     if (bypass.has(tabId)) bypass.delete(tabId);
-    if (!isPDFAddress(url) || pending.has(tabId)) return;
+    if (!isPDFAddress(url) || pending.has(tabId) || history.sources.includes(url)) return;
     pending.add(tabId);
     try {
       const {pdfAutoOpen = true} = await chrome.storage.local.get('pdfAutoOpen');
       if (!pdfAutoOpen || !await hasSourceAccess(chrome,url)) return;
       // Do not redirect a tab that navigated while permissions/settings were being checked.
       const latest = await chrome.tabs.get(tabId);
-      if (latest.url === url || latest.pendingUrl === url) await openCurrentPDF(chrome,latest,url);
+      if (latest.url === url || latest.pendingUrl === url) {
+        history.sources.push(url);history.sources=history.sources.slice(-128);history.fromReader=true;
+        await saveNavigation(tabId,history);
+        await openCurrentPDF(chrome,latest,url);
+      }
     } catch { /* A closed/inaccessible tab stays in Chrome's viewer. */ }
     finally { pending.delete(tabId); }
   };
-  chrome.tabs.onUpdated.addListener(maybeOpen);
-  chrome.tabs.onRemoved.addListener(tabId => { bypass.delete(tabId); pending.delete(tabId); });
+  chrome.tabs.onUpdated.addListener((...args)=> {
+    const id=args[0],job=(queues.get(id)||Promise.resolve()).then(()=>maybeOpen(...args)).catch(()=>{});
+    queues.set(id,job);return job.finally(()=>{if(queues.get(id)===job)queues.delete(id);});
+  });
+  chrome.tabs.onRemoved.addListener(tabId => { bypass.delete(tabId); pending.delete(tabId);navigation.delete(tabId);chrome.storage.session?.remove(key(tabId)).catch(()=>{}); });
   chrome.action.onClicked.addListener(tab => {
     if (isPDFAddress(tab.url)) openCurrentPDF(chrome,tab).catch(() => {});
     else chrome.sidePanel.open({tabId:tab.id}).catch(() => {});

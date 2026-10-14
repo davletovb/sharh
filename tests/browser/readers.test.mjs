@@ -19,7 +19,7 @@ test('production readers meet every annotated corpus heading, paragraph, page-la
           const scope=buildScope(doc);
           return {id:doc.id,version:doc.version,size:scopeSize(doc,scope),sections:doc.sections};
         },{extracted,item});
-        assert.ok(doc.size.fits); assert.equal(extracted.extractorVersion,'reader-1');
+        assert.ok(doc.size.fits); assert.equal(extracted.extractorVersion,'reader-2');
         if(item.format==='html') {
           const anchor=extracted.blocks.find(b=>b.kind==='para').anchor;
           await world.page.reload();

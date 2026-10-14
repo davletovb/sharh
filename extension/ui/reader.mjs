@@ -6,9 +6,10 @@ import {bindScopePicker} from './scope-picker.mjs';
 import {PDFView} from './pdf-view.mjs';
 import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
-let doc, pdf, sourceTab=params.has('tab') ? Number(params.get('tab')) : null, localHTML, pendingSource, lastSelection=null;
+const initialTab=params.has('tab')?Number(params.get('tab')):null;
+let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
 let busy=false;
-const pdfView=new PDFView($('pdf-pages'));
+let pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
   if (sourceTab !== null) return readerMessage('selection',{version:doc.version});
@@ -17,7 +18,7 @@ const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
 const state=text=>{ $('reader-state').textContent=text; };
 const fail=error=> {
   const hints={READABILITY_NO_ARTICLE:'No main article was found. Try Whole page or choose a region.',REGION_NOT_FOUND:'No page element matches that region selector.',NO_TEXT_BLOCKS:'No readable text was found in this source.',INVALID_ARCHIVE:'Choose a Sharh documents export file.',INVALID_DOCUMENT:'The document archive has an invalid document.',NO_SELECTION:'Select source text first.'};
-  state(hints[error.message] || error.message || String(error));
+  state(error.name==='PasswordException'?'This PDF needs a password. Open it in Chrome’s viewer.':hints[error.message] || error.message || String(error));
 };
 async function operate(action) {
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
@@ -33,28 +34,46 @@ async function operate(action) {
     $('reextract').disabled=doc?.kind!=='html' || (sourceTab===null && !localHTML);
   }
 }
-async function readerMessage(operation,values={}) {
+async function readerMessage(operation,values={},tabId=sourceTab) {
   // Recheck permission through injection, including after a site grant is removed.
-  await attachReader();
-  const tab=await chrome.tabs.get(sourceTab);
+  await attachReader(tabId);
+  const tab=await chrome.tabs.get(tabId);
   if (operation!=='extract' && doc?.address && tab.url?.split('#')[0]!==doc.address.split('#')[0]) throw Error('The source tab navigated to another document. Read it again.');
-  const response=await chrome.tabs.sendMessage(sourceTab,{type:`sharh:reader:${operation}`,...values},{frameId:0});
+  const response=await chrome.tabs.sendMessage(tabId,{type:`sharh:reader:${operation}`,...values},{frameId:0});
   if (response?.error) throw Error(response.error);
   return response?.result;
 }
-async function attachReader() {
-  await chrome.scripting.executeScript({target:{tabId:sourceTab},files:['content/reader.mjs']});
+async function attachReader(tabId=sourceTab) {
+  await chrome.scripting.executeScript({target:{tabId},files:['content/reader.mjs']});
 }
 async function resetPDF() {
   pdfView.clear();
   if (pdf) await pdf.loadingTask.destroy();
   pdf=null;
 }
+function setViewerSource(address) {
+  viewerSource=address;$('chrome-viewer').hidden=!address;
+}
+async function commitDocument(value,{pdf:nextPDF=null,sourceTab:nextTab=null,localHTML:nextHTML=null}={}) {
+  let prepared;
+  if(nextPDF) {
+    prepared=new PDFView(document.createElement('div'));
+    try{await prepared.open(nextPDF,value,{observe:false});}catch(error){prepared.clear();throw error;}
+  }
+  const previousPDF=pdf;
+  pdfView.clear();
+  if(prepared){$('pdf-pages').replaceChildren(...prepared.container.childNodes);prepared.container=$('pdf-pages');pdfView=prepared;}
+  pdf=nextPDF;sourceTab=nextTab;localHTML=nextHTML;
+  pendingSource=null;$('allow-source').hidden=true;$('access-help').textContent='';
+  setViewerSource(value.kind==='pdf'?value.address:null);
+  await showDocument(value);
+  if(prepared)prepared.startObserving();
+  if(previousPDF && previousPDF!==nextPDF)await previousPDF.loadingTask.destroy().catch(()=>{});
+}
 async function showDocument(value) {
   doc=value; lastSelection=null; $('document-title').textContent=doc.title; document.title=`${doc.title} · Sharh`;
   $('document-detail').textContent=`${doc.kind==='pdf' ? `${doc.pageCount} pages · ` : ''}${doc.blocks.length} numbered blocks${doc.language ? ` · ${doc.language}` : ''}`;
   $('reextract').disabled=doc.kind!=='html' || (sourceTab===null && !localHTML);
-  $('chrome-viewer').hidden=doc.kind!=='pdf' || !doc.address;
   $('outline').replaceChildren();
   for (const section of doc.sections) {
     const button=document.createElement('button'); button.textContent=`${section.title}${section.firstPage!==undefined ? ` · pp. ${doc.pageLabels[section.firstPage]}–${doc.pageLabels[section.lastPage]}` : ''}`;
@@ -76,24 +95,26 @@ async function showDocument(value) {
 }
 async function readTab(tabId) {
   state('Reading page…');
-  sourceTab=tabId; localHTML=null; await resetPDF();
   const tab=await chrome.tabs.get(tabId);
-  try { await attachReader(); } catch { pendingSource=tab.url || null; $('allow-source').hidden=!pendingSource; throw Error('Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.'); }
-  const result=await readerMessage('extract',{mode:$('html-mode').value,region:$('html-region').value.trim() || null});
+  try { await attachReader(tabId); } catch { pendingSource=tab.url?{kind:'tab',address:tab.url,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error('Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.'); }
+  const result=await readerMessage('extract',{mode:$('html-mode').value,region:$('html-region').value.trim() || null},tabId);
   const value=createDocument(result.extraction,{kind:'html',identity:result.identity,address:result.address});
-  await store.saveDocument(value); await showDocument(value);
+  await store.saveDocument(value); await commitDocument(value,{sourceTab:tabId});
 }
 async function loadPDFBytes(bytes,{identity,address=null,fileName=null}={}) {
-  state('Extracting PDF text…'); await resetPDF(); sourceTab=null; localHTML=null;
-  pdf=await openPDF(bytes,{workerSrc:chrome.runtime.getURL('pdf.worker.mjs'),standardFontDataUrl:chrome.runtime.getURL('standard_fonts/'),wasmUrl:chrome.runtime.getURL('wasm/')});
-  const extraction=await extractPDF(pdf,identity,{sourceHash:contentHash(new Uint8Array(bytes))});
+  state('Extracting PDF text…');
+  const candidate=await openPDF(bytes,{workerSrc:chrome.runtime.getURL('pdf.worker.mjs'),standardFontDataUrl:chrome.runtime.getURL('standard_fonts/'),wasmUrl:chrome.runtime.getURL('wasm/')});
+  try {
+  const extraction=await extractPDF(candidate,identity,{sourceHash:contentHash(new Uint8Array(bytes))});
   if (!extraction.blocks.length) throw Error('This PDF has no extractable text. Scanned PDFs need OCR, which is not available yet.');
   const value=createDocument(extraction,{kind:'pdf',identity,address,fileName});
   await store.saveDocument(value,{bytes:new Uint8Array(bytes),mime:'application/pdf'});
-  await showDocument(value); await pdfView.open(pdf,value);
+  await commitDocument(value,{pdf:candidate});
+  }catch(error){if(pdf!==candidate)await candidate.loadingTask.destroy().catch(()=>{});throw error;}
 }
 async function openPDFAddress(address) {
-  const url=sourceURL(address); pendingSource=url.href; $('source-address').value=url.href;
+  const url=sourceURL(address); pendingSource={kind:'pdf',address:url.href}; $('source-address').value=url.href;
+  setViewerSource(url.href);
   if (!await hasSourceAccess(chrome,url.href)) {
     $('allow-source').hidden=false;
     $('access-help').textContent=url.protocol==='file:' ? 'Enable “Allow access to file URLs” in Sharh’s Chrome extension details, then allow file access here.' : `Allow ${url.origin} to fetch this PDF and open .pdf addresses automatically on this site.`;
@@ -112,16 +133,16 @@ async function openFile(file) {
     const bytes=new Uint8Array(await file.arrayBuffer());
     await loadPDFBytes(bytes,{identity:`file:${file.name}:${contentHash(bytes)}`,fileName:file.name});
   } else if (/\.html?$/i.test(file.name) || file.type==='text/html') {
-    await resetPDF(); sourceTab=null; localHTML={text:await file.text(),name:file.name}; await readLocalHTML();
+    const text=await file.text();
+    await readLocalHTML({text,name:file.name,identity:`file:${file.name}:${contentHash(new TextEncoder().encode(text))}`});
   } else throw Error('Choose a PDF or HTML file.');
 }
-async function readLocalHTML() {
-  const source=new DOMParser().parseFromString(localHTML.text,'text/html');
+async function readLocalHTML(candidate=localHTML) {
+  const source=new DOMParser().parseFromString(candidate.text,'text/html'), identity=candidate.identity;
   let extraction;
-  try { extraction=await extractHTML(source,{mode:$('html-mode').value,region:$('html-region').value.trim() || null,identity:`file:${localHTML.name}`}); }
-  catch(error) { if ($('html-mode').value!=='article') throw error; extraction=await extractHTML(source,{mode:'whole',identity:`file:${localHTML.name}`}); extraction.warnings.push({cause:'no-main-article',detail:'Used whole-page extraction.'}); }
-  const value=createDocument(extraction,{kind:'html',identity:`file:${localHTML.name}`,fileName:localHTML.name});
-  await store.saveDocument(value,{html:localHTML.text,mime:'text/html'}); await showDocument(value);
+  extraction=await extractHTML(source,{mode:$('html-mode').value,region:$('html-region').value.trim() || null,identity});
+  const value=createDocument(extraction,{kind:'html',identity,fileName:candidate.name});
+  await store.saveDocument(value,{html:candidate.text,mime:'text/html'}); await commitDocument(value,{localHTML:candidate});
 }
 async function jump(block) {
   if (busy) return;
@@ -144,19 +165,23 @@ function blockSelection() {
   }
   return spans.length ? {spans} : null;
 }
-document.addEventListener('selectionchange',()=> {
+function rememberSelection() {
   if (!doc) return;
   const selected=pdf ? pdfView.selection() : sourceTab===null ? blockSelection() : null;
   if (selected) lastSelection=selected;
-});
+}
+document.addEventListener('pointerup',rememberSelection);
+document.addEventListener('keyup',rememberSelection);
+document.addEventListener('pointerdown',event=>{if(event.target.closest('button,input,select'))rememberSelection();},true);
 async function reopen(id) {
-  const value=await store.getDocument(id), source=await store.getSource(id,value.version);
-  await resetPDF(); sourceTab=null; localHTML=null;
+  const value=await store.getDocument(id);
+  if(!value)throw Error('This saved document could not be found. Open its source again.');
+  const source=await store.getSource(id,value.version);
   if (value.kind==='pdf') {
     if (!source?.bytes) throw Error('The saved PDF file is missing. Open the source again.');
-    pdf=await openPDF(source.bytes,{workerSrc:chrome.runtime.getURL('pdf.worker.mjs'),standardFontDataUrl:chrome.runtime.getURL('standard_fonts/'),wasmUrl:chrome.runtime.getURL('wasm/')});
-    await showDocument(value); await pdfView.open(pdf,value);
-  } else { if (source?.html) localHTML={text:source.html,name:value.fileName}; await showDocument(value); }
+    const candidate=await openPDF(source.bytes,{workerSrc:chrome.runtime.getURL('pdf.worker.mjs'),standardFontDataUrl:chrome.runtime.getURL('standard_fonts/'),wasmUrl:chrome.runtime.getURL('wasm/')});
+    try{await commitDocument(value,{pdf:candidate});}catch(error){if(pdf!==candidate)await candidate.loadingTask.destroy().catch(()=>{});throw error;}
+  } else await commitDocument(value,{localHTML:source?.html?{text:source.html,name:value.fileName,identity:value.identity}:null});
 }
 async function savedList() {
   const rows=await store.listDocuments(); $('saved-documents').replaceChildren();
@@ -164,7 +189,7 @@ async function savedList() {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
     open.addEventListener('click',()=>operate(()=>reopen(item.id)));
-    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); if(doc?.id===item.id) { await resetPDF(); doc=null; $('scope-picker').hidden=true; $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
+    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); if(doc?.id===item.id) { await resetPDF(); doc=null; picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
     row.append(title,open,remove); $('saved-documents').append(row);
   }
 }
@@ -181,14 +206,14 @@ $('open-address').addEventListener('submit',event=>{ event.preventDefault(); ope
 $('allow-source').addEventListener('click',()=> {
   if (!pendingSource) return;
   // permissions.request must begin directly in the user gesture.
-  const permission=chrome.permissions.request({origins:[sourceOrigin(pendingSource)]});
+  const pending=pendingSource, permission=chrome.permissions.request({origins:[sourceOrigin(pending.address)]});
   operate(async()=> {
     const granted=await permission;
     if (!granted) throw Error('Source access was not granted.');
-    if (sourceTab!==null) await readTab(sourceTab); else await openPDFAddress(pendingSource);
+    if (pending.kind==='tab') await readTab(pending.tabId); else await openPDFAddress(pending.address);
   });
 });
-$('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type:'sharh:chrome-viewer',source:doc.address}).then(response=>{if(response?.error)throw Error(response.error);}).catch(fail));
+$('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type:'sharh:chrome-viewer',source:viewerSource}).then(response=>{if(response?.error)throw Error(response.error);}).catch(fail));
 document.addEventListener('dragover',event=>{ if ([...event.dataTransfer.types].includes('Files')) { event.preventDefault(); document.body.classList.add('dragover'); } });
 document.addEventListener('dragleave',()=>document.body.classList.remove('dragover'));
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
@@ -196,7 +221,7 @@ $('export-data').addEventListener('click',()=>operate(async()=> { const archive=
 $('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
 await savedList();
 await operate(async()=> {
-  if (params.has('source')) { sourceTab=null; await openPDFAddress(params.get('source')); }
+  if (params.has('source')) await openPDFAddress(params.get('source'));
   else if (params.has('doc')) await reopen(params.get('doc'));
-  else if (sourceTab!==null) await readTab(sourceTab);
+  else if (initialTab!==null) await readTab(initialTab);
 });

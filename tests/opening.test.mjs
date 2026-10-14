@@ -11,6 +11,20 @@ test('PDF addressing is URL-aware and only permits web/file sources',()=> {
   const url=new URL(readerURL({getURL:p=>`chrome-extension://test/${p}`},{source:'https://example.org/a.pdf?a=1&b=2',tabId:2}));
   assert.equal(url.searchParams.get('source'),'https://example.org/a.pdf?a=1&b=2');
 });
+test('auto-open remembers handoffs across worker restarts and does not trap Back or reader exits',async()=> {
+  const session={},updates=[];let current='https://example.org/a.pdf';
+  const chrome={runtime:{id:'test',getURL:p=>`chrome-extension://test/${p}`,onMessage:event()},
+    storage:{local:{async get(){return {pdfAutoOpen:true};}},session:{async get(key){return {[key]:session[key]};},async set(values){Object.assign(session,structuredClone(values));},async remove(key){delete session[key];}}},
+    extension:{async isAllowedFileSchemeAccess(){return true;}},permissions:{async contains(){return true;}},
+    tabs:{onUpdated:event(),onRemoved:event(),async get(id){return {id,url:current};},async update(id,{url}){updates.push(url);current=url;}},action:{onClicked:event()},sidePanel:{async open(){}},contextMenus:{onClicked:event()}};
+  installOpening(chrome);await chrome.tabs.onUpdated.listeners.at(-1)(1,{url:current},{id:1,url:current});assert.equal(updates.length,1);
+  const reader=current;await chrome.tabs.onUpdated.listeners.at(-1)(1,{url:reader},{id:1,url:reader});
+  installOpening(chrome);current='https://example.org/a.pdf';
+  await chrome.tabs.onUpdated.listeners.at(-1)(1,{url:current},{id:1,url:current});await chrome.tabs.onUpdated.listeners.at(-1)(1,{status:'complete'},{id:1,url:current});assert.equal(updates.length,1);
+  current='https://example.org/article';await chrome.tabs.onUpdated.listeners.at(-1)(1,{url:current},{id:1,url:current});
+  current='https://example.org/b.pdf';await chrome.tabs.onUpdated.listeners.at(-1)(1,{url:current},{id:1,url:current});assert.equal(updates.length,2);
+  await chrome.tabs.onRemoved.listeners.at(-1)(1);assert.deepEqual(session,{});
+});
 test('PDF opening honours setting, granted sites, file access, navigation races and explicit toolbar actions',async()=> {
   let enabled=true,granted=true,fileAccess=false,url='https://example.org/a.pdf'; const updates=[];
   const chrome={runtime:{id:'test',getURL:p=>`chrome-extension://test/${p}`,onMessage:event()},

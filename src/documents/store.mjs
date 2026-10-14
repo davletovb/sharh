@@ -1,15 +1,16 @@
 import {validateDocument} from './model.mjs';
+import {equalData,portableRow,encodeBytes,decodeBytes} from './archive.mjs';
 export const STORE_KEYS = Object.freeze({
   docs: 'id', extractions: ['docId','version'], blocks: ['docId','version','n'], sections: ['docId','version','id'],
   sources: ['docId','version'], runs: 'id', records: ['runId','sequence'], chats: 'id',
   collections: 'id', glossary: ['bookId','term'], jobs: 'id', maintenance: 'id'
 });
 const stores = Object.keys(STORE_KEYS);
+const archiveStores=stores.filter(name=>name!=='maintenance');
 const result = request => new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
 const done = tx => new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = () => reject(tx.error || Error('TRANSACTION_ABORTED')); tx.onerror = () => {}; });
 const metadata = ({blocks, sections, ...doc}) => doc;
 const strip = ({docId, ...row}) => row;
-const identical = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export async function openDocumentStore({indexedDB = globalThis.indexedDB, name = 'sharh'} = {}) {
   const request = indexedDB.open(name, 1);
   request.onupgradeneeded = () => {
@@ -95,21 +96,23 @@ export class DocumentStore {
     return {handles: [...handles].map(JSON.parse), groups: [...groups].map(JSON.parse)};
   }
   async exportData() {
-    const tx = this.db.transaction(stores), complete = done(tx), data = {};
-    await Promise.all(stores.map(async name => { data[name] = await result(tx.objectStore(name).getAll()); }));
+    const tx = this.db.transaction(archiveStores), complete = done(tx), data = {};
+    await Promise.all(archiveStores.map(async name => { data[name] = await result(tx.objectStore(name).getAll()); }));
     await complete;
-    data.sources = data.sources.map(row => ({...row, ...(row.bytes ? {bytes: Array.from(new Uint8Array(row.bytes))} : {})}));
-    return {format: 'sharh-documents', version: 1, stores: data};
+    for(const name of ['runs','chats','jobs'])data[name]=data[name].map(portableRow);
+    data.sources = data.sources.map(row => ({...row, ...(row.bytes ? {bytes:encodeBytes(row.bytes)} : {})}));
+    return {format: 'sharh-documents', version: 2, stores: data};
   }
   async importData(archive) {
     const data = validateArchive(archive);
     const tx = this.db.transaction(stores, 'readwrite'), complete = done(tx); let conflict;
     // Existing rows may be identical; differing rows abort the entire import, preserving local data.
-    for (const name of stores) for (const row of data[name]) {
+    for (const name of archiveStores) for (const row of data[name]) {
       const key = Array.isArray(STORE_KEYS[name]) ? STORE_KEYS[name].map(k => row[k]) : row[STORE_KEYS[name]];
       const request = tx.objectStore(name).get(key);
       request.onsuccess = () => {
-        if (request.result && !identical(request.result, row)) { conflict = Error('IMPORT_CONFLICT: Export or delete the existing document before importing a different version.'); tx.abort(); return; }
+        const existing=['runs','chats','jobs'].includes(name) && request.result ? portableRow(request.result) : request.result;
+        if (existing && !equalData(existing, row)) { conflict = Error('IMPORT_CONFLICT: Export or delete the existing document before importing a different version.'); tx.abort(); return; }
         if (!request.result) tx.objectStore(name).put(row);
       };
     }
@@ -118,14 +121,16 @@ export class DocumentStore {
   }
 }
 export function validateArchive(archive) {
-  if (archive?.format !== 'sharh-documents' || archive.version !== 1 || !archive.stores ||
-      Object.keys(archive.stores).some(name => !stores.includes(name)) || stores.some(name => !Array.isArray(archive.stores[name]))) throw Error('INVALID_ARCHIVE');
+  if (archive?.format !== 'sharh-documents' || ![1,2].includes(archive.version) || !archive.stores ||
+      Object.keys(archive.stores).some(name => !stores.includes(name)) || archiveStores.some(name => !Array.isArray(archive.stores[name]))) throw Error('INVALID_ARCHIVE');
   const data = structuredClone(archive.stores), docs = new Map(data.docs.map(doc => [doc.id, doc])), versions = new Map();
+  data.maintenance=[];
+  for(const name of ['runs','chats','jobs'])data[name]=data[name].map(portableRow);
   for (const name of stores) {
     const keys = new Set();
     for (const row of data[name]) {
       const fields = Array.isArray(STORE_KEYS[name]) ? STORE_KEYS[name] : [STORE_KEYS[name]], key = fields.map(k => row?.[k]);
-      if (key.some(v => !['string','number'].includes(typeof v)) || keys.has(JSON.stringify(key))) throw Error('INVALID_ARCHIVE_KEY');
+      if (key.some((value,i) => ['n','sequence'].includes(fields[i]) ? !Number.isSafeInteger(value) || value < (fields[i]==='n'?1:0) : typeof value!=='string' || !value) || keys.has(JSON.stringify(key))) throw Error('INVALID_ARCHIVE_KEY');
       keys.add(JSON.stringify(key));
     }
   }
@@ -147,8 +152,7 @@ export function validateArchive(archive) {
   for (const row of data.glossary) if (!docs.has(row.bookId)) throw Error('ORPHAN_GLOSSARY');
   for (const collection of data.collections) if (!Array.isArray(collection.items) || collection.items.some(item => !docs.has(typeof item === 'string' ? item : item?.docId))) throw Error('ORPHAN_COLLECTION_ITEM');
   for (const row of data.sources) if (row.bytes !== undefined) {
-    if (!Array.isArray(row.bytes) || row.bytes.some(b => !Number.isInteger(b) || b < 0 || b > 255)) throw Error('INVALID_SOURCE_BYTES');
-    row.bytes = new Uint8Array(row.bytes);
+    row.bytes=decodeBytes(row.bytes,archive.version);
   }
   return data;
 }
