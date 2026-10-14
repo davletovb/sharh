@@ -1,6 +1,6 @@
 # Analysis engine (D)
 
-The path-neutral engine lives in `src/analysis/`; extension pages use `extension/ui/analysis.mjs` to reach the one worker-owned Seatline connection. E still owns the Analyze controls and specialized graph/card views. F still owns final lens wording and live prompt evaluation. Merely reading a document never starts analysis.
+The path-neutral engine lives in `src/analysis/`; extension pages use `extension/ui/analysis.mjs` to reach the one worker-owned Seatline connection. E supplies the Analyze controls/views; F supplies versioned lens/action instructions and the evaluation harness. Live prompt quality remains unverified. Merely reading a document never starts analysis.
 
 ## Public entry points
 

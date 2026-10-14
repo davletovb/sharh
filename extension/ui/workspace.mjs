@@ -5,7 +5,8 @@ import {createModelPicker} from './model-picker.mjs';
 import {bindAppearance} from './theme.mjs';
 import {createAnalysisView,referenceButtons} from './views.mjs';
 import {element,button,field,options,uid} from './dom.mjs';
-export const PASSAGE_ACTIONS=Object.freeze({Explain:'Explain the selected passage in plain language, using its context. Gloss key terms.',Translate:'Translate the selected passage faithfully into the output language. Keep original terms beside their translations and explain difficult terms.',Logic:'Explain what the author is doing in the selected passage and how it relates to the surrounding argument. Label stated and inferred claims.',Define:'Define the selected term as used in this text, distinguish its general meaning, and cite the paragraph that introduces it.'});
+import {PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
+export {PASSAGE_ACTIONS};
 export async function createWorkspace(container,{store,engine,client,storage=chrome.storage.local,changes=chrome.storage.onChanged,onReference=()=>{},onOpenDocument=()=>{},onControlsChanged=()=>{}}) {
   let doc=null,scope=null,selectedRun=null,view=null,epoch=0,controller=null,runId=null,preview=null,modelPicker,appearance,loading=0,viewDoc=null;
   const root=element('section','','workspace'),heading=element('header'),title=element('h2','Choose a document','workspace-title'),scopeLabel=element('p','No scope selected.','scope-label'),size=element('p','','scope-estimate');
@@ -121,7 +122,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       if(controller)throw Error('Stop the current run before starting another.');
       if(!Object.hasOwn(PASSAGE_ACTIONS,action))throw Error('Unknown passage action.');await ready;
       const passageScope=buildScope(doc,{kind:'selection',spans:selection.spans}),quick=await modelPicker.forTier('quick'),lensName=action==='Logic'?'logic':'passage';
-      return run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:24,lens:lensName,focus:`Passage action: ${action}. ${PASSAGE_ACTIONS[action]}`},
+      return run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:24,lens:lensName,action,focus:''},
         {providerInfo:quick.info,allowSavedExtraction:true,onBegin:async run=>{if(intentId)await engine.repository.write(run.id,{passageIntentId:intentId});await onAccepted?.(run);}});
     },
     openSaved:loadRun,

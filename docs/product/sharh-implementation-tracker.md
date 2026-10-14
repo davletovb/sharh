@@ -1,18 +1,18 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A/B, C, D and E implemented. E-01–E-06 are DONE; E-07 retains its owner-machine screen-reader gate. D-01–D-06 are DONE with deterministic CI browser/real-broker evidence. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
+Status: A–E implemented. F-01–F-06 are IMPLEMENTED — VERIFY for real-provider output quality; F-07 is DONE with scripted/pinned-broker matrices and review-form validation. F-08 is BLOCKED by live/expert and owner-machine gates. A-02/A-03/B-05/E-07 remain IMPLEMENTED — VERIFY. No live-provider behaviour is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **27**
-- IMPLEMENTED — VERIFY: **4**
+- DONE: **28**
+- IMPLEMENTED — VERIFY: **10**
 - IN PROGRESS: **0**
-- BLOCKED: **0**
-- TODO: **41**
+- BLOCKED: **1**
+- TODO: **33**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -137,14 +137,14 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| F-01 | Write the shared rules | A-03, D-01 | The rules cover the role, the document as data, references, *stated* and *inferred*, quotations, JSON Lines and the output language. **Live:** on the injection fixtures, no Claude or Codex run follows the embedded canary instruction | TODO | — | — |
-| F-02 | Build the Summary lens | E-03, F-01 | The lens produces `sum` records at all four levels, plus `arc` records. Recorded outputs pass validation at the framework's automatic targets. Expert review happens in F-08 | TODO | — | — |
-| F-03 | Build the Structure lens | E-03, F-01 | As F-02, and Structure covers at least 90% of annotated headings | TODO | — | — |
-| F-04 | Build the Logic lens | E-03, F-01 | As F-02, with `node`, `edge`, `step` and `gap` records and no dangling identifiers | TODO | — | — |
-| F-05 | Build the Thinking lens | E-03, F-01 | As F-02, with every facet kind available, concepts and a causal chain; inferred items are labelled | TODO | — | — |
-| F-06 | Write the passage action prompts | E-05, F-01 | Explain, Translate, Logic and Define return valid records in the requested output language. Translate keeps original terms beside their translations. Define cites the ¶ that introduces the term | TODO | — | — |
-| F-07 | Build the evaluation harness | A-06, D-02, D-05 | One command runs every lens on every provider over the corpus and writes a JSON report with the automatic metrics. A review form records faithfulness, structural accuracy, argument accuracy, insight and usefulness per run | TODO | — | — |
-| F-08 | Accept Phase 1 | B-05, B-06, B-07, C-04, C-05, D-03, D-04, E-04, E-06, E-07, F-02 – F-07 | **Live:** the framework's Phase 1 acceptance holds on the owner's machine with Claude and Codex through a real companion. The report is under `docs/evidence/` | TODO | — | — |
+| F-01 | Write the shared rules | A-03, D-01 | The rules cover the role, the document as data, references, *stated* and *inferred*, quotations, JSON Lines and the output language. **Live:** on the injection fixtures, no Claude or Codex run follows the embedded canary instruction | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-02 | Build the Summary lens | E-03, F-01 | The lens produces `sum` records at all four levels, plus `arc` records. Recorded outputs pass validation at the framework's automatic targets. Expert review happens in F-08 | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-03 | Build the Structure lens | E-03, F-01 | As F-02, and Structure covers at least 90% of annotated headings | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-04 | Build the Logic lens | E-03, F-01 | As F-02, with `node`, `edge`, `step` and `gap` records and no dangling identifiers | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-05 | Build the Thinking lens | E-03, F-01 | As F-02, with every facet kind available, concepts and a causal chain; inferred items are labelled | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-06 | Write the passage action prompts | E-05, F-01 | Explain, Translate, Logic and Define return valid records in the requested output language. Translate keeps original terms beside their translations. Define cites the ¶ that introduces the term | IMPLEMENTED — VERIFY | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); prompts implemented and deterministic checks pass; actual provider output quality/live injection gates remain |
+| F-07 | Build the evaluation harness | A-06, D-02, D-05 | One command runs every lens on every provider over the corpus and writes a JSON report with the automatic metrics. A review form records faithfulness, structural accuracy, argument accuracy, insight and usefulness per run | DONE | Codex | [F evidence](../evidence/2026-10-15-f-phase-one.md); [source-labelled CI snapshot](../evidence/2026-10-15-f-validation-run38622975409.json); both 224-run matrices, raw defect metrics and review forms pass; no live quality claim |
+| F-08 | Accept Phase 1 | B-05, B-06, B-07, C-04, C-05, D-03, D-04, E-04, E-06, E-07, F-02 – F-07 | **Live:** the framework's Phase 1 acceptance holds on the owner's machine with Claude and Codex through a real companion. The report is under `docs/evidence/` | BLOCKED | Owner | [F scope decision](../decisions/f-phase-one-evaluation.md); live/expert and A/B/E owner gates remain open |
 
 ### G — Scholar's toolkit (Phase 2)
 

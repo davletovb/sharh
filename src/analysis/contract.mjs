@@ -1,6 +1,6 @@
 import {cleanText} from '../documents/model.mjs';
 
-export const PROMPT_VERSION = 'analysis-1';
+export const PROMPT_VERSION = 'analysis-3';
 export const ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/;
 export const ENUMS = Object.freeze({
   level: ['line','abstract','section','brief'],

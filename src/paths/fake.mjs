@@ -9,8 +9,8 @@ const defaultWait=(ms,signal)=>new Promise((resolve,reject)=> {
 // Explicitly injected scripts; never selected automatically by a production request.
 export class FakePath {
   id='fake';label='Scripted test path';
-  constructor({scripts=[],sessions=true,wait=defaultWait,delayMs=8}={}) {
-    Object.assign(this,{scripts:[...scripts],sessions,wait,delayMs});this.calls=[];this.maintenance=[];this.handles=new Set();this.nextHandle=0;
+  constructor({scripts=[],scriptFor=null,sessions=true,wait=defaultWait,delayMs=8}={}) {
+    Object.assign(this,{scripts:[...scripts],scriptFor,sessions,wait,delayMs});this.calls=[];this.maintenance=[];this.handles=new Set();this.nextHandle=0;
   }
   async discover() {return [{path:'fake',provider:'fixture',available:true,signedIn:true,accepted:true,models:[],capabilities:{streaming:true,sessions:this.sessions,toolIsolation:true,maxRequestBytes:MAX_REQUEST_BYTES}}];}
   async prepare() {}
@@ -21,7 +21,7 @@ export class FakePath {
     const mode=request.session?.mode??'none';
     if(request.session?.mode==='continue' && !this.handles.has(request.session.handle))throw new PathError('PROVIDER_FAILED','UNKNOWN_SESSION');
     if(mode!=='none' && !this.sessions)throw new PathError('OPTION_UNSUPPORTED','PERSISTENT_SESSION_UNSUPPORTED');
-    const script=this.scripts.shift();if(!script)throw Error('FAKE_SCRIPT_EXHAUSTED');
+    const script=this.scriptFor?await this.scriptFor({target,request}):this.scripts.shift();if(!script)throw Error('FAKE_SCRIPT_EXHAUSTED');
     onEvent({type:'started'});
     let session=null;
     if(mode!=='none') {session=request.session?.handle??`fake_session_${++this.nextHandle}`;this.handles.add(session);onEvent({type:'session',handle:session});}

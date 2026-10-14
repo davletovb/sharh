@@ -1,0 +1,53 @@
+{
+  "ciRun": "https://github.com/davletovb/sharh/actions/runs/38622975409",
+  "pullRequestHead": "03d44efd8dd21d1e6a62552a73b50630c04ae10b",
+  "checkoutCommit": "4514f9d28e45cfacae1c6d1049fca1835c0ad0e5",
+  "sourceNote": "Immutable summary of this run's artifacts. Checkout is GitHub's test merge, not a later PR head. Later source changes require their own CI evidence.",
+  "promptVersion": "analysis-2",
+  "unitTests": 159,
+  "browserTests": 16,
+  "draftProbeRuns": 56,
+  "existingBrokerPathChecks": 16,
+  "existingBrokerEngineWorkspaceChecks": 6,
+  "matrix": {
+    "items": 14,
+    "providers": ["claude", "codex"],
+    "lenses": ["summary", "structure", "logic", "thinking"],
+    "actions": ["Explain", "Translate", "Logic", "Define"]
+  },
+  "scripted": {
+    "artifactId": 11922861579,
+    "reportId": "bad64e0e-a86c-4ccd-9272-9bae84694004",
+    "kind": "scripted",
+    "runs": 224,
+    "automaticPassed": true,
+    "minimumParseRate": 1,
+    "minimumReferenceValidity": 1,
+    "minimumHeadingCoverage": 1,
+    "unverifiedQuotations": 0,
+    "canaryMarkersObserved": 0,
+    "pendingCleanup": 0
+  },
+  "broker": {
+    "artifactId": 11922194599,
+    "reportId": "88776b78-df8c-4ef0-a2dc-dc0d963e3f3e",
+    "kind": "real-broker-stand-ins",
+    "runs": 224,
+    "automaticPassed": true,
+    "minimumParseRate": 1,
+    "minimumReferenceValidity": 1,
+    "minimumHeadingCoverage": 1,
+    "unverifiedQuotations": 0,
+    "canaryMarkersObserved": 0,
+    "pendingCleanup": 0,
+    "expertReviewsCompleted": 0
+  },
+  "package": {
+    "reproducible": true,
+    "sha256": "8268af873fe42208f6d3e2364ed852fbcfff1000ac94138aeacf84cecdabf053"
+  },
+  "liveProviderClaim": false,
+  "actualLanguageOrSemanticQualityClaim": false,
+  "phaseOneAccepted": false,
+  "remainingGates": ["Live Claude/Codex output and injection evaluation", "Expert review", "Natural licensed corpus additions", "A-02", "A-03", "B-05", "E-07", "F-08"]
+}

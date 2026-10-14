@@ -1,6 +1,8 @@
 // Test-only provider CLI. Never use as a live-model quality result.
 import {readFileSync} from 'node:fs';
 import {standInOutput} from './draft-prompts.mjs';
+import {phaseOneOutput} from './phase-one-fixtures.mjs';
+import {PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
 const [provider, ...args] = process.argv.slice(2);
 const emit = value => process.stdout.write(JSON.stringify(value) + '\n');
 if (provider === 'codex' && args[0] === 'login') { process.stderr.write('Logged in using ChatGPT\n'); }
@@ -17,7 +19,8 @@ else {
     const task=JSON.parse(taskMatch[1]);
     pause=task.focus==='fixture:pause';
     if(sourceMatch) {
-      output=standInOutput(task.lens,JSON.parse(sourceMatch[1]));
+      const phaseOne=PHASE_ONE_LENSES.includes(task.lens) || Object.hasOwn(PASSAGE_ACTIONS,task.action??'');
+      output=task.focus?.startsWith('fixture:') || !phaseOne?standInOutput(task.lens,JSON.parse(sourceMatch[1])):phaseOneOutput(task,JSON.parse(sourceMatch[1]));
       if(task.focus==='fixture:truncate')output=output.replace('{"t":"end"}\n','');
     } else {
       // A session follow-up contains the task and retained records, but no document layer.

@@ -67,7 +67,7 @@ test('passage actions send selected spans with neighbouring context in the reque
  const path=new FakePath({scripts:Array.from({length:4},()=>({text:jsonl({t:'note',text:'Explanation',refs:[5]},end)})),wait:async()=>{}}),engine=new AnalysisEngine({store,paths:{fake:path}}),client={call:async method=>method==='discover'?path.discover():null};let workspace;
  try{workspace=await createWorkspace(document.getElementById('host'),{store,engine,client,storage,changes});await workspace.ready;await workspace.setDocument(doc);
  for(const action of ['Explain','Translate','Logic','Define'])await workspace.passage(action,{spans:[{n:5,start:0,end:8}]});
- for(const call of path.calls){const data=JSON.parse(call.request.document);assert.deepEqual(data.blocks.map(b=>b.n),[2,3,4,5,6]);assert.equal(call.request.tier,'quick');assert.match(call.request.task,/"outputLanguage":"uz"/);assert.match(call.request.task,/Passage action:/);assert.ok(data.blocks.find(b=>b.n===5).selected);}
+ for(const [i,call] of path.calls.entries()){const data=JSON.parse(call.request.document),task=JSON.parse(call.request.task.split('\n')[1]);assert.deepEqual(data.blocks.map(b=>b.n),[2,3,4,5,6]);assert.equal(call.request.tier,'quick');assert.equal(task.outputLanguage,'uz');assert.equal(task.action,['Explain','Translate','Logic','Define'][i]);assert.ok(task.instructions.length>200);assert.ok(data.blocks.find(b=>b.n===5).selected);}
  }finally{workspace?.dispose();store.close();d.window.close();}
 });
 

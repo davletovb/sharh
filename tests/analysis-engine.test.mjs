@@ -26,7 +26,7 @@ test('engine streams recorded fixtures, persists validated records, target, prom
   try {
     let firstBeforeEnd=false,ended=false;
     const one=await s.start({}, {onEvent:e=>{if(e.type==='record' && !ended)firstBeforeEnd=true;if(e.type==='completed')ended=true;}});
-    assert.ok(firstBeforeEnd);assert.equal(one.run.status,'completed');assert.equal(one.run.promptVersion,'analysis-1');assert.equal(one.records.length,3);
+    assert.ok(firstBeforeEnd);assert.equal(one.run.status,'completed');assert.equal(one.run.promptVersion,'analysis-3');assert.equal(one.records.length,3);
     assert.deepEqual(one.run.target,target);assert.equal(one.run.metrics.quotationsVerified,1);assert.equal(one.run.metrics.truncated,false);assert.deepEqual(one.run.metrics.usage,{input_tokens:10,output_tokens:4});
     assert.ok(one.run.metrics.timeToFirstRecordMs>=0);assert.ok(one.run.metrics.totalMs>=one.run.metrics.timeToFirstRecordMs);
     const two=await s.start();assert.notEqual(one.run.id,two.run.id);assert.equal(two.run.version,2);assert.equal((await s.engine.repository.list(s.doc.id)).length,2);
