@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDocument,versionOf,validateDocument} from '../src/documents/model.mjs';
+import {validateDocument,pdfTextOffsets,normalizePDFText} from '../src/documents/model.mjs';
 import {buildScope,serializeScope,scopeRequest,scopeSize} from '../src/documents/scopes.mjs';
 import {generationFrame,SeatlinePath} from '../src/paths/seatline.mjs';
 import {measureRequest,MAX_REQUEST_BYTES} from '../src/paths/limits.mjs';
@@ -32,6 +32,14 @@ test('PDF page scopes use physical indices and retain printed labels and notes',
   const scope=buildScope(doc,{kind:'pages',first:1,last:2});
   assert.equal(scope.blocks[0].n,3); assert.match(scope.label,/41–42/);
   for (const [first,last] of [[-1,1],[1,0],[0,3],[.5,1]]) assert.throws(()=>buildScope(doc,{kind:'pages',first,last}),/INVALID_PAGE/);
+});
+test('PDF partial-selection offsets survive dehyphenation, soft hyphens, NFC and surrogate pairs',()=> {
+  for (const raw of ['  Public partici-\npation gives a voice.','NFC: e\u0301lan; soft\u00ad\nword 😀','Привет\nмир العربية']) {
+    const map=pdfTextOffsets(raw); assert.equal(map.text,normalizePDFText(raw));
+    const start=raw.indexOf('gives');
+    if(start>=0) { const part=map.range(start,start+5); assert.equal(map.text.slice(part.start,part.end),'gives'); }
+    assert.equal(map.range(0,raw.length).end,map.text.length);
+  }
 });
 test('scope size includes exact multilingual/escaped protected-frame bytes and the path refuses overflow before connecting',async()=> {
   const doc=await exampleDocument(); doc.blocks[4].text='«Oʻzbek» \"Привет\" العربية 😀 \n \\'.repeat(100);

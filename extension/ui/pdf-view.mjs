@@ -1,8 +1,9 @@
 import {TextLayer} from 'pdfjs-dist/build/pdf.mjs';
 import {resolvePDFAnchor} from '../../src/readers/pdf.mjs';
+import {pdfTextOffsets} from '../../src/documents/model.mjs';
 export class PDFView {
   constructor(container) { this.container=container; this.pages=new Map(); this.pdf=null; this.generation=0; }
-  clear() { this.generation++; this.observer?.disconnect(); for (const page of this.pages.values()) page.task?.cancel(); this.pages.clear(); this.container.replaceChildren(); }
+  clear() { this.generation++; this.observer?.disconnect(); for (const page of this.pages.values()) page.task?.cancel(); this.pages.clear(); this.doc=null; this.container.replaceChildren(); }
   async open(pdf,doc) {
     this.clear(); this.pdf=pdf; this.doc=doc;
     const generation=this.generation;
@@ -34,7 +35,7 @@ export class PDFView {
       await state.task.promise;
       const content=await page.getTextContent(), layer=new TextLayer({textContentSource:content,container:text,viewport});
       await layer.render();
-      let divIndex=0; state.items=[];
+      let divIndex=0; state.items=[]; state.content=content;
       for (const [itemIndex,item] of content.items.entries()) if (typeof item.str === 'string') {
         const div=layer.textDivs[divIndex++]; if (div) { div.dataset.item=itemIndex; state.items[itemIndex]=div; }
       }
@@ -56,18 +57,26 @@ export class PDFView {
     state.el.scrollIntoView({block:'center'}); return hit;
   }
   selection() {
+    if (!this.doc) return null;
     const selection=getSelection(); if (!selection?.rangeCount || selection.isCollapsed) return null;
     const range=selection.getRangeAt(0), spans=[];
     // The text layer retains PDF.js item indices; use only intersecting source items, not duplicate text elsewhere.
     for (const block of this.doc.blocks) {
-      const state=this.pages.get(block.page), selectedItems=block.anchor.items.filter(index => {
-        const el=state?.items?.[index]; return el && [...el.childNodes].some(node => node.nodeType===Node.TEXT_NODE && range.intersectsNode(node));
-      });
-      if (!selectedItems.length) continue;
-      const selectedText=selection.toString().normalize('NFC').replace(/\s+/gu,' ').trim();
-      const exact=block.text.indexOf(selectedText);
-      // For multi-line dehyphenation or cross-block selections, include the intersecting block rather than invent offsets.
-      spans.push({n:block.n,start:exact>=0 ? exact : 0,end:exact>=0 ? exact+selectedText.length : block.text.length});
+      const state=this.pages.get(block.page); if(!state?.content)continue;
+      let raw=''; const selected=[];
+      for(const [at,index] of block.anchor.items.entries()) {
+        raw+=block.anchor.separators[at]; const offset=raw.length, text=state.content.items[index].str;
+        raw+=text;
+        const el=state.items[index], node=el?.firstChild;
+        if (!node || node.nodeType!==Node.TEXT_NODE || !range.intersectsNode(node)) continue;
+        const start=range.startContainer===node ? range.startOffset : range.startContainer===el ? (range.startOffset ? text.length : 0) : 0;
+        const end=range.endContainer===node ? range.endOffset : range.endContainer===el ? (range.endOffset ? text.length : 0) : text.length;
+        if(end>start) selected.push({start:offset+start,end:offset+end});
+      }
+      if(!selected.length)continue;
+      const map=pdfTextOffsets(raw);
+      if(map.text!==block.text)continue; // Never attach a selection to a differently normalized extraction.
+      for(const part of selected) { const normalized=map.range(part.start,part.end); if(normalized)spans.push({n:block.n,...normalized}); }
     }
     return spans.length ? {spans,text:selection.toString()} : null;
   }

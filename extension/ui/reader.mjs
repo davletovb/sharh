@@ -16,6 +16,8 @@ const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
 const state=text=>{ $('reader-state').textContent=text; };
 const fail=error=>state(error.message || String(error));
 async function readerMessage(operation,values={}) {
+  // Recheck permission through injection, including after a site grant is removed.
+  await attachReader();
   const response=await chrome.tabs.sendMessage(sourceTab,{type:`sharh:reader:${operation}`,...values},{frameId:0});
   if (response?.error) throw Error(response.error);
   return response?.result;
@@ -48,6 +50,7 @@ async function showDocument(value) {
     row.append(link,text); $('text-blocks').append(row);
   }
   $('text-blocks').hidden=doc.kind==='pdf';
+  $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
   await picker.setDocument(doc); await savedList();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
@@ -153,6 +156,7 @@ $('read-current').addEventListener('click',async()=> {
   } catch(error) { fail(error); }
 });
 $('reextract').addEventListener('click',()=> (localHTML ? readLocalHTML() : readTab(sourceTab)).catch(fail));
+$('show-text').addEventListener('click',()=> { $('text-blocks').hidden=!$('text-blocks').hidden; $('show-text').textContent=$('text-blocks').hidden ? 'Show numbered text' : 'Hide numbered text'; });
 $('open-file').addEventListener('change',event=>openFile(event.target.files[0]).catch(fail));
 $('open-address').addEventListener('submit',event=>{ event.preventDefault(); openPDFAddress($('source-address').value).catch(fail); });
 $('allow-source').addEventListener('click',()=> {

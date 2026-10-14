@@ -31,12 +31,13 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]'));
     assert.equal(await reader.locator('.pdf-page').count(),2);
     assert.ok(await reader.locator('.textLayer span').count()>4);
-    const textRect=await reader.locator('.textLayer span').filter({hasText:'Public participation'}).first().boundingBox();
+    const textRect=await reader.locator('.textLayer span').filter({hasText:'Public partici-'}).first().boundingBox();
     assert.ok(textRect.width>0 && textRect.height>0);
     await reader.locator('#scope-kind').selectOption('pages'); await reader.locator('#scope-first').fill('2'); await reader.locator('#scope-last').fill('2'); await reader.locator('#scope-last').dispatchEvent('change');
     await reader.waitForFunction(()=>document.querySelector('#scope-help').textContent.startsWith('Estimated'));
     await reader.locator('#outline button').first().click(); await reader.waitForFunction(()=>document.querySelector('.pdf-highlight'));
     const rect=await reader.locator('.pdf-highlight').first().boundingBox(); assert.ok(rect.width>0 && rect.height>0);
+    await reader.screenshot({path:'test-results/c-reader.png'});
     report.checks.renderedSelectablePDF=true; report.checks.pdfHighlight=true; report.checks.pageScope=true;
     const archive=await reader.evaluate(async()=> { const {openDocumentStore}=await import('../documents.mjs'),store=await openDocumentStore(); try{return await store.exportData();}finally{store.close();} });
     assert.equal(archive.stores.docs.length,2); assert.ok(archive.stores.sources.some(s=>s.bytes?.length>0));
@@ -65,7 +66,7 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Highlighted'));
     assert.equal(await source.evaluate(()=>CSS.highlights.has('sharh-reference')),true); report.checks.productionPageInjection=true;
     // Actual PDF navigation exercises the worker, without a test-specific route or changed manifest.
-    await source.goto(`${server.url}/corpus/fixtures/pdf/book-with-outline.pdf`,{waitUntil:'commit'}).catch(()=>{});
+    await source.goto(`${server.url}/corpus/fixtures/pdf/outlined-book.pdf`,{waitUntil:'commit'}).catch(()=>{});
     await source.waitForURL(url=>url.href.startsWith(`${base}/ui/reader.html?source=`));
     await source.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.pdfAutoOpen=true;
     await source.locator('#chrome-viewer').click();
@@ -78,7 +79,7 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     if (!fileGrant) await settings.evaluate(async id=>chrome.developerPrivate.addHostPermission(id,'file:///*'),id);
     await reader.reload(); await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.filePDFWithAccess=true;
     await settings.evaluate(async ({id,origin})=>chrome.developerPrivate.removeHostPermission(id,origin+'/*'),{id,origin:server.url});
-    await reader.goto(`${base}/ui/reader.html?source=${encodeURIComponent(server.url+'/corpus/fixtures/pdf/book-with-outline.pdf')}`);
+    await reader.goto(`${base}/ui/reader.html?source=${encodeURIComponent(server.url+'/corpus/fixtures/pdf/outlined-book.pdf')}`);
     await reader.waitForFunction(()=>document.querySelector('#allow-source').hidden===false); report.checks.permissionRemoval=true;
     assert.deepEqual(report.errors,[]);
   } finally {

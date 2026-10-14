@@ -6,6 +6,31 @@ export const normalizeText = text => text.normalize('NFC').replace(/\u00ad/g, ''
 export function normalizePDFText(text) {
   return normalizeText(text.replace(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu, '$1$2').replace(/\u00ad[ \t]*\n[ \t]*/gu, ''));
 }
+export function pdfTextOffsets(raw) {
+  // Map original PDF item offsets through exactly the same dehyphenation/NFC/space normalization.
+  const deleted=new Uint8Array(raw.length);
+  for (const match of raw.matchAll(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu)) deleted.fill(1,match.index+match[1].length,match.index+match[0].length-match[2].length);
+  for (const match of raw.matchAll(/\u00ad(?:[ \t]*\n[ \t]*)?/gu)) deleted.fill(1,match.index,match.index+match[0].length);
+  let kept=''; const original=[];
+  for(let i=0;i<raw.length;i++) if(!deleted[i]) { kept+=raw[i]; original.push(i); }
+  const starts=[],ends=[],chars=[];
+  for(const {segment,index} of new Intl.Segmenter('und',{granularity:'grapheme'}).segment(kept)) {
+    for(const char of segment.normalize('NFC')) {
+      const start=original[index], end=original[index+segment.length-1]+1;
+      if (/\s/u.test(char)) {
+        if(!chars.length)continue;
+        if(chars.at(-1)===' ') { ends[ends.length-1]=end; continue; }
+        chars.push(' '); starts.push(start); ends.push(end);
+      } else for(let i=0;i<char.length;i++) { chars.push(char[i]); starts.push(start); ends.push(end); }
+    }
+  }
+  if(chars.at(-1)===' ') { chars.pop();starts.pop();ends.pop(); }
+  return {text:chars.join(''), range(start,end) {
+    const a=ends.findIndex(position=>position>start); let b=starts.length;
+    while(b>0 && starts[b-1]>=end)b--;
+    return a<0 || b<=a ? null : {start:a,end:b};
+  }};
+}
 export async function versionOf(identity, content) {
   return hash(`${EXTRACTOR_VERSION}\n${identity}\n${content}`);
 }
@@ -33,7 +58,7 @@ export function createDocument(extraction, {kind, identity, address = null, file
   const levels = extraction.sections.filter(s => Number.isInteger(s.first)).map(s => s.level);
   const doc = {...extraction, id: hash(`${kind}\n${identity}`), identity, kind, address, fileName,
     title: title || extraction.title || fileName || 'Untitled document', language: language || extraction.language || null,
-    chapterLevel: chapterLevel ?? (levels.length ? Math.min(...levels) : 1)};
+    chapterLevel: chapterLevel ?? levels.reduce((min,level) => Math.min(min,level), levels[0] || 1)};
   validateDocument(doc);
   return doc;
 }
@@ -44,6 +69,7 @@ export function validateDocument(doc) {
       !doc.blocks.length || !Number.isSafeInteger(doc.chapterLevel) || doc.chapterLevel < 1) throw Error('INVALID_DOCUMENT');
   const sections = new Map(doc.sections.map(s => [s.id, s]));
   if (sections.size !== doc.sections.length) throw Error('DUPLICATE_SECTION');
+  if (doc.kind === 'pdf' && (!Number.isSafeInteger(doc.pageCount) || doc.pageCount < 1 || !Array.isArray(doc.pageLabels) || doc.pageLabels.length !== doc.pageCount || doc.pageLabels.some(label => typeof label !== 'string'))) throw Error('INVALID_PDF_PAGES');
   for (const [index, block] of doc.blocks.entries()) {
     if (block.n !== index + 1 || !['para','heading','quote','list','caption','note','table'].includes(block.kind) ||
         typeof block.text !== 'string' || !block.text || !block.text.isWellFormed() || block.text.includes('\0') ||
@@ -51,12 +77,12 @@ export function validateDocument(doc) {
         (block.section != null && !sections.has(block.section))) throw Error('INVALID_BLOCK');
     const a = block.anchor;
     if (doc.kind === 'html') {
-      if (a?.type !== 'html' || typeof a.path !== 'string' || a.quote?.exact !== block.text ||
+      if (a?.type !== 'html' || typeof a.path !== 'string' || a.quote?.exact !== block.text || typeof a.quote.prefix !== 'string' || typeof a.quote.suffix !== 'string' ||
           !Number.isSafeInteger(a.position?.start) || !Number.isSafeInteger(a.position?.end) ||
           a.position.start < 0 || a.position.end <= a.position.start) throw Error('INVALID_HTML_ANCHOR');
-    } else if (a?.type !== 'pdf' || !Number.isSafeInteger(block.page) || block.page < 0 || a.page !== block.page ||
-        typeof block.pageLabel !== 'string' || !Array.isArray(a.items) || !a.items.length ||
-        a.items.some(i => !Number.isSafeInteger(i) || i < 0) || !Array.isArray(a.separators) || a.separators.length !== a.items.length) throw Error('INVALID_PDF_ANCHOR');
+    } else if (a?.type !== 'pdf' || !Number.isSafeInteger(block.page) || block.page < 0 || block.page >= doc.pageCount || a.page !== block.page ||
+        block.pageLabel !== doc.pageLabels[block.page] || a.quote?.exact !== block.text || !Array.isArray(a.items) || !a.items.length ||
+        a.items.some(i => !Number.isSafeInteger(i) || i < 0) || !Array.isArray(a.separators) || a.separators.length !== a.items.length || a.separators.some(s => typeof s !== 'string')) throw Error('INVALID_PDF_ANCHOR');
   }
   for (const section of doc.sections) {
     if (typeof section.id !== 'string' || typeof section.title !== 'string' || !Number.isInteger(section.level) || section.level < 1 ||
@@ -64,6 +90,10 @@ export function validateDocument(doc) {
         (section.parent != null && !sections.has(section.parent))) throw Error('INVALID_SECTION');
     const visited = new Set([section.id]); let parent = section.parent;
     while (parent != null) { if (visited.has(parent)) throw Error('SECTION_CYCLE'); visited.add(parent); parent = sections.get(parent).parent; }
+    if (section.parent != null) {
+      const parentSection=sections.get(section.parent);
+      if (parentSection.first > section.first || parentSection.last < section.last || parentSection.level >= section.level) throw Error('INVALID_SECTION_PARENT');
+    }
   }
   return doc;
 }
