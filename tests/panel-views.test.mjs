@@ -72,7 +72,7 @@ test('passage actions send selected spans with neighbouring context in the reque
 
 test('selection toolbar preserves the selected passage, supports keyboard arrows/Escape and obeys disabled access',async()=> {
  const d=dom(),p=document.createElement('p');p.textContent='Selected words';document.getElementById('host').append(p);const range=document.createRange();range.selectNodeContents(p);range.getBoundingClientRect=()=>({left:20,bottom:60});getSelection().addRange(range);let allowed=false;const calls=[];
- const spans={spans:[{n:3,start:0,end:8}]},toolbar=installSelectionToolbar({document,enabled:async()=>allowed,selection:async()=>spans,onAction:(action,selection)=>calls.push({action,selection})});
+ const spans={spans:[{n:3,start:0,end:8}]},toolbar=installSelectionToolbar({document,enabled:async()=>allowed,selection:async()=>spans,onPrepare:()=>{throw Error('WARMUP_UNAVAILABLE');},onAction:(action,selection)=>calls.push({action,selection})});
  try{document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));assert.equal(document.querySelector('[role=toolbar]'),null);allowed=true;document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));
  const bar=document.querySelector('[role=toolbar]'),buttons=bar.querySelectorAll('button');assert.equal(bar.hidden,false);buttons[0].focus();buttons[0].dispatchEvent(new d.window.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));assert.equal(document.activeElement,buttons[1]);buttons[1].click();assert.equal(calls[0].action,'Translate');assert.deepEqual(calls[0].selection,spans);assert.equal(bar.hidden,true);
  }finally{toolbar.dispose();d.window.close();}

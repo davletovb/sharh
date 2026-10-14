@@ -23,7 +23,8 @@ export function installSelectionToolbar({document,selection,onAction,enabled=asy
     const value=await selection();if(ticket!==revision || !value?.spans?.length){hide();return;}
     saved=value;create();const spans=value.spans;bar.querySelector('.passage-context').textContent=`¶${spans[0].n}–${spans.at(-1).n} · with surrounding context`;
     const selected=document.defaultView.getSelection(),rect=selected?.rangeCount?selected.getRangeAt(0).getBoundingClientRect():null;
-    const target=shadow?host:bar;target.style.left=Math.min(Math.max(12,rect?.left??12),Math.max(12,document.defaultView.innerWidth-330))+'px';target.style.top=Math.min(Math.max(12,(rect?.bottom??12)+8),Math.max(12,document.defaultView.innerHeight-110))+'px';bar.hidden=false;onPrepare();
+    const target=shadow?host:bar;target.style.left=Math.min(Math.max(12,rect?.left??12),Math.max(12,document.defaultView.innerWidth-330))+'px';target.style.top=Math.min(Math.max(12,(rect?.bottom??12)+8),Math.max(12,document.defaultView.innerHeight-110))+'px';bar.hidden=false;
+    try{Promise.resolve(onPrepare()).catch(()=>{});}catch{/* Optional warm-up never hides a usable toolbar. */}
   }
   const listen=event=>{update(event).catch(hide);};
   document.addEventListener('pointerup',listen);document.addEventListener('keyup',listen);
