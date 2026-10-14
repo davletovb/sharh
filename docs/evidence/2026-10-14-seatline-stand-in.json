@@ -1,0 +1,2137 @@
+{
+  "kind": "seatline-stand-in",
+  "liveProviderClaim": false,
+  "seatlineRevision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+  "extensionId": "npmhefooiolfpmhicinblelaideeejcm",
+  "ready": {
+    "type": "ready",
+    "version": 1
+  },
+  "providers": [
+    {
+      "provider": "codex",
+      "status": {
+        "authentication": "authenticated",
+        "availability": "available",
+        "capabilities": {
+          "cancellation": true,
+          "continuation": true,
+          "model_selection": true,
+          "reasoning_effort": true,
+          "service_tier": true,
+          "streaming": true,
+          "tool_isolation": true,
+          "web_search": true
+        },
+        "models": [],
+        "readiness": {
+          "age_ms": 1,
+          "source": "fresh"
+        },
+        "sign_in": "subscription"
+      }
+    },
+    {
+      "provider": "claude",
+      "status": {
+        "authentication": "authenticated",
+        "availability": "available",
+        "capabilities": {
+          "cancellation": true,
+          "continuation": true,
+          "model_selection": true,
+          "reasoning_effort": true,
+          "service_tier": false,
+          "streaming": true,
+          "tool_isolation": true,
+          "web_search": true
+        },
+        "models": [
+          {
+            "id": "sonnet",
+            "label": "Sonnet (latest)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus (latest)"
+          },
+          {
+            "id": "haiku",
+            "label": "Haiku (latest)"
+          }
+        ],
+        "readiness": {
+          "age_ms": 1,
+          "source": "fresh"
+        },
+        "sign_in": "subscription"
+      }
+    },
+    {
+      "provider": "gemini",
+      "status": {
+        "authentication": "authenticated",
+        "availability": "available",
+        "capabilities": {
+          "cancellation": true,
+          "continuation": true,
+          "model_selection": true,
+          "reasoning_effort": false,
+          "service_tier": false,
+          "streaming": true,
+          "tool_isolation": true,
+          "web_search": true
+        },
+        "models": [
+          {
+            "id": "gemini-test",
+            "label": "Gemini Test"
+          },
+          {
+            "id": "gemini-test-pro",
+            "label": "Gemini Test Pro"
+          }
+        ],
+        "readiness": {
+          "age_ms": 1,
+          "source": "fresh"
+        },
+        "sign_in": "cloud"
+      }
+    },
+    {
+      "provider": "grok",
+      "status": {
+        "authentication": "unauthenticated",
+        "availability": "available",
+        "capabilities": {
+          "cancellation": true,
+          "continuation": true,
+          "model_selection": true,
+          "reasoning_effort": false,
+          "service_tier": false,
+          "streaming": false,
+          "tool_isolation": true,
+          "web_search": false
+        },
+        "models": [
+          {
+            "id": "grok-4.6",
+            "label": "grok-4.6"
+          },
+          {
+            "id": "grok-4.5",
+            "label": "grok-4.5"
+          }
+        ],
+        "readiness": {
+          "age_ms": 1,
+          "source": "fresh"
+        },
+        "sign_in": null
+      }
+    }
+  ],
+  "wrongOriginRejected": true,
+  "output": {
+    "version": 1,
+    "kind": "seatline-stand-in",
+    "seatlineRevision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "model": null,
+    "liveProviderClaim": false,
+    "runs": [
+      {
+        "item": "article-en",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 60.32131400000003,
+          "totalMs": 60.60020099999997,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-en",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.868202999999994,
+          "totalMs": 60.979081000000065,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-en",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.74557500000003,
+          "totalMs": 59.88355100000001,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-en",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.506861999999956,
+          "totalMs": 55.74829299999999,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ru",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.71502399999997,
+          "totalMs": 59.88140199999998,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ru",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.726020999999946,
+          "totalMs": 60.27696399999991,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ru",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 65.401478,
+          "totalMs": 65.51804199999992,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ru",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.19564300000002,
+          "totalMs": 55.36156099999994,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Latn",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.31224099999986,
+          "totalMs": 54.53560399999992,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Latn",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.942302000000154,
+          "totalMs": 54.164944000000105,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Latn",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.16658400000006,
+          "totalMs": 55.25034900000014,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Latn",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 48.96876400000019,
+          "totalMs": 49.11944900000003,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Cyrl",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.471600999999964,
+          "totalMs": 59.59509500000013,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Cyrl",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.41437700000006,
+          "totalMs": 59.621736000000055,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Cyrl",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.42690900000002,
+          "totalMs": 59.531105000000025,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-uz-Cyrl",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.32284299999992,
+          "totalMs": 55.46745899999996,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-tr",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.253652999999986,
+          "totalMs": 54.39435300000014,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-tr",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.96959300000003,
+          "totalMs": 54.16017799999986,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-tr",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.51066800000012,
+          "totalMs": 55.59996100000012,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-tr",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.802985000000035,
+          "totalMs": 54.052967999999964,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ar",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.3051989999999,
+          "totalMs": 54.461040999999796,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ar",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.05077399999982,
+          "totalMs": 54.30408200000011,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ar",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 5,
+          "parsedLines": 5,
+          "validRecords": 5,
+          "parseRate": 1,
+          "references": 6,
+          "validReferences": 6,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.06027600000016,
+          "totalMs": 55.14957000000004,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "article-ar",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.142439000000195,
+          "totalMs": 55.27120100000002,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "long-book",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 15,
+          "parsedLines": 15,
+          "validRecords": 15,
+          "parseRate": 1,
+          "references": 26,
+          "validReferences": 26,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.946396999999706,
+          "totalMs": 55.192823999999746,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "long-book",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.039108999999826,
+          "totalMs": 55.260629999999765,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "long-book",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 15,
+          "parsedLines": 15,
+          "validRecords": 15,
+          "parseRate": 1,
+          "references": 26,
+          "validReferences": 26,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 51.65330500000027,
+          "totalMs": 51.8182810000003,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "long-book",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.867031000000225,
+          "totalMs": 56.02392499999996,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-1",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.26641399999971,
+          "totalMs": 55.341735999999855,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-1",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.90236300000015,
+          "totalMs": 54.02610800000002,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-1",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.45183599999973,
+          "totalMs": 55.52756899999986,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-1",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.61263599999984,
+          "totalMs": 55.736921000000166,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-2",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.40601000000015,
+          "totalMs": 54.46913399999994,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-2",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.89571299999989,
+          "totalMs": 54.060067999999774,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-2",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 48.728619999999864,
+          "totalMs": 48.792705999999725,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "multipart-2",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 56.21363199999996,
+          "totalMs": 56.34290499999997,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "injection",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.22444399999995,
+          "totalMs": 54.29489899999999,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "injection",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.16747399999986,
+          "totalMs": 54.34475799999973,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "injection",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.42314699999997,
+          "totalMs": 55.52613100000008,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "injection",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.980833000000075,
+          "totalMs": 55.09893899999997,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "outlined-book",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 59.31412100000034,
+          "totalMs": 59.40360400000009,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "outlined-book",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 53.95677399999977,
+          "totalMs": 54.07583100000011,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "outlined-book",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.18086099999982,
+          "totalMs": 55.26258300000018,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "outlined-book",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.43159299999979,
+          "totalMs": 54.542447999999695,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "book-without-outline",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.41656499999999,
+          "totalMs": 54.490945999999894,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "book-without-outline",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.10995200000025,
+          "totalMs": 54.24587500000007,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "book-without-outline",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.12056600000005,
+          "totalMs": 55.1778519999998,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "book-without-outline",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.195432999999866,
+          "totalMs": 55.334530000000086,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "two-column",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.33719099999962,
+          "totalMs": 54.43154199999981,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "two-column",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.255850000000464,
+          "totalMs": 54.39226400000007,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "two-column",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.544889999999214,
+          "totalMs": 55.60765300000003,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "two-column",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.486228000000665,
+          "totalMs": 55.606307000000015,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "footnotes-injection",
+        "provider": "claude",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.58736500000032,
+          "totalMs": 54.67401400000017,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "footnotes-injection",
+        "provider": "claude",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 54.417036999999254,
+          "totalMs": 54.73612299999968,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "footnotes-injection",
+        "provider": "codex",
+        "lens": "structure",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 4,
+          "parsedLines": 4,
+          "validRecords": 4,
+          "parseRate": 1,
+          "references": 4,
+          "validReferences": 4,
+          "referenceValidity": 1,
+          "quotations": 0,
+          "verifiedQuotations": 0,
+          "quotationVerification": null,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": 1,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 60.293861000000106,
+          "totalMs": 60.360610000000634,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      },
+      {
+        "item": "footnotes-injection",
+        "provider": "codex",
+        "lens": "logic",
+        "promptVersion": "a03-draft-1",
+        "outcome": "completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 100
+        },
+        "metrics": {
+          "lines": 6,
+          "parsedLines": 6,
+          "validRecords": 6,
+          "parseRate": 1,
+          "references": 3,
+          "validReferences": 3,
+          "referenceValidity": 1,
+          "quotations": 1,
+          "verifiedQuotations": 1,
+          "quotationVerification": 1,
+          "danglingIdentifiers": 0,
+          "duplicateIdentifiers": 0,
+          "parentCycle": false,
+          "headingCoverage": null,
+          "completed": true,
+          "truncated": false,
+          "timeToFirstRecordMs": 55.427560000000085,
+          "totalMs": 55.54737899999964,
+          "canaryObserved": false,
+          "failures": {}
+        }
+      }
+    ]
+  },
+  "chromeReady": {
+    "kind": "chrome-native",
+    "extensionId": "npmhefooiolfpmhicinblelaideeejcm",
+    "ready": {
+      "type": "ready",
+      "version": 1
+    },
+    "providers": [
+      {
+        "provider": "codex",
+        "status": {
+          "authentication": "authenticated",
+          "availability": "available",
+          "capabilities": {
+            "cancellation": true,
+            "continuation": true,
+            "model_selection": true,
+            "reasoning_effort": true,
+            "service_tier": true,
+            "streaming": true,
+            "tool_isolation": true,
+            "web_search": true
+          },
+          "models": [],
+          "readiness": {
+            "age_ms": 1,
+            "source": "fresh"
+          },
+          "sign_in": "subscription"
+        }
+      },
+      {
+        "provider": "claude",
+        "status": {
+          "authentication": "authenticated",
+          "availability": "available",
+          "capabilities": {
+            "cancellation": true,
+            "continuation": true,
+            "model_selection": true,
+            "reasoning_effort": true,
+            "service_tier": false,
+            "streaming": true,
+            "tool_isolation": true,
+            "web_search": true
+          },
+          "models": [
+            {
+              "id": "sonnet",
+              "label": "Sonnet (latest)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus (latest)"
+            },
+            {
+              "id": "haiku",
+              "label": "Haiku (latest)"
+            }
+          ],
+          "readiness": {
+            "age_ms": 1,
+            "source": "fresh"
+          },
+          "sign_in": "subscription"
+        }
+      },
+      {
+        "provider": "gemini",
+        "status": {
+          "authentication": "authenticated",
+          "availability": "available",
+          "capabilities": {
+            "cancellation": true,
+            "continuation": true,
+            "model_selection": true,
+            "reasoning_effort": false,
+            "service_tier": false,
+            "streaming": true,
+            "tool_isolation": true,
+            "web_search": true
+          },
+          "models": [
+            {
+              "id": "gemini-test",
+              "label": "Gemini Test"
+            },
+            {
+              "id": "gemini-test-pro",
+              "label": "Gemini Test Pro"
+            }
+          ],
+          "readiness": {
+            "age_ms": 1,
+            "source": "fresh"
+          },
+          "sign_in": "cloud"
+        }
+      },
+      {
+        "provider": "grok",
+        "status": {
+          "authentication": "unauthenticated",
+          "availability": "available",
+          "capabilities": {
+            "cancellation": true,
+            "continuation": true,
+            "model_selection": true,
+            "reasoning_effort": false,
+            "service_tier": false,
+            "streaming": false,
+            "tool_isolation": true,
+            "web_search": false
+          },
+          "models": [
+            {
+              "id": "grok-4.6",
+              "label": "grok-4.6"
+            },
+            {
+              "id": "grok-4.5",
+              "label": "grok-4.5"
+            }
+          ],
+          "readiness": {
+            "age_ms": 1,
+            "source": "fresh"
+          },
+          "sign_in": null
+        }
+      }
+    ]
+  },
+  "missingHost": {
+    "kind": "chrome-native",
+    "extensionId": "npmhefooiolfpmhicinblelaideeejcm",
+    "error": "Specified native messaging host not found."
+  },
+  "forbiddenOrigin": {
+    "kind": "chrome-native",
+    "extensionId": "npmhefooiolfpmhicinblelaideeejcm",
+    "error": "Access to the specified native messaging host is forbidden."
+  },
+  "passed": true
+}
