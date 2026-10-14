@@ -32,7 +32,7 @@ export const FIELDS = Object.freeze({
   concept: {id:'id',term:'text',src:'text?',gloss:'text',refs:'refs'},
   theme: {id:'id',label:'text',text:'text',refs:'refs'},
   code: {id:'id',theme:'id',label:'text',text:'text'},
-  excerpt: {code:'id',ref:'number',quote:'quote'},
+  excerpt: {code:'id',ref:'reference',quote:'quote'},
   tension: {a:'id',b:'id',text:'text',refs:'refs'},
   memo: {text:'text'},
   cite: {who:'text',work:'text?',role:'enum:citation',text:'text',refs:'refs'},
@@ -79,8 +79,8 @@ export function validateFields(input,lens) {
     } else if (spec==='id') {
       if (typeof value!=='string' || !ID.test(value)) return {error:'identifier'};
       record[key]=value;
-    } else if (spec==='number') {
-      if (!Number.isSafeInteger(value) || value<1) return {error:'fields'};
+    } else if (spec==='number' || spec==='reference') {
+      if (!Number.isSafeInteger(value) || spec==='number' && value<1) return {error:'fields'};
       record[key]=value;
     } else if (spec==='ids') {
       if (!Array.isArray(value) || !value.length || value.length>256 || value.some(id=>typeof id!=='string' || !ID.test(id))) return {error:'identifier'};

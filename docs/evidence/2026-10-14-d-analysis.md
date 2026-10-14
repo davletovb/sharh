@@ -15,7 +15,8 @@ Source: branch `codex/d-analysis-engine`, based on merged C `603dae78b883eba8ad8
 
 ## Validation state
 
-- Local `npm run test:unit`: **107/107 passing** (83 existing + 24 new).
-- Local `npm run build` and `git diff --check`: passing.
-- Local browser validation cannot start because the Chromium executable is absent in this workspace. The unchanged production manifest, browser regression suite and pinned real-broker integration are run in CI; current run evidence will be linked on the PR.
+- The [immutable baseline snapshot](2026-10-14-d-validation.json) records [CI run 38548748062](https://github.com/davletovb/sharh/actions/runs/38548748062) at source `8be206096f340047640326ec595cc08c9fa37a26`: **107 unit tests, 12 browser tests**, the existing **16 real-broker path checks**, and **4 additional production-engine/broker checks**, all passing. All corpus fixtures and the 56-run draft-output probe also pass.
+- The downloaded browser/broker reports and package report are copied exactly into that source-labelled snapshot. The 200-record text sink's maximum measured render callback was 2.1 ms on that CI runner (a scripted UI test, not live-model latency). Its screenshot was inspected: model markup stays text. The extension package is reproducible.
+- Final local hardening adds two regressions: canonical unanchored/failed-quote records survive continuation, and repair cannot hide path-capped output. **109/109 unit tests pass locally** (83 existing + 26 new); build, package reproducibility and `git diff --check` pass. The final-head CI run is linked from the PR; the baseline snapshot is not relabelled as that head.
+- Local browser execution is unavailable because Chromium is absent in this workspace; browser and real-broker execution use CI with the unchanged production manifest.
 - No live provider run or owner-machine validation is claimed. A-02, A-03 and B-05 remain open. E's lens controls/specialized views and F's final prompt-quality work are not part of D.

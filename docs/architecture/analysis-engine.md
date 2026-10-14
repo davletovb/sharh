@@ -30,7 +30,7 @@ Metrics distinguish physical lines, candidate record lines, new/retained valid r
 
 ## Repair, continuation and storage
 
-Below 80% valid candidate lines (or zero valid records), exactly one ephemeral repair is attempted. It receives the faulty output as JSON data and the output contract, not the source document. The repaired result passes the same validator. Repair records replace the visible/stored attempt only after the repair succeeds. A failed repair preserves the initial validated records and its failed attempt metadata. A repaired truncated result starts fresh on continuation, avoiding reuse of an unrepaired conversation.
+Below 80% valid candidate lines (or zero valid records), exactly one ephemeral repair is attempted. It receives the faulty output as JSON data and the output contract, not the source document. The repaired result passes the same validator. Repair records replace the visible/stored attempt only after the repair succeeds. A failed repair preserves the initial validated records and its failed attempt metadata. Repair cannot clear a path-reported output cap: the run remains truncated and can continue. A repaired truncated result starts fresh on continuation, avoiding reuse of an unrepaired conversation.
 
 Explicit continuation revalidates retained records and resolves new links against them. Session loss before any new output permits one announced scope reconstruction; a contextless answer after session loss is discarded rather than accepted. The resulting failed/truncated version can be explicitly continued as a new turn. Changing prompt versions refuses session reuse.
 

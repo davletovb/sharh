@@ -99,11 +99,14 @@ export class AnalysisEngine {
         final=await attempt(prompt.request,0);
       }
       if(!final.error && (final.metrics.validRate<0.8 || final.metrics.validRecords===0) && !combined.aborted) {
+        const capped=final.result?.truncated===true;
         notify(onEvent,{type:'repairing',runId:run.id});
         // Raw output is quoted as JSON data; a repair turn never receives the source document.
         const faulty=(retained.length?retained.map(e=>JSON.stringify(e.record)).join('\n')+'\n':'')+final.raw;
         const repaired=await attempt(repairRequest(run.lens,run.config.language,faulty,run.cleanupGroup),1);
         if(!repaired.error) {
+          // Repair may fix a missing end marker, but cannot recover content cut off by a path cap.
+          repaired.metrics.truncated ||= capped;
           final=repaired;session=null;notify(onEvent,{type:'reset',runId:run.id});
           for(const entry of final.records)notify(onEvent,{type:'record',runId:run.id,attempt:1,entry});
         } else notify(onEvent,{type:'repair_failed',runId:run.id,code:repaired.error.code??'PROVIDER_FAILED'});

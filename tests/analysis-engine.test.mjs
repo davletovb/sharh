@@ -138,3 +138,8 @@ test('fake path exposes timing, nonstreaming-sized chunks, cancellation and UTF-
   assert.deepEqual(waits,[15]);assert.equal(result.text,'🙂');assert.equal(result.truncated,true);assert.equal(result.session,null);assert.equal((await path.discover())[0].capabilities.sessions,true);
   const abort=new AbortController();abort.abort();await assert.rejects(path.run(target,{},{signal:abort.signal}),{code:'CANCELLED'});
 });
+
+test('successful format repair cannot erase a path-reported output truncation or its continue action',async()=> {
+  const s=await setup([{text:'{broken fragment',truncated:true},{text:good}]);
+  try {const result=await s.start();assert.equal(result.run.status,'truncated');assert.equal(result.run.canContinue,true);assert.equal(result.run.metrics.truncated,true);assert.equal(result.records.length,1);assert.equal(s.path.calls.length,2);}finally{s.store.close();}
+});

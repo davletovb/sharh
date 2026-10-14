@@ -30,7 +30,7 @@ test('D engine in packaged Chromium: timed streaming text view, repair, continua
     assert.match(await page.locator('#analysis-fixture').textContent(),/<svg/);
     const streaming=await page.evaluate(()=>({status:d.result.run.status,maxRenderMs:d.maxRenderMs,firstBeforeEnd:d.firstRecordBeforeEnd,id:d.result.run.id,metrics:d.result.run.metrics}));
     assert.equal(streaming.status,'completed');assert.ok(streaming.firstBeforeEnd);assert.ok(streaming.maxRenderMs<100);report.checks.streaming200TextRecords=streaming;
-    await page.screenshot({path:'test-results/d-records.png',fullPage:true});
+    await page.screenshot({path:'test-results/d-records.png'});
     const malformed=await readFile('tests/fixtures/analysis/malformed.jsonl','utf8'),good=await readFile('tests/fixtures/analysis/logic.jsonl','utf8');
     const repaired=await page.evaluate(async({malformed,good})=> {
       const {FakePath,AnalysisEngine,buildScope}=SharhTest,path=new FakePath({scripts:[{text:malformed},{text:good}],delayMs:1}),engine=new AnalysisEngine({store:d.store,paths:{fake:path}});

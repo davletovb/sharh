@@ -114,3 +114,14 @@ test('continued validation isolates retained metrics and accepts first meta whil
   assert.equal(result.metrics.validRate,.5);assert.equal(result.metrics.retainedRecords,1);assert.equal(result.metrics.newValidRecords,1);assert.equal(result.meta.lang,'en');
   const late=parse('logic',['{bad}',{t:'meta',lens:'logic',lang:'en'},{t:'end'}]);assert.equal(late.metrics.dropped.meta_order,1);
 });
+
+test('continuation revalidation preserves canonical unanchored spans and excerpts whose quote was removed',()=> {
+  const section=parse('structure',[{t:'sec',id:'s',title:'x',role:'claim',gist:'x',span:[99,100]},{t:'end'}]);
+  const next=new RecordParser({lens:'structure',blocks});next.seed(section.records);next.push('{"t":"end"}\n');
+  assert.equal(next.finish().records.length,1);assert.deepEqual(next.finish().records[0].record.span,[]);
+  const theme=parse('themes',[{t:'theme',id:'t',label:'x',text:'x',refs:[2]},{t:'code',id:'c',theme:'t',label:'x',text:'x'},
+    {t:'excerpt',code:'c',ref:999,quote:'not found'},{t:'end'}]);
+  const p=new RecordParser({lens:'themes',blocks});p.seed(theme.records);p.push('{"t":"end"}\n');const result=p.finish();
+  assert.equal(result.records.length,3);const excerpt=result.records.find(e=>e.record.t==='excerpt');
+  assert.equal(excerpt.record.quote,undefined);assert.equal(excerpt.record.ref,undefined);assert.ok(excerpt.flags.includes('unanchored'));assert.ok(excerpt.flags.includes('quotation_not_found'));
+});

@@ -20,7 +20,15 @@ export class RecordParser {
     this.seeding=true;
     for(const prior of entries) {
       this.seedFlags=prior.flags??[];
-      this.line(JSON.stringify(prior.record));
+      const normalized=structuredClone(prior.record);
+      // Validation deliberately removes invalid anchors/quotes. Restore only invalid sentinels
+      // before revalidation, so the canonical unanchored record remains representable.
+      if(normalized.t==='sec' && normalized.span?.length===0 && this.seedFlags.includes('unanchored'))normalized.span=[0,0];
+      if(normalized.t==='excerpt') {
+        if(normalized.ref===undefined && this.seedFlags.includes('unanchored'))normalized.ref=0;
+        if(normalized.quote===undefined && this.seedFlags.includes('quotation_not_found'))normalized.quote='…';
+      }
+      this.line(JSON.stringify(normalized));
       const entry=this.pending.at(-1)?.sequence===this.metrics.lines?this.pending.at(-1):this.entries.at(-1);
       if(entry)entry.flags=[...new Set([...entry.flags,...prior.flags??[]])];
     }
