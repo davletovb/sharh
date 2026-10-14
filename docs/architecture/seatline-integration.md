@@ -266,7 +266,7 @@ The table describes consumer behavior across B/D/G/H. B maps and surfaces all fa
 | `READINESS_CHANGED`, `READINESS_EXPIRED`, `READINESS_UNVERIFIED` | Retry once after fresh readiness |
 | `READINESS_UNSUPPORTED`, `INVALID_REQUEST` on a protected method | Update required; no fallback |
 | `SESSION_LIMIT_REACHED` | Forget old sessions, then retry once |
-| Port disconnect | Reconnect, then re-run an interrupted analysis turn once. Analysis turns have no side effects, but a turn that had started may already have used plan usage, so the reader is told. |
+| Port disconnect | D retains validated partial records and offers explicit continuation with the scope; it never silently replays a sent generation. Future job retry policy may re-run once with an explicit plan-usage notice. |
 
 ## Client
 

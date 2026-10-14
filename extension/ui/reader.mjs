@@ -5,7 +5,12 @@ import {openDocumentStore} from '../../src/documents/store.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
 import {PDFView} from './pdf-view.mjs';
 import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
+import {createAnalysisEngine} from './analysis.mjs';
+import {PathClient} from './client.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
+// E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
+export const {engine:analysisEngine}=createAnalysisEngine(store);
+const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
 let busy=false;
@@ -195,7 +200,7 @@ async function savedList() {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
     open.addEventListener('click',()=>operate(()=>reopen(item.id)));
-    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); if(doc?.id===item.id) { await resetPDF(); doc=null; picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
+    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
     row.append(title,open,remove); $('saved-documents').append(row);
   }
 }

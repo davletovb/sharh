@@ -1,7 +1,7 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A/B and C slices implemented. C-01–C-05 are DONE. B-01–B-04, B-06 and B-07 are DONE. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
+Status: A/B and C slices implemented. D-01–D-06 are implemented pending CI browser/real-broker verification. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
@@ -9,10 +9,10 @@ This is the authoritative progress record. Requirements are defined in the [prod
 
 - Planned implementation items: **72**
 - DONE: **15**
-- IMPLEMENTED — VERIFY: **3**
+- IMPLEMENTED — VERIFY: **9**
 - IN PROGRESS: **0**
 - BLOCKED: **0**
-- TODO: **54**
+- TODO: **48**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -114,12 +114,12 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| D-01 | Assemble prompts | C-01 | Prompts are built in the three layers of the analysis pipeline. The document is serialized with ¶ numbers, page labels, notes, context and selection marks, and a language tag. Placement on Seatline follows the turn mapping, and the prompt version is stored with each run | TODO | — | — |
-| D-02 | Parse and validate records | C-01 | Validation steps 1 to 8 of the analysis pipeline pass fixtures that include fenced, malformed, truncated and adversarial output. Metrics are recorded per run. No model text is ever rendered as HTML | TODO | — | — |
-| D-03 | Verify quotations | D-02 | Fixtures pass in English, Russian, Uzbek (Latin and Cyrillic), Turkish and Arabic, covering:<br>• normalization of NFC, whitespace, quotation marks, apostrophes (including the Uzbek ʻ variants), dashes and soft hyphens;<br>• `…` segments;<br>• matches across paragraphs.<br>Unmatched quotations are removed and flagged | TODO | — | — |
-| D-04 | Repair and continue runs | B-03, D-02 | When fewer than 80% of lines are valid, exactly one repair turn runs and its output is validated again. A truncated run offers *continue*, as a session follow-up or as a new run. Fake-path tests cover both | TODO | — | — |
-| D-05 | Store runs, versions and metrics | C-01, D-02 | Runs and records are stored with their target, prompt version and metrics. Running a lens again creates a new version. Re-extraction marks earlier runs stale. Deleting a document cascades and schedules Seatline `forget` and `cleanup` | TODO | — | — |
-| D-06 | Build the fake path | B-03, D-02 | A scripted path replays recorded JSON Lines with realistic timing, malformed lines and truncation. View and validation tests in CI use it | TODO | — | — |
+| D-01 | Assemble prompts | C-01 | Prompts are built in the three layers of the analysis pipeline. The document is serialized with ¶ numbers, page labels, notes, context and selection marks, and a language tag. Placement on Seatline follows the turn mapping, and the prompt version is stored with each run | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
+| D-02 | Parse and validate records | C-01 | Validation steps 1 to 8 of the analysis pipeline pass fixtures that include fenced, malformed, truncated and adversarial output. Metrics are recorded per run. No model text is ever rendered as HTML | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
+| D-03 | Verify quotations | D-02 | Fixtures pass in English, Russian, Uzbek (Latin and Cyrillic), Turkish and Arabic, covering:<br>• normalization of NFC, whitespace, quotation marks, apostrophes (including the Uzbek ʻ variants), dashes and soft hyphens;<br>• `…` segments;<br>• matches across paragraphs.<br>Unmatched quotations are removed and flagged | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
+| D-04 | Repair and continue runs | B-03, D-02 | When fewer than 80% of lines are valid, exactly one repair turn runs and its output is validated again. A truncated run offers *continue*, as a session follow-up or as a new run. Fake-path tests cover both | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
+| D-05 | Store runs, versions and metrics | C-01, D-02 | Runs and records are stored with their target, prompt version and metrics. Running a lens again creates a new version. Re-extraction marks earlier runs stale. Deleting a document cascades and schedules Seatline `forget` and `cleanup` | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
+| D-06 | Build the fake path | B-03, D-02 | A scripted path replays recorded JSON Lines with realistic timing, malformed lines and truncation. View and validation tests in CI use it | IMPLEMENTED — VERIFY | Codex | [D evidence](../evidence/2026-10-14-d-analysis.md); 107 unit tests/build pass, CI browser/real-broker gate pending |
 
 ### E — Panel, views and passage actions
 

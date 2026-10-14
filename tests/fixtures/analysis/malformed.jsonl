@@ -1,0 +1,5 @@
+```json
+Here is the result:
+{broken}
+{"t":"node","id":"p1","kind":"claim","text":"A partial valid finding.","refs":[3,999],"basis":"stated","quote":"fabricated quotation"}
+{"t":"node","id":"unfinished","kind":

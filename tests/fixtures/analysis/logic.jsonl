@@ -1,0 +1,5 @@
+{"t":"meta","lens":"logic","lang":"en"}
+{"t":"edge","from":"p1","to":"c1","rel":"supports"}
+{"t":"node","id":"p1","kind":"premise","text":"A scripted observation, not a live model result.","refs":[3],"basis":"stated","quote":"First paragraph"}
+{"t":"node","id":"c1","kind":"claim","text":"<img src=x onerror=alert(1)> remains text.","refs":[4],"basis":"inferred"}
+{"t":"end"}

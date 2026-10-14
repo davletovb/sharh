@@ -67,6 +67,8 @@ jobs:
         run: node scripts/verify-companion.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
       - name: Production Seatline path through the real broker and Chromium
         run: npm run test:companion -- --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
+      - name: Production analysis engine, continuation and deletion maintenance through the real broker
+        run: node scripts/verify-analysis-engine.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

@@ -2,12 +2,17 @@ import {NativeSeatline} from '../src/paths/native-seatline.mjs';
 import {SeatlinePath} from '../src/paths/seatline.mjs';
 import {SeatlinePreferences} from './lib/preferences.mjs';
 import {installOpening,createReaderMenus} from './lib/opening.mjs';
+import {openDocumentStore} from '../src/documents/store.mjs';
+import {MaintenanceDispatcher} from '../src/analysis/maintenance.mjs';
 installOpening(chrome);
 const preferences = new SeatlinePreferences(chrome.storage);
 const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), {
   disconnectMessage: () => chrome.runtime.lastError?.message || ''
 });
 const path = new SeatlinePath({client, policy: () => preferences.value});
+const maintenance=openDocumentStore().then(store=>new MaintenanceDispatcher(store,{seatline:path}));
+// Retry durable deletion intentions on worker activation. Failed rows remain local.
+preferences.refresh().then(()=>maintenance).then(dispatcher=>dispatcher.drain()).catch(()=>{});
 chrome.runtime.onInstalled.addListener(() => {
   createReaderMenus(chrome).catch(() => {});
 });
@@ -47,6 +52,9 @@ chrome.runtime.onConnect.addListener((port) => {
       await preferences.refresh();
       let result;
       switch (message.method) {
+        case 'maintenance':
+          result=await (await maintenance).drain();
+          break;
         case 'discover':
           result = await path.discover({fresh: message.fresh === true});
           break;
