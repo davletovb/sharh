@@ -1,7 +1,7 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: Planning. A-01 is done, from a source audit; every other item is TODO. Live provider runs and real-Chrome checks need the owner's machine.
+Status: A slice in progress. A-01 is done from a source audit; A-02 through A-06 are owned by Codex. Live provider runs and real-Chrome checks need the owner's machine.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
@@ -10,9 +10,9 @@ This is the authoritative progress record. Requirements are defined in the [prod
 - Planned implementation items: **72**
 - DONE: **1**
 - IMPLEMENTED — VERIFY: **0**
-- IN PROGRESS: **0**
+- IN PROGRESS: **5**
 - BLOCKED: **0**
-- TODO: **71**
+- TODO: **66**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -82,11 +82,11 @@ flowchart LR
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | A-01 | Audit the Seatline consumer contract | — | Transport, methods, events, limits, capabilities, sign-in classes, session support and missing generic capabilities are recorded from a pinned revision's source | DONE | Claude | [Seatline integration](../architecture/seatline-integration.md), read from source at `ba712f7` and checked against the companion, provider and core code; no live run |
-| A-02 | Pin the contract and validate authorization | A-01 | `config/seatline-contract.json` pins the revision in Lineleaf's shape, and a manifest `key` fixes one development ID. CI builds the companion at the pin and authorizes `sharh` for that ID; a probe reaches `ready` and reads every provider's status. Chrome's missing-host and forbidden-origin errors are recorded for B-05. **Live:** the same probe works on the owner's Chrome | TODO | — | — |
-| A-03 | Probe JSON Lines compliance | A-01, A-06 | A standalone harness sends draft Structure and Logic prompts over corpus items through Seatline. It reports parse rate, reference validity, quotation verification, completion and time to first record, and is verified against stand-in providers in CI. **Live:** results for Claude and Codex are recorded under `docs/evidence/` | TODO | — | — |
-| A-04 | Prototype extraction and anchoring | A-06 | On the HTML and PDF fixtures, Readability and PDF.js produce numbered blocks and sections, anchors resolve after a reload, and a highlight lands on the cited paragraph. Every failure is listed with its cause | TODO | — | — |
-| A-05 | Freeze Phase 1 scope and toolchain | A-01 and A-04 for the toolchain; A-02 and A-03 for the final freeze | A decision document records the module and bundling approach; the libraries (PDF.js, Readability, a Markdown sanitizer, graph layout); the test stack; CI; and the code layout. It settles the framework's proposed Phase 1 defaults or names what blocks them | TODO | — | — |
-| A-06 | Assemble the evaluation corpus | — | A manifest covers the framework's languages and formats. Committed fixtures are public domain or openly licensed, with source and licence recorded; private texts appear only in an uncommitted local manifest. At least one item per format has annotated headings and ¶ counts, and the prompt-injection fixtures carry a canary instruction | TODO | — | — |
+| A-02 | Pin the contract and validate authorization | A-01 | `config/seatline-contract.json` pins the revision in Lineleaf's shape, and a manifest `key` fixes one development ID. CI builds the companion at the pin and authorizes `sharh` for that ID; a probe reaches `ready` and reads every provider's status. Chrome's missing-host and forbidden-origin errors are recorded for B-05. **Live:** the same probe works on the owner's Chrome | IN PROGRESS | Codex | A foundation slice |
+| A-03 | Probe JSON Lines compliance | A-01, A-06 | A standalone harness sends draft Structure and Logic prompts over corpus items through Seatline. It reports parse rate, reference validity, quotation verification, completion and time to first record, and is verified against stand-in providers in CI. **Live:** results for Claude and Codex are recorded under `docs/evidence/` | IN PROGRESS | Codex | A foundation slice |
+| A-04 | Prototype extraction and anchoring | A-06 | On the HTML and PDF fixtures, Readability and PDF.js produce numbered blocks and sections, anchors resolve after a reload, and a highlight lands on the cited paragraph. Every failure is listed with its cause | IN PROGRESS | Codex | A foundation slice |
+| A-05 | Freeze Phase 1 scope and toolchain | A-01 and A-04 for the toolchain; A-02 and A-03 for the final freeze | A decision document records the module and bundling approach; the libraries (PDF.js, Readability, a Markdown sanitizer, graph layout); the test stack; CI; and the code layout. It settles the framework's proposed Phase 1 defaults or names what blocks them | IN PROGRESS | Codex | A foundation slice |
+| A-06 | Assemble the evaluation corpus | — | A manifest covers the framework's languages and formats. Committed fixtures are public domain or openly licensed, with source and licence recorded; private texts appear only in an uncommitted local manifest. At least one item per format has annotated headings and ¶ counts, and the prompt-injection fixtures carry a canary instruction | IN PROGRESS | Codex | A foundation slice |
 
 ### B — Seatline path
 
@@ -254,5 +254,6 @@ Completed 2026-10-14:
 | 2026-10-13 | Use several model paths: Seatline first, API keys later | Owner instruction |
 | 2026-10-13 | Name the product Sharh, with the repository `davletovb/sharh` | Owner created the repository |
 | 2026-10-14 | Track implementation in this document with stable IDs | Owner asked for a tracker plan |
+| 2026-10-14 | Accept A-02 through A-06 as one foundation slice: build the probes, corpus and extraction prototype together; A-05 may name unresolved live gates instead of assuming a final provider/default freeze | Owner requested the entire A slice; LIVE criteria retain IMPLEMENTED — VERIFY until recorded on the owner’s machine |
 
 The defaults still marked *Proposed* in the framework's [decisions table](sharh-product-framework.md#decisions-and-open-questions) are settled by A-05 and R-04 and recorded here when decided. They cover the browser, the sign-in policy, the default models, the Second reader pair, PDF auto-open and distribution.

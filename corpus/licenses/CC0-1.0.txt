@@ -1,0 +1,5 @@
+Sharh evaluation fixtures and their original text are dedicated to the public domain under CC0 1.0 Universal.
+To the extent possible under law, the authors waive all copyright and related or neighboring rights in these original fixtures. Where waiver is not possible, they grant an unconditional, irrevocable, nonexclusive, royalty-free licence to use, copy, modify, distribute and otherwise exploit them for any purpose, without conditions.
+No warranty is provided. This dedication does not cover third-party libraries.
+Canonical legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+SPDX-License-Identifier: CC0-1.0

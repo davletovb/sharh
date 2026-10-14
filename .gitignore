@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test-results/
+.seatline-audit/
+corpus/private/
+corpus/local-manifest.json
+playwright-report/

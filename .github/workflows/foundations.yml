@@ -1,0 +1,69 @@
+name: A foundations
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: foundations-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  corpus-and-prototypes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run corpus:generate
+      - name: Corpus regeneration is deterministic
+        run: git diff --exit-code -- corpus
+      - run: npm run verify
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: corpus-and-prototype-evidence
+          path: |
+            test-results/
+            dist/probe/
+  pinned-companion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - id: contract
+        name: Read the exact contract pin
+        run: node --input-type=module -e "import {appendFileSync,readFileSync} from 'node:fs'; appendFileSync(process.env.GITHUB_OUTPUT,'revision='+JSON.parse(readFileSync('config/seatline-contract.json')).revision+'\n');"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: davletovb/seatline
+          ref: ${{ steps.contract.outputs.revision }}
+          path: .seatline-audit
+          persist-credentials: false
+      - run: rustup toolchain install 1.91.0 --profile minimal
+      - name: Build the pinned real broker, bridge and upstream stand-ins
+        working-directory: .seatline-audit
+        run: cargo +1.91.0 build --locked --release -p seatline-companion -p seatline-tests --bins
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Native ready, all statuses, protected JSONL output and actual Chromium errors
+        run: node scripts/verify-companion.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: pinned-companion-evidence
+          path: test-results/

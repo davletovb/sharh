@@ -1,0 +1,28 @@
+{
+  "name": "sharh",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "corpus:generate": "node scripts/generate-corpus.mjs",
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:browser": "npm run build && node --test tests/browser/*.test.mjs",
+    "probe:output": "node scripts/probe-output.mjs",
+    "probe:authorization": "node scripts/probe-authorization.mjs",
+    "verify": "npm test && npm run probe:output -- --fixture"
+  },
+  "dependencies": {
+    "@mozilla/readability": "0.6.0",
+    "pdfjs-dist": "6.4.299"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "pdf-lib": "1.17.1",
+    "playwright": "1.62.1"
+  }
+}

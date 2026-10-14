@@ -1,0 +1,93 @@
+{
+  "repository": "https://github.com/davletovb/seatline",
+  "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+  "minimum_revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+  "legacy_revision": null,
+  "version": "0.1.0-dev",
+  "protocol": 1,
+  "native_host": "com.seatline.host",
+  "development_extension_id": "npmhefooiolfpmhicinblelaideeejcm",
+  "store_extension_id": null,
+  "app": "sharh",
+  "providers": [
+    "codex",
+    "claude",
+    "gemini",
+    "grok"
+  ],
+  "frame": {
+    "length_bytes": 4,
+    "byte_order": "little",
+    "encoding": "utf-8",
+    "max_bytes": 1048576
+  },
+  "methods": [
+    "status",
+    "send",
+    "forget",
+    "cleanup",
+    "cancel",
+    "readiness",
+    "prepare",
+    "send_ready",
+    "send_ready_with_policy"
+  ],
+  "cancel_target_location": "top-level",
+  "events": [
+    "launched",
+    "started",
+    "activity",
+    "delta",
+    "session",
+    "session_lost",
+    "usage",
+    "source",
+    "status",
+    "completed",
+    "stopped",
+    "failed",
+    "queued",
+    "admitted"
+  ],
+  "limits": {
+    "running": 8,
+    "running_per_app": 2,
+    "running_per_provider": 2,
+    "running_limits_per_class": true,
+    "readiness_running": 2,
+    "cleanup_running": 2,
+    "queue_timeout_ms": 30000,
+    "queued": 64,
+    "queued_per_app": 8,
+    "connections": 32,
+    "sessions_per_app": 2000,
+    "sessions_total": 10000,
+    "max_turn_seconds": 900
+  },
+  "reading_policy": {
+    "generation_method": "send_ready_with_policy",
+    "tools": "none",
+    "session": "ephemeral",
+    "continuation": null,
+    "check_sign_in": false,
+    "allowed_sign_in": {
+      "claude": [
+        "subscription"
+      ],
+      "codex": [
+        "subscription"
+      ],
+      "grok": [
+        "subscription"
+      ],
+      "gemini": [
+        "cloud"
+      ]
+    },
+    "gemini_cloud_opt_in_default": false,
+    "readiness": {
+      "cached_max_age_ms": 30000
+    },
+    "max_request_bytes": 1000000
+  }
+}
