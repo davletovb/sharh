@@ -1,6 +1,7 @@
 import {Readability} from '@mozilla/readability';
 import {EXTRACTOR_VERSION, normalizeText, makeSections, versionOf} from './document.mjs';
 const selector = 'h1,h2,h3,h4,h5,h6,p,blockquote,li,pre,figcaption,table';
+const styledDocuments = new WeakSet();
 function elements(root) {
   return [...root.querySelectorAll(selector)].filter(el => !el.closest('script,style,nav,footer,aside,[hidden],[aria-hidden="true"]') &&
     !el.querySelector(selector) && normalizeText(el.textContent));
@@ -59,6 +60,12 @@ export function highlightHTML(document, anchor) {
   const resolved = resolveHTMLAnchor(document, anchor);
   const view = document.defaultView;
   if (!resolved || !view.CSS?.highlights || !view.Highlight) return null;
+  if (!styledDocuments.has(document)) {
+    const sheet = new view.CSSStyleSheet();
+    sheet.replaceSync('::highlight(sharh-reference) { background-color: #f3c969; color: #16171c; }');
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    styledDocuments.add(document);
+  }
   view.CSS.highlights.set('sharh-reference', new view.Highlight(resolved.range));
   resolved.element.scrollIntoView({block: 'center'});
   return {strategy: resolved.strategy, text: normalizeText(resolved.range.toString()), rects: [...resolved.range.getClientRects()].map(r => ({x: r.x, y: r.y, width: r.width, height: r.height}))};

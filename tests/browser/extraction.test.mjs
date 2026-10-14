@@ -25,9 +25,9 @@ test('HTML and PDF corpus: numbered extraction, sections, reload anchors and vis
             // Shift paths with unrelated content, then force the quote fallback.
             const aside=document.createElement('p');aside.textContent='An unrelated DOM change.';document.querySelector('article').prepend(aside);
             const second=p.highlightHTML(document,anchor);
-            return {first,unchanged,second,highlightRanges:CSS.highlights.get('sharh-reference')?.size};
+            return {first,unchanged,second,highlightRanges:CSS.highlights.get('sharh-reference')?.size,highlightColor:getComputedStyle(document.querySelector('article p'), '::highlight(sharh-reference)').backgroundColor};
           },anchor);
-          assert.equal(result.unchanged,true);assert.equal(result.first.text,target.text);assert.equal(result.second.text,target.text);assert.equal(result.highlightRanges,1);assert.ok(result.first.rects.some(r=>r.width>0&&r.height>0));
+          assert.equal(result.unchanged,true);assert.equal(result.first.text,target.text);assert.equal(result.second.text,target.text);assert.equal(result.highlightRanges,1);assert.equal(result.highlightColor,'rgb(243, 201, 105)');assert.ok(result.first.rects.some(r=>r.width>0&&r.height>0));
           // Reload a serialized anchor, not a retained element/Range.
           assert.equal(result.second.strategy,'quote');
         } else {
@@ -37,11 +37,12 @@ test('HTML and PDF corpus: numbered extraction, sections, reload anchors and vis
               const hit=await p.resolvePDFAnchor(pdf,anchor),page=await pdf.getPage(anchor.page+1),viewport=page.getViewport({scale:1});
               const canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;document.body.append(canvas);
               const ctx=canvas.getContext('2d');await page.render({canvasContext:ctx,viewport}).promise;
+              const sample=hit.rects[0],beforePixel=[...ctx.getImageData(Math.ceil(sample.x+1),Math.ceil(sample.y+1),1,1).data];
               ctx.fillStyle='rgba(255,200,0,.5)';for(const r of hit.rects)ctx.fillRect(r.x,r.y,r.width,r.height);
-              return {...hit,pixel:[...ctx.getImageData(Math.ceil(hit.rects[0].x+1),Math.ceil(hit.rects[0].y+1),1,1).data]};
+              return {...hit,beforePixel,pixel:[...ctx.getImageData(Math.ceil(hit.rects[0].x+1),Math.ceil(hit.rects[0].y+1),1,1).data]};
             } finally {await pdf.loadingTask.destroy();}
           },{anchor,path:item.path});
-          assert.equal(result.text,target.text);assert.ok(result.rects.every(r=>r.width>0&&r.height>0));assert.equal(result.pixel[3],255);
+          assert.equal(result.text,target.text);assert.ok(result.rects.every(r=>r.width>0&&r.height>0));assert.equal(result.pixel[3],255);assert.notDeepEqual(result.pixel,result.beforePixel);
           assert.deepEqual(extracted.pageLabels,item.expected.pageLabels);
           assert.ok(extracted.removed.length>=4);
           if(item.expected.outline)assert.equal(extracted.sections[0].firstPage,0);
