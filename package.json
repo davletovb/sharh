@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@mozilla/readability": "0.6.0",
+    "@noble/hashes": "2.0.1",
     "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {

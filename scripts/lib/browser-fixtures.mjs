@@ -29,7 +29,7 @@ export async function fixtureBrowser() {
   async function extract(item) {
     if (item.format === 'html') {
       await page.goto(`${server.url}/${item.path}`);
-      return page.evaluate(async () => (await import('/dist/prototype.mjs')).extractHTML(document));
+      return page.evaluate(async identity => (await import('/dist/prototype.mjs')).extractHTML(document, {identity}), item.path);
     }
     await page.goto(`${server.url}/dist/index.html`);
     return page.evaluate(async path => {

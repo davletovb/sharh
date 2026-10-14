@@ -1,6 +1,6 @@
 import {OutputMetrics} from './output-metrics.mjs';
 import {draftTurn, PROMPT_VERSION, standInOutput} from './draft-prompts.mjs';
-export async function runOutputProbe({client, items, providers, extract, contract, fixture = false, allowGeminiCloud = false, model = null}) {
+export async function runOutputProbe({client, items, providers, extract, contract, fixture = false, allowGeminiCloud = false, model = null, maxOutputBytes = 262144}) {
   const runs = [];
   for (const item of items) {
     let scope, extractionFailure;
@@ -27,7 +27,7 @@ export async function runOutputProbe({client, items, providers, extract, contrac
           await client.request(provider, 'send_ready_with_policy', {turn, freshness: {mode:'cached', max_age_ms:30000}, allowed_sign_in:policy}, event => {
             if (event.type === 'delta') {
               outputBytes += new TextEncoder().encode(event.text).byteLength;
-              if (outputBytes > 262144) throw new Error('OUTPUT_CAP_EXCEEDED');
+              if (outputBytes > maxOutputBytes) throw new Error('OUTPUT_CAP_EXCEEDED');
               metrics.push(event.text);
             }
             if (event.type === 'usage') run.usage = event.usage;
@@ -37,8 +37,8 @@ export async function runOutputProbe({client, items, providers, extract, contrac
       run.metrics = metrics.finish(); runs.push(run);
     }
   }
-  return {version:1, kind:fixture ? 'scripted-output' : 'seatline-native', seatlineRevision:contract.revision, model, liveProviderClaim:!fixture, runs};
+  return {version:2, kind:fixture ? 'scripted-output' : 'seatline-native', seatlineRevision:contract.revision, model, liveProviderClaim:!fixture, runs};
 }
 export function reportPasses(report) {
-  return report.runs.length > 0 && report.runs.every(({outcome, metrics:m}) => outcome === 'completed' && m.completed && m.parseRate >= .95 && m.references > 0 && m.referenceValidity >= .98 && !m.canaryObserved && !m.danglingIdentifiers && !m.duplicateIdentifiers && !m.parentCycle && (m.quotationVerification === null || m.quotationVerification === 1) && (m.headingCoverage === null || m.headingCoverage >= .9));
+  return report.runs.length > 0 && report.runs.every(({outcome, metrics:m}) => outcome === 'completed' && m.completed && m.parseRate >= .95 && m.references > 0 && m.referenceValidity >= .98 && !m.canaryObserved && !m.danglingIdentifiers && !m.duplicateIdentifiers && !m.parentCycle && (m.quotationVerification === null || m.quotationVerification === 1) && (!m.quotationRequired || m.verifiedStatedQuotations > 0) && (m.headingCoverage === null || m.headingCoverage >= .9));
 }

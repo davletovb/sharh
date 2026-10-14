@@ -26,6 +26,13 @@ try {
   report.output=await runOutputProbe({client,items:corpus.items,providers:['claude','codex'],extract:browser.extract,contract:world.contract});
   report.output.kind='seatline-stand-in'; report.output.liveProviderClaim=false;
   assert.ok(reportPasses(report.output),'Stand-in output contract probe failed');
+  report.overflowRecovery = await runOutputProbe({client, items:corpus.items.slice(0,1), providers:['claude','codex'], extract:browser.extract, contract:world.contract, maxOutputBytes:64});
+  report.overflowRecovery.kind='seatline-stand-in'; report.overflowRecovery.liveProviderClaim=false;
+  assert.ok(report.overflowRecovery.runs.every(r=>r.failure==='OUTPUT_CAP_EXCEEDED'));
+  const afterOverflow=await probeStatuses(client,world.contract.providers);
+  assert.ok(afterOverflow.every(p=>p.status)); report.statusAfterOverflow=true;
+  assert.equal(world.env.HOME,undefined); report.brokerDoesNotInheritHome=true;
+
   await browser.close(); browser=null; client.close(); client=null;
   // Chrome native registration is under an isolated XDG config. No owner's grants are changed.
   // Chromium uses its own native-host directory; mirror the installer registration only in this test profile.
@@ -37,7 +44,7 @@ try {
   await mkdir(join(profile,'NativeMessagingHosts'),{recursive:true});
   await cp(chromeManifest,join(profile,'NativeMessagingHosts/com.seatline.host.json'));
   const extension=resolve('dist/probe');
-  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:{...process.env,...world.env},args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
+  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:world.env,args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
   const page=await context.newPage();
   await page.goto(`chrome-extension://${world.contract.development_extension_id}/probe.html`);
   await page.waitForFunction(()=>typeof window.checkAuthorization==='function');

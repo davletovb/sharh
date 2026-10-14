@@ -18,10 +18,12 @@ The corpus contains 14 original CC0 synthetic fixtures, with all six language/sc
 | PDF extraction | `pdfjs-dist` 6.4.299, PDF.js text-item indices and rectangles; PDF outline before detected headings |
 | Markdown | Select `marked` plus DOMPurify for Ask; installation and rendering tests belong to G-01. No model output is rendered by these probes. Never use raw `innerHTML` for model text. |
 | Graphs | Select `@dagrejs/dagre` for argument layout, `d3-hierarchy` for outlines and `d3-force` for concepts; bundle locally when E-03 implements views |
-| Tests | Node's built-in test runner and Playwright 1.62.1; `pdf-lib` 1.17.1 generates deterministic original PDF fixtures |
+| Tests | Node's built-in test runner and Playwright 1.62.1; `pdf-lib` 1.17.1 generates deterministic original PDF fixtures; bundled `@noble/hashes` 2.0.1 supplies SHA-256 in insecure content-script contexts too |
 | Companion | Build the audited revision with Rust 1.91.0 and its Cargo lockfile; no app-specific changes in Seatline |
 | CI | Two jobs: corpus/prototype/metrics, and pinned real broker/bridge with stand-in CLIs plus actual Chromium native-host checks; upload JSON evidence even on failure |
 | Code boundaries | `src/prototypes/`: extraction experiments; `scripts/lib/`: probe transport, draft prompts and metrics; `extension/`: A-02 diagnostic shell; `corpus/`: licensed fixtures; `tests/`: unit and browser acceptance; `config/`: pin and fixed ID |
+
+The [review fixes](../evidence/2026-10-14-a-review-fixes.md) strengthen provenance, nested text, PDF layout/outline handling, compliance metrics and per-request overflow recovery. `foundation-2` versions invalidate earlier prototype extraction identities. General normalization keeps hard hyphens; only PDF line assembly attempts conservative de-hyphenation.
 
 The prototype is not the production C reader, the metrics checker is not the tolerant D validator, and the probe transport is not the B native client/path. In particular, full nested PDF layouts, storage, production repairs, sessions, pacing, service-worker routing and all product views remain their existing tracker items. Promote proven primitives into those implementations with their acceptance tests.
 

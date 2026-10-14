@@ -18,3 +18,16 @@ test('wrong protocol and missing ready time out without generation',async()=>{
   const p=port(),c=probeClient(p);p.onMessage.emit({type:'ready',version:2});await assert.rejects(c.ready,/PROTOCOL_VERSION/);
   const p2=port(),c2=probeClient(p2,{timeoutMs:5});await assert.rejects(c2.ready,/READY_TIMEOUT/);assert.equal(p2.sent.length,0);
 });
+test('one callback overflow cancels only its target, drains late events and leaves later probes usable',async()=>{
+  const p=port(),c=probeClient(p);p.onMessage.emit({type:'ready',version:1});
+  p.postMessage=function(frame){this.sent.push(frame);if(frame.method==='cancel')queueMicrotask(()=>this.onMessage.emit({id:frame.target,event:{type:'stopped'}}));};
+  const failed=c.request('codex','send_ready_with_policy',{},()=>{throw new Error('OUTPUT_CAP_EXCEEDED')});
+  const other=c.request('claude','readiness');await Promise.resolve();
+  const [target,otherFrame]=p.sent;
+  p.onMessage.emit({id:target.id,event:{type:'delta',text:'oversized'}});
+  await assert.rejects(failed,/OUTPUT_CAP_EXCEEDED/);
+  assert.equal(p.sent.at(-1).target,target.id);assert.equal(p.sent.at(-1).method,'cancel');
+  p.onMessage.emit({id:target.id,event:{type:'delta',text:'late'}});p.onMessage.emit({id:target.id,event:{type:'completed'}});
+  p.onMessage.emit({id:otherFrame.id,event:{type:'completed'}});await other;
+  const next=c.request('codex','readiness');await Promise.resolve();p.onMessage.emit({id:p.sent.at(-1).id,event:{type:'completed'}});await next;c.close();
+});

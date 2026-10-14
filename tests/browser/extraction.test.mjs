@@ -13,7 +13,7 @@ test('HTML and PDF corpus: numbered extraction, sections, reload anchors and vis
         assert.equal(extracted.blocks.length,item.expected.blockCount,item.id+' block count');
         assert.deepEqual(extracted.blocks.map(b=>b.text),item.expected.blocks.map(b=>b.text),item.id+' reading order/text');
         assert.deepEqual(extracted.blocks.filter(b=>b.kind==='heading').map(b=>b.text),item.expected.headings);
-        assert.ok(extracted.sections.length>0);assert.deepEqual(extracted.blocks.map(b=>b.n),Array.from({length:extracted.blocks.length},(_,i)=>i+1));
+        assert.ok(extracted.sections.length>0);const sectionIds=new Set(extracted.sections.map(s=>s.id));assert.ok(extracted.blocks.every(b=>b.section===null||sectionIds.has(b.section)));assert.deepEqual(extracted.blocks.map(b=>b.n),Array.from({length:extracted.blocks.length},(_,i)=>i+1));
         const target=extracted.blocks.find(b=>b.kind==='para'),anchor=target.anchor;
         await world.page.reload();
         if (item.format==='html') {

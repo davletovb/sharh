@@ -1,5 +1,10 @@
-export const EXTRACTOR_VERSION = 'foundation-1';
-export const normalizeText = text => text.normalize('NFC').replace(/\u00ad/g, '').replace(/(\p{L})-\s*\n\s*(\p{L})/gu, '$1$2').replace(/\s+/gu, ' ').trim();
+import {sha256} from '@noble/hashes/sha2.js';
+export const EXTRACTOR_VERSION = 'foundation-2';
+// HTML source wrapping is whitespace, not proof of discretionary hyphenation.
+export const normalizeText = text => text.normalize('NFC').replace(/\u00ad/g, '').replace(/\s+/gu, ' ').trim();
+export function normalizePDFText(text) {
+  return normalizeText(text.replace(/(\p{L}{6,})-[ \t]*\n[ \t]*(\p{Ll}{3,})(?![\p{L}-])/gu, '$1$2').replace(/\u00ad[ \t]*\n[ \t]*/gu, ''));
+}
 export function makeSections(blocks) {
   const sections = [], stack = [];
   for (const block of blocks) {
@@ -17,6 +22,6 @@ export function makeSections(blocks) {
   return sections;
 }
 export async function versionOf(identity, text) {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${EXTRACTOR_VERSION}\n${identity}\n${text}`));
-  return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, '0')).join('');
+  // Works in HTTP content scripts too; no dependency on secure-context WebCrypto.
+  return Array.from(sha256(new TextEncoder().encode(`${EXTRACTOR_VERSION}\n${identity}\n${text}`)), b => b.toString(16).padStart(2, '0')).join('');
 }

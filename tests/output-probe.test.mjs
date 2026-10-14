@@ -24,3 +24,8 @@ test('an unsupported readiness method is measured, with zero fallback sends',asy
   const report=await runOutputProbe({client,items:[{id:'a'}],providers:['claude'],extract:async()=>scope,contract});
   assert.deepEqual(methods,['readiness','readiness']);assert.ok(report.runs.every(r=>r.failure==='READINESS_UNSUPPORTED'));
 });
+test('a headingless structure run passes; removing a logic run’s stated quotation fails compliance',async()=>{
+  const report=await runOutputProbe({fixture:true,items:[{id:'headingless'}],providers:['claude'],extract:async()=>({blocks:[{n:1,kind:'para',text:'A short observation.'}]}),contract});
+  assert.equal(report.runs[0].metrics.headingCoverage,null);assert.equal(reportPasses(report),true);
+  report.runs[1].metrics.quotationVerification=null;report.runs[1].metrics.verifiedStatedQuotations=0;assert.equal(reportPasses(report),false);
+});

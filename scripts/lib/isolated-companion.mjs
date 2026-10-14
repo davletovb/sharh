@@ -11,8 +11,9 @@ export async function isolatedCompanion(companion, fakeProvider) {
   const root = await mkdtemp(join(homedir(), 'sharh-foundation-')); await chmod(root, 0o700);
   const data = join(root, 'data'), providers = join(root, 'providers');
   await mkdir(providers, {mode:0o700});
-  const env = {HOME:homedir(), PATH:'/usr/bin:/bin', LANG:'C.UTF-8', SEATLINE_DATA_DIR:data, XDG_CONFIG_HOME:join(root,'config'), XDG_CACHE_HOME:join(root,'cache'), XDG_DATA_HOME:join(root,'provider-data'), SHARH_PROVIDER_PATH:providers, SEATLINE_BROKER_IDLE_SECS:'2'};
-  const run = (...args) => execFileSync(resolve(companion), args, {env, stdio:['ignore','pipe','pipe'],timeout:15000});
+  const env = {PATH:'/usr/bin:/bin', LANG:'C.UTF-8', SEATLINE_DATA_DIR:data, XDG_CONFIG_HOME:join(root,'config'), XDG_CACHE_HOME:join(root,'cache'), XDG_DATA_HOME:join(root,'provider-data'), SHARH_PROVIDER_PATH:providers, SEATLINE_BROKER_IDLE_SECS:'2'};
+  const installEnv = {...env, HOME: homedir()}; // The pinned Linux installer requires HOME but writes registration under XDG_CONFIG_HOME.
+  const run = (...args) => execFileSync(resolve(companion), args, {env: installEnv, stdio:['ignore','pipe','pipe'],timeout:15000});
   let server;
   async function close() {
     if (server && server.exitCode === null) {

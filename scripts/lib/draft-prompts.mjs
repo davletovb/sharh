@@ -13,6 +13,7 @@ export function standInOutput(lens, scope) {
   const rows = [{t: 'meta', lens, lang: 'en'}];
   if (lens === 'structure') {
     const headings = scope.blocks.filter(b => b.kind === 'heading');
+    if (!headings.length && scope.blocks.length) rows.push({t:'sec', id:'s1', title:scope.title || 'Document', role:'context', gist:'Document without explicit headings.', span:[scope.blocks[0].n, scope.blocks.at(-1).n]});
     headings.forEach((h, i) => rows.push({t:'sec', id:`s${i + 1}`, title:h.text, role:'context', gist:'Deterministic fixture section; no semantic quality claim.', span:[h.n, (headings[i + 1]?.n ?? scope.blocks.at(-1).n + 1) - 1]}));
   } else {
     const first = scope.blocks.find(b => b.kind === 'para') ?? scope.blocks[0];
