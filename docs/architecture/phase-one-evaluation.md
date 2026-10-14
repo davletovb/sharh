@@ -1,8 +1,8 @@
 # Phase 1 prompts and evaluation
 
-`src/analysis/lenses.mjs` supplies the four trusted lens instructions and four passage actions. `assemblePrompt` keeps rules, numbered document data and task/contract separate; action selection is an enum, not text smuggled through the focus field. The prompt version is `analysis-2`. Old versions remain readable, but their continuation is refused rather than silently changing instructions.
+`src/analysis/lenses.mjs` supplies the four trusted lens instructions and four passage actions. `assemblePrompt` keeps rules, numbered document data and task/contract separate; action selection is an enum, not text smuggled through the focus field. The prompt version is `analysis-3`. Prompt identity hashes the rules, lens wording and output contract as well as the scope/configuration, so later wording drift is detected even if a version bump is missed. Earlier versions remain readable, but cannot continue under changed instructions.
 
-Summary defines four scales and the arc; Structure preserves heading starts and hierarchy; Logic separates statements, reconstructed inferences and justified gaps; Thinking covers concepts, causal/dependency relations and all nine supported facet kinds without requiring unsupported claims. Translate pairs original/translated terms. Define cites the earliest *supplied* introduction and acknowledges when it lies outside the scope. The shared rules prohibit document/focus/repair-output instructions and tool use, constrain references and quotes, and specify output language/script. Prompts are not evidence of live injection resistance or semantic quality.
+Summary defines four scales and the arc; Structure preserves heading starts, original title wording and hierarchy (the title is a source label; its gist uses the requested output language); Logic separates statements, reconstructed inferences and justified gaps; Thinking covers concepts, causal/dependency relations and all nine supported facet kinds without requiring unsupported claims. Translate pairs original/translated terms. Define cites the earliest *supplied* introduction and acknowledges when it lies outside the scope. The shared rules prohibit document/focus/repair-output instructions and tool use, constrain references and quotes, and specify output language/script. Prompts are not evidence of live injection resistance or semantic quality.
 
 ## Commands
 
@@ -25,21 +25,25 @@ CI adds `--fake-provider PATH` with the pinned companion. That mode creates an i
 
 ## Reports and scoring
 
-Reports and blank `.review.json` forms are written under `test-results/` by default. Each checkpoint records source commit/dirty state, prompt version, item/provider/action/language, extraction version, exact scope text, raw first/repair attempts, portable saved-run metadata, canonical findings and timings. Session handles and owned cleanup groups are excluded from run exports. The run uses a unique evaluation cleanup namespace and drains its cleanup intentions; a pending cleanup makes the command fail.
+Generation reports and blank `.review.json` forms are written under `test-results/` by default. Review-only mode builds nothing and defaults to a sibling `<input>.reviewed.json`; it refuses to overwrite the report or form, including symlink/hardlink aliases. Generation refuses output paths that overwrite its manifest/corpus inputs or each other. Checkpoints are written atomically. Each records source commit/dirty state, prompt version, item/provider/action/language, extraction version, exact scope text, raw first/repair attempts, portable saved-run metadata, canonical findings and timings. Session handles and owned cleanup groups are excluded from run exports.
 
-Automatic scores use the **raw original answer**, not the repaired or filtered display records. This catches malformed/framed output, removed references, bad quotations, duplicate/dangling IDs, cycles, incomplete output and injection canaries. Final-only/non-streaming output uses an observer-isolated engine hook. A successful repair remains visible and saved, but cannot improve the original quality score. Missing source/provider runs remain failed matrix cells; later cells still execute.
+Fixture answers are created lazily from the actual request when the path runs; preflight/setup failures cannot leave a previous cell's answer queued. The run uses a unique evaluation cleanup namespace. Every exit attempts document deletion, maintenance and all resource closures, including partial setup. Cleanup failures/pending intentions are recorded and make the command fail; one close failure cannot skip the next. A setup failure writes a failed report with zero live-provider claims.
+
+Automatic scores use the **raw original answer**, not the repaired or filtered display records. This catches malformed/framed output, removed references, bad quotations, duplicate/dangling IDs, cycles, incomplete output and injection canaries. The observer-isolated final-output hook is the only raw-output source, including non-streaming paths; late deltas cannot contaminate the initial answer. A successful repair remains visible and saved, but cannot improve the original quality score. Missing source/provider runs remain failed matrix cells; later cells still execute.
 
 | Measure | Target |
 | --- | --- |
 | Parse rate | ≥95% of nonblank raw lines valid |
-| Reference validity | ≥98%; anchored findings required |
-| Quotations | Every raw displayed quote verified; stated Logic quote where supplied prose permits |
+| Reference validity | ≥98%; anchored findings required; passage actions must cite at least one selected paragraph |
+| Quotations | Every provided quote verified; quotation presence is diagnostic, with no forced stated/quoted node |
 | Structural integrity | No duplicate/dangling identifiers or parent cycles |
-| Structure heading coverage | ≥90% of *annotated* headings; missing extraction headings count against it |
+| Structure heading coverage | ≥90% of *annotated* headings, matching both original title and paragraph start; missing/retitled headings count against it |
+| Record budget | Findings must not exceed `maxRecords`; meta/end do not consume the budget |
+| Language metadata | Defaults to `en`; same primary language, no conflicting explicit script/region (a missing script such as `uz` for `uz-Latn` is accepted) |
 | Completion | End marker, no trailing output, no path truncation |
 | Injection marker | Not observed; conservative canary check, not a semantic proof |
 
-Lens/action shape diagnostics additionally require Summary's four levels/arc, Structure sections, Logic nodes/steps (and edges for multi-node arguments), Thinking concepts/facets, and passage term pairs where required. Prompts permit omitting unsupported gaps/facets instead of fabricating them. Reports retain record/facet kinds for corpus-level review. Actual language/script, translated meaning, introducing-paragraph accuracy, insight and faithfulness require expert review; a matching `meta.lang` is not proof.
+Lens/action shape diagnostics additionally require Summary's four levels/arc, Structure sections, Logic nodes/steps (and edges for multi-node arguments), Thinking concepts/facets, and passage term pairs where required. Prompts permit omitting unsupported gaps/facets instead of fabricating them. Inferred-only Logic and unquoted stated nodes can pass; expert review decides whether a safe quotation was unjustifiably omitted. Valid context references remain allowed alongside a selected-paragraph citation. Scope offsets use JavaScript/DOM UTF-16 units, including astral/combining text. Reports retain record/facet kinds for corpus-level review. Actual language/script, translated meaning, introducing-paragraph accuracy, insight and faithfulness require expert review; compatible `meta.lang` is not proof.
 
 ## Expert review and acceptance
 

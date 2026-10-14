@@ -18,19 +18,20 @@ export async function runEvaluation({engine,store,items,providers,extract,kind,s
     limitations:['Automatic checks cannot establish semantic faithfulness, actual output language, insight, translation quality or term-introduction accuracy.','Stand-ins do not establish live prompt-injection resistance.','Phase 1 also requires natural licensed corpus texts and the A/B/E owner gates.']};
   const cases=[...lenses.map(lens=>({lens,action:null})),...actions.map(action=>({action,lens:action==='Logic'?'logic':'passage'}))];
   for(const item of items){let doc,extractionError;try{doc=createDocument(await extract(item),{kind:item.format,identity:item.path,language:item.language});await store.saveDocument(doc);}catch(error){extractionError=error.message;}
-    for(const provider of providers)for(const task of cases){const id=crypto.randomUUID(),row={id,item:item.id,provider,...task,language:language??item.language,outcome:'failed',rawAttempts:[],records:[]};report.runs.push(row);let saved,scope;
+    for(const provider of providers)for(const task of cases){const id=crypto.randomUUID(),row={id,item:item.id,provider,...task,language:language??item.language??'en',outcome:'failed',rawAttempts:[],records:[]};report.runs.push(row);let saved,scope,budget;
       try{
         if(extractionError)throw Error('EXTRACTION_FAILED: '+extractionError);
         scope=evaluationScope(doc,task.action);
         const config={doc,scope,...task,language:row.language,budget:task.lens==='structure'?200:24,target:{path:'seatline',provider,model:null,...targets[provider]},tier:task.action?'quick':'analysis',persistent:false,cleanupGroup:`eval-${report.id.slice(0,8)}-${doc.id.slice(0,16)}`};
+        budget=config.budget;
         row.extractionVersion=doc.version;row.source={path:item.path,title:doc.title,language:doc.language,license:item.license??null,sha256:item.sha256??null};
         row.scope={kind:scope.kind,label:scope.label,blocks:scope.blocks.map(({n,kind,text,pageLabel,selected,context})=>({n,kind,text,...(pageLabel?{pageLabel}:{}),...(selected?{selected}:{}),...(context?{context}: {})}))};await beforeRun(config);
-        try{saved=await engine.start(config,{onAttemptOutput:({attempt,raw})=>{row.rawAttempts[attempt]=raw;},onEvent:event=>{if(event.type==='delta'){const at=event.attempt??0;row.rawAttempts[at]??='';row.rawAttempts[at]+=event.text;}}});}
+        try{saved=await engine.start(config,{onAttemptOutput:({attempt,raw})=>{row.rawAttempts[attempt]=raw;}});}
         catch(error){if(error.runId)saved=await engine.repository.get(error.runId);throw error;}
         row.outcome=saved.run.status==='completed'?'completed':saved.run.status;
       }catch(error){row.failure={code:error.code??'EVALUATION_FAILED',reason:error.reason??error.message};}
       if(saved){row.run=portableRow(saved.run);row.records=saved.records;row.rawAttempts=Array.from(row.rawAttempts,s=>s??'');
-        row.metrics=measureOutput(row.rawAttempts[0]??'',{...task,language:row.language,doc,scope,expectedHeadings:item.expected?.headings??[],canary:item.canary,truncated:saved.run.attempts?.[0]?.metrics?.truncated??saved.run.metrics.truncated});
+        row.metrics=measureOutput(row.rawAttempts[0]??'',{...task,language:row.language,budget,doc,scope,expectedHeadings:item.expected?.headings??[],canary:item.canary,truncated:saved.run.attempts?.[0]?.metrics?.truncated??saved.run.metrics.truncated});
         row.metrics.timeToFirstRecordMs=saved.run.metrics.timeToFirstRecordMs;row.metrics.totalMs=saved.run.metrics.totalMs;row.passed=row.outcome==='completed' && metricsPass(row.metrics);
       }else row.passed=false;
       await checkpoint(report);
