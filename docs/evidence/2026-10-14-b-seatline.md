@@ -18,7 +18,7 @@ Transport/path failures retain neutral code, native reason and retryability. Rep
 
 ## Verification
 
-Local validation: 44 unit tests passed, including the 20 production transport/path tests. Two clean builds produced identical extension ZIP hashes; Python's independent ZIP reader accepted every entry and CRC. Reports are generated under `test-results/`.
+Local validation: 47 unit tests passed, including the 23 production transport/path tests. Two clean builds produced identical extension ZIP hashes; Python's independent ZIP reader accepted every entry and CRC. Reports are generated under `test-results/`.
 
 CI runs:
 

@@ -132,18 +132,21 @@ export class SeatlinePath {
     this.policy = policy;
     this.now = now;
     this.cache = new Map();
+    this.connectionEpoch = 0;
     this.lastPrepare = new Map();
     const onClose = this.client.onClose || (() => {});
     this.client.onClose = (error) => {
       this.cache.clear();
+      this.connectionEpoch++;
       this.lastPrepare.clear();
       onClose(error);
     };
     this.pacer = pacer || new RequestPacer({onActivity: (count) => this.client.setJobsActive?.(count)});
   }
   async readiness(provider, isFresh = false, signal) {
+    const epoch = this.connectionEpoch;
     const result = await this.client.request(provider, 'readiness', isFresh ? fresh : cached, {signal});
-    this.cache.set(provider, {status: result.status, at: this.now()});
+    if (epoch === this.connectionEpoch) this.cache.set(provider, {status: result.status, at: this.now()});
     return providerInfo(provider, result.status, this.policy());
   }
   async discover({fresh = false} = {}) {
@@ -169,8 +172,9 @@ export class SeatlinePath {
     if (this.now() - (this.lastPrepare.get(provider) ?? -Infinity) < 10000) return;
     this.lastPrepare.set(provider, this.now());
     try {
+      const epoch = this.connectionEpoch;
       const result = await this.client.request(provider, 'prepare', cached);
-      this.cache.set(provider, {status: result.status, at: this.now()});
+      if (epoch === this.connectionEpoch) this.cache.set(provider, {status: result.status, at: this.now()});
     } catch {
       /* unsolicited warm-up stays quiet */
     }
@@ -204,6 +208,7 @@ export class SeatlinePath {
       target.provider,
       request.priority,
       async () => {
+        if (request.priority === 'background') await this.prepareFor('job-start', target);
         if (!allowedSignIn(target.provider, this.policy()).length)
           throw new PathError('POLICY_DENIED', 'SIGN_IN_POLICY_DENIED');
         for (let attempt = 0; ; attempt++) {

@@ -97,7 +97,6 @@ try {
   resolved = true;
   assert.equal(answer.text, 'First. Second.');
   assert.ok(deltas.length >= 2);
-  assert.ok(answer.usage);
   report.checks.streaming = {chunks: deltas.length, text: answer.text};
 
   const start = await path.run(target, {
@@ -107,6 +106,7 @@ try {
     session: {mode: 'start'}
   });
   assert.ok(start.session);
+  assert.ok(start.usage);
   const continued = await path.run(target, {
     ...request,
     kind: 'chat',
@@ -129,7 +129,8 @@ try {
     {...request, tier: 'quick', limits: {maxOutputBytes: 8}}
   );
   assert.equal(cap.truncated, true);
-  assert.equal(cap.text, 'First.');
+  assert.ok(cap.text.startsWith('First.'));
+  assert.ok(Buffer.byteLength(cap.text) <= 8);
   report.checks.outputCap = true;
   const beforeFrames = frames.length;
   await assert.rejects(path.run(target, {...request, document: 'я'.repeat(500001)}), {code: 'TOO_LARGE'});

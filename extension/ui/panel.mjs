@@ -27,3 +27,7 @@ export const {run} = bindRuns(client, {
   retry: document.querySelector('#retry'),
   stop: document.querySelector('#stop')
 });
+
+const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+if (/^(https?:|file:)/.test(tab?.url || ''))
+  prepare('panel-document', {path: 'seatline', provider: 'claude'}).catch(() => {});

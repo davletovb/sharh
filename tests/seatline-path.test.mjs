@@ -349,3 +349,21 @@ test('forget batches at 256 tokens and waits for an active provider turn', async
   );
   h.client.close();
 });
+
+test('a readiness result finishing just before disconnect cannot restore a stale capability cache', async () => {
+  let disconnected = false;
+  const h = harness((frame, reply, port) => {
+    normal(frame, reply);
+    if (!disconnected) {
+      disconnected = true;
+      port.disconnect();
+    }
+  });
+  const path = new SeatlinePath({client: h.client});
+  await path.readiness('codex');
+  assert.equal(path.cache.size, 0);
+  await path.readiness('codex');
+  assert.equal(h.ports.length, 2);
+  assert.equal(path.cache.size, 1);
+  h.client.close();
+});

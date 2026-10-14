@@ -53,7 +53,7 @@ test('per-kind UTF-8 caps cancel only the target, retain partial text, and drain
   h.reply(run, {type: 'delta', text: 'яя'});
   await assert.rejects(
     capped,
-    (error) => error.reason === 'OUTPUT_CAP_EXCEEDED' && error.partial.text === 'я' && error.truncated
+    (error) => error.reason === 'OUTPUT_CAP_EXCEEDED' && error.partial.text === 'яя' && error.truncated
   );
   assert.deepEqual(Object.keys(h.sent.at(-1)).sort(), ['id', 'method', 'target']);
   assert.equal(h.sent.at(-1).target, run.id);
@@ -203,4 +203,40 @@ test('idle closes at the configured deadline and an active job holds the port', 
   await new Promise((r) => setTimeout(r, 25));
   assert.equal(h.ports[0].closed, true);
   h.client.close();
+});
+
+test('capped final chunks preserve whole Unicode characters and partial counters', async () => {
+  const h = harness((frame, reply) => {
+    if (frame.method === 'cancel') return reply({type: 'stopped'}, frame.target);
+    reply({type: 'status', provider: 'codex', status: status()});
+    reply({type: 'delta', text: 'я🧭z'});
+  });
+  const seen = [];
+  await assert.rejects(
+    h.client.request('codex', 'send_ready_with_policy', params, {
+      maxOutputBytes: 5,
+      onEvent: (e) => {
+        if (e.type === 'delta') seen.push(e.text);
+      }
+    }),
+    (error) => error.reason === 'OUTPUT_CAP_EXCEEDED' && error.partial.text === 'я'
+  );
+  assert.deepEqual(seen, ['я']);
+  h.client.close();
+});
+
+test('native setup failures distinguish missing and forbidden hosts without posting', async () => {
+  for (const [message, code] of [
+    ['Specified native messaging host not found.', 'NOT_INSTALLED'],
+    ['Access to native messaging host is forbidden.', 'NOT_AUTHORIZED']
+  ]) {
+    let connects = 0;
+    const client = new NativeSeatline(() => {
+      connects++;
+      throw Error(message);
+    });
+    await assert.rejects(client.request('codex', 'readiness', {}), {code});
+    assert.equal(connects, 1);
+    client.close();
+  }
 });

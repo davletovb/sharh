@@ -17,6 +17,7 @@ $('#gemini-cloud').addEventListener('change', async () => {
   await chrome.storage.local.set({seatlinePolicy: {allowGeminiCloud: $('#gemini-cloud').checked}});
   await check();
 });
+$('#check').addEventListener('click', check);
 async function check() {
   $('#check').disabled = true;
   $('#check-state').textContent = 'Checking…';

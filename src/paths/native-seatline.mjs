@@ -208,6 +208,16 @@ export class NativeSeatline {
           )
             throw Error();
           if (item.bytes + bytes(event.text) > item.maxOutputBytes) {
+            // Keep a whole-code-point prefix of the final chunk without crossing the UTF-8 cap.
+            let prefix = '';
+            for (const point of event.text) {
+              const size = bytes(point);
+              if (item.bytes + size > item.maxOutputBytes) break;
+              item.bytes += size;
+              prefix += point;
+            }
+            item.text += prefix;
+            if (prefix) this.emit(item, {...event, text: prefix});
             this.cancel(
               item.id,
               new PathError('TOO_LARGE', 'OUTPUT_CAP_EXCEEDED', false, {
