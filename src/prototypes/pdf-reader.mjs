@@ -7,7 +7,7 @@ export async function openPDF(data) {
 export async function extractPDF(pdf, identity = 'local-pdf') {
   const pages = [], labels = await pdf.getPageLabels();
   for (let index = 0; index < pdf.numPages; index++) {
-    const page = await pdf.getPage(index), content = await page.getTextContent(), viewport = page.getViewport({scale: 1});
+    const page = await pdf.getPage(index + 1), content = await page.getTextContent(), viewport = page.getViewport({scale: 1});
     pages.push({index, height: viewport.height, width: viewport.width, items: content.items.map((item, i) => ({...item, index: i, x: item.transform?.[4], y: item.transform?.[5], size: Math.abs(item.transform?.[3] ?? 0)})).filter(item => item.str?.trim())});
   }
   const repeated = new Map();

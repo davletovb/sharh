@@ -39,7 +39,7 @@ test('HTML and PDF corpus: numbered extraction, sections, reload anchors and vis
               const ctx=canvas.getContext('2d');await page.render({canvasContext:ctx,viewport}).promise;
               ctx.fillStyle='rgba(255,200,0,.5)';for(const r of hit.rects)ctx.fillRect(r.x,r.y,r.width,r.height);
               return {...hit,pixel:[...ctx.getImageData(Math.ceil(hit.rects[0].x+1),Math.ceil(hit.rects[0].y+1),1,1).data]};
-            } finally {await pdf.destroy();}
+            } finally {await pdf.loadingTask.destroy();}
           },{anchor,path:item.path});
           assert.equal(result.text,target.text);assert.ok(result.rects.every(r=>r.width>0&&r.height>0));assert.equal(result.pixel[3],255);
           assert.deepEqual(extracted.pageLabels,item.expected.pageLabels);

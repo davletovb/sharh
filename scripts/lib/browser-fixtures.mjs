@@ -34,7 +34,7 @@ export async function fixtureBrowser() {
     await page.goto(`${server.url}/dist/index.html`);
     return page.evaluate(async path => {
       const p = await import('/dist/prototype.mjs'), pdf = await p.openPDF(await (await fetch('/' + path)).arrayBuffer());
-      try { return await p.extractPDF(pdf, path); } finally { await pdf.destroy(); }
+      try { return await p.extractPDF(pdf, path); } finally { await pdf.loadingTask.destroy(); }
     }, item.path);
   }
   return {browser, page, server, extract, close: async () => { await browser.close(); await server.close(); }};

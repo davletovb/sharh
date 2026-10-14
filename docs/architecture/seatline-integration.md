@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Proposed. Read from source, not run.
+Status: Contract pinned; A-02 authorization and A-03 output probes implemented. Source facts below use the audited revision. Deterministic CI evidence and owner-machine live gates are tracked in the [foundation decision](../decisions/a-foundations.md).
 
 | | |
 | --- | --- |
@@ -10,7 +10,7 @@ Status: Proposed. Read from source, not run.
 | Client reference | Lineleaf [`extension/lib/native-seatline.mjs`](https://github.com/davletovb/Lineleaf/blob/c6403c5524a217bd1bae01f9a0a22e4b4b51b044/extension/lib/native-seatline.mjs) at `c6403c5` |
 | Live provider runs | None. No latency, quota or output-quality result for any provider is claimed here. |
 
-When implementation starts, pin the revision in `config/seatline-contract.json`, in the same shape Lineleaf uses, and re-check this document against it. Facts below that are specific to a revision say so.
+The audited revision is pinned in [`config/seatline-contract.json`](../../config/seatline-contract.json). It retains Lineleaf’s common contract fields; Sharh-specific generation defaults live in `reading_policy` instead of Lineleaf’s `writing_policy`. The manifest key derives development ID `npmhefooiolfpmhicinblelaideeejcm`. Re-check this document on every pin change. Facts below that are specific to a revision say so.
 
 ## Ownership
 
@@ -310,7 +310,7 @@ It keeps Lineleaf's rules unchanged:
   - Replay recorded model outputs through the fake path to test readers, views and validation.
 - **Live**, on the owner's machine: each lens with each provider on the evaluation corpus, recording latency and validation metrics.
 
-Nothing in this document is a live result.
+The source audit is not a live result. Deterministic probe evidence is recorded separately under `docs/evidence/`; live owner-machine checks remain required.
 
 ## Expected latency
 

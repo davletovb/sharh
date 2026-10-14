@@ -3,11 +3,13 @@ import {draftTurn, PROMPT_VERSION, standInOutput} from './draft-prompts.mjs';
 export async function runOutputProbe({client, items, providers, extract, contract, fixture = false, allowGeminiCloud = false, model = null}) {
   const runs = [];
   for (const item of items) {
-    const scope = await extract(item);
+    let scope, extractionFailure;
+    try { scope = await extract(item); } catch (error) { extractionFailure = error.message; }
     for (const provider of providers) for (const lens of ['structure', 'logic']) {
-      const metrics = new OutputMetrics({lens, blocks: scope.blocks, canary: item.canary});
+      const metrics = new OutputMetrics({lens, blocks: scope?.blocks ?? [], canary: item.canary});
       const run = {item: item.id, provider, lens, promptVersion: PROMPT_VERSION, outcome: 'completed'};
       try {
+        if (extractionFailure) throw new Error('EXTRACTION_FAILED: ' + extractionFailure);
         if (fixture) {
           const output = standInOutput(lens, scope);
           // Split through arbitrary Unicode/record boundaries, as native delta events can.
