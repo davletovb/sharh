@@ -367,3 +367,31 @@ test('a readiness result finishing just before disconnect cannot restore a stale
   assert.equal(path.cache.size, 1);
   h.client.close();
 });
+
+test('failed connections do not defeat preparation throttling, and invalid continuation handles never become new sessions', async () => {
+  let now = 0,
+    connects = 0;
+  const client = new (await import('../src/paths/native-seatline.mjs')).NativeSeatline(() => {
+    connects++;
+    throw Error('host not found');
+  });
+  const path = new SeatlinePath({client, now: () => now});
+  await path.prepare(target);
+  await path.prepareFor('model-picker', target);
+  assert.equal(connects, 1);
+  now = 10000;
+  await path.prepare(target);
+  assert.equal(connects, 2);
+  client.close();
+  const h = harness(normal),
+    checked = new SeatlinePath({client: h.client});
+  for (const handle of [undefined, null, 123, {}, ''])
+    await assert.rejects(
+      checked.run(target, {...request, kind: 'chat', session: {mode: 'continue', handle}}),
+      {reason: 'INVALID_SESSION'}
+    );
+  await assert.rejects(checked.cleanup(target, undefined), {reason: 'INVALID_CLEANUP_GROUP'});
+  await assert.rejects(checked.run({...target, model: 123}, request), {reason: 'INVALID_MODEL_ID'});
+  assert.equal(h.sent.length, 0);
+  h.client.close();
+});

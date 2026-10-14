@@ -70,9 +70,15 @@ export function assertReady(info, target, request, policy) {
     throw new PathError('OPTION_UNSUPPORTED', 'PERSISTENT_SESSION_UNSUPPORTED');
 }
 function validate(target, request) {
+  if (!target || typeof target !== 'object' || !request || typeof request !== 'object')
+    throw new PathError('OPTION_UNSUPPORTED', 'INVALID_REQUEST');
   if (target.path !== 'seatline' || !contract.providers.includes(target.provider))
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_TARGET');
-  if (target.model && !/^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/.test(target.model))
+  if (
+    target.model != null &&
+    (typeof target.model !== 'string' ||
+      (target.model !== '' && !/^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/.test(target.model)))
+  )
     throw new PathError('MODEL_UNSUPPORTED', 'INVALID_MODEL_ID');
   if (
     !['analysis', 'chat', 'search', 'repair'].includes(request.kind) ||
@@ -82,16 +88,20 @@ function validate(target, request) {
     !['interactive', 'background'].includes(request.priority)
   )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_REQUEST');
-  if (request.cleanupGroup != null && !/^[A-Za-z0-9_-]{1,64}$/.test(request.cleanupGroup))
+  if (
+    request.cleanupGroup != null &&
+    (typeof request.cleanupGroup !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(request.cleanupGroup))
+  )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_CLEANUP_GROUP');
   if (request.history && !Array.isArray(request.history))
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
   if (request.history?.some((m) => !['user', 'assistant'].includes(m.role) || typeof m.text !== 'string'))
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
-  const mode = request.session?.mode || 'none';
+  const mode = request.session?.mode ?? 'none';
   if (
     !['none', 'start', 'continue'].includes(mode) ||
-    (mode === 'continue' && !/^[A-Za-z0-9_-]{1,256}$/.test(request.session.handle))
+    (mode === 'continue' &&
+      (typeof request.session.handle !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(request.session.handle)))
   )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_SESSION');
   if (mode !== 'none' && !['chat', 'analysis'].includes(request.kind))
@@ -100,7 +110,7 @@ function validate(target, request) {
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_TIER');
 }
 export function turnFor(target, request) {
-  const mode = request.session?.mode || 'none',
+  const mode = request.session?.mode ?? 'none',
     continued = mode === 'continue';
   const prompt = continued
     ? request.task
@@ -138,7 +148,6 @@ export class SeatlinePath {
     this.client.onClose = (error) => {
       this.cache.clear();
       this.connectionEpoch++;
-      this.lastPrepare.clear();
       onClose(error);
     };
     this.pacer = pacer || new RequestPacer({onActivity: (count) => this.client.setJobsActive?.(count)});
@@ -167,7 +176,7 @@ export class SeatlinePath {
     );
   }
   async prepare(target) {
-    const provider = target.provider;
+    const provider = target?.provider;
     if (!contract.providers.includes(provider)) return;
     if (this.now() - (this.lastPrepare.get(provider) ?? -Infinity) < 10000) return;
     this.lastPrepare.set(provider, this.now());
@@ -254,6 +263,7 @@ export class SeatlinePath {
   }
   async forget(target, sessionHandles) {
     if (
+      target?.path !== 'seatline' ||
       !contract.providers.includes(target.provider) ||
       !Array.isArray(sessionHandles) ||
       sessionHandles.some((h) => typeof h !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(h))
@@ -265,7 +275,12 @@ export class SeatlinePath {
     });
   }
   async cleanup(target, group) {
-    if (!contract.providers.includes(target.provider) || !/^[A-Za-z0-9_-]{1,64}$/.test(group))
+    if (
+      target?.path !== 'seatline' ||
+      !contract.providers.includes(target.provider) ||
+      typeof group !== 'string' ||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(group)
+    )
       throw new PathError('OPTION_UNSUPPORTED', 'INVALID_CLEANUP_GROUP');
     return this.pacer.maintain(target.provider, () =>
       this.client.request(target.provider, 'cleanup', {group})

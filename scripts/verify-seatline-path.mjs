@@ -288,8 +288,14 @@ try {
   await page.waitForFunction(
     () => document.querySelector('#check-state').textContent === 'Fresh check complete.'
   );
-  assert.equal(await page.locator('[data-state="ready"]').count(), 3);
+  assert.equal(await page.locator('[data-state="ready"]').count(), 2);
+  assert.equal(await page.locator('[data-state="signed_out"]').count(), 1);
   assert.equal(await page.locator('[data-state="sign_in_not_accepted"]').count(), 1);
+  await page.locator('#gemini-cloud').check();
+  await page.waitForFunction(() => document.querySelectorAll('[data-state="ready"]').length === 3);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#gemini-cloud').checked);
+  report.checks.geminiOptInPersisted = true;
   const uiResult = await page.evaluate(
     async ({target, request}) => {
       const {PathClient} = await import('./client.mjs');
