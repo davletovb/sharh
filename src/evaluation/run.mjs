@@ -4,6 +4,13 @@ import {PROMPT_VERSION} from '../analysis/prompts.mjs';
 import {PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../analysis/lenses.mjs';
 import {portableRow} from '../documents/archive.mjs';
 import {measureOutput,metricsPass,AUTOMATIC_TARGETS} from './metrics.mjs';
+export function evaluationScope(doc,action=null){
+  if(!action)return buildScope(doc);
+  const block=doc.blocks.find(b=>b.kind==='para')??doc.blocks[0];
+  const term=action==='Define'?block.text.match(/\p{L}{4,}/u)??block.text.match(/[\p{L}\p{N}]+/u):null;
+  const start=term?.index??0,end=term?start+term[0].length:[...block.text].slice(0,160).join('').length;
+  return buildScope(doc,{kind:'selection',spans:[{n:block.n,start,end}]});
+}
 export async function runEvaluation({engine,store,items,providers,extract,kind,sourceCommit,lenses=PHASE_ONE_LENSES,actions=Object.keys(PASSAGE_ACTIONS),targets={},language=null,beforeRun=()=>{},checkpoint=()=>{}}){
   if(!['scripted','real-broker-stand-ins','live'].includes(kind) || !items.length || !providers.length || new Set(providers).size!==providers.length || new Set(items.map(i=>i.id)).size!==items.length || lenses.some(l=>!PHASE_ONE_LENSES.includes(l)) || actions.some(a=>!Object.hasOwn(PASSAGE_ACTIONS,a)) || new Set(lenses).size!==lenses.length || new Set(actions).size!==actions.length || !lenses.length && !actions.length)throw Error('INVALID_EVALUATION_MATRIX');
   const report={schemaVersion:1,id:crypto.randomUUID(),kind,liveProviderClaim:kind==='live',sourceCommit,promptVersion:PROMPT_VERSION,createdAt:new Date().toISOString(),targets:AUTOMATIC_TARGETS,
@@ -14,7 +21,7 @@ export async function runEvaluation({engine,store,items,providers,extract,kind,s
     for(const provider of providers)for(const task of cases){const id=crypto.randomUUID(),row={id,item:item.id,provider,...task,language:language??item.language,outcome:'failed',rawAttempts:[],records:[]};report.runs.push(row);let saved,scope;
       try{
         if(extractionError)throw Error('EXTRACTION_FAILED: '+extractionError);
-        const selected=doc.blocks.find(b=>b.kind==='para')??doc.blocks[0];scope=task.action?buildScope(doc,{kind:'selection',spans:[{n:selected.n,start:0,end:Math.min(selected.text.length,160)}]}):buildScope(doc);
+        scope=evaluationScope(doc,task.action);
         const config={doc,scope,...task,language:row.language,budget:task.lens==='structure'?200:24,target:{path:'seatline',provider,model:null,...targets[provider]},tier:task.action?'quick':'analysis',persistent:false,cleanupGroup:`eval-${report.id.slice(0,8)}-${doc.id.slice(0,16)}`};
         row.extractionVersion=doc.version;row.source={path:item.path,title:doc.title,language:doc.language,license:item.license??null,sha256:item.sha256??null};
         row.scope={kind:scope.kind,label:scope.label,blocks:scope.blocks.map(({n,kind,text,pageLabel,selected,context})=>({n,kind,text,...(pageLabel?{pageLabel}:{}),...(selected?{selected}:{}),...(context?{context}: {})}))};await beforeRun(config);

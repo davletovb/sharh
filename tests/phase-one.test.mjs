@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {IDBFactory} from 'fake-indexeddb';
-import {readFile} from 'node:fs/promises';
+import {readFile,writeFile,mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {assemblePrompt,PROMPT_VERSION,RULES} from '../src/analysis/prompts.mjs';
 import {taskInstructions,PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../src/analysis/lenses.mjs';
@@ -12,7 +14,7 @@ import {FakePath} from '../src/paths/fake.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
 import {openDocumentStore} from '../src/documents/store.mjs';
 import {measureOutput,metricsPass} from '../src/evaluation/metrics.mjs';
-import {runEvaluation} from '../src/evaluation/run.mjs';
+import {runEvaluation,evaluationScope} from '../src/evaluation/run.mjs';
 import {reviewForm,validateReviews,REVIEW_DIMENSIONS} from '../src/evaluation/reviews.mjs';
 import {phaseOneOutput} from '../scripts/lib/phase-one-fixtures.mjs';
 import {exampleDocument} from './helpers/document.mjs';
@@ -84,4 +86,14 @@ test('evaluation matrix/CLI refuses ambiguous modes and unknown filters before e
   const w=await world();try{await assert.rejects(runEvaluation({...w,items:[item],providers:['claude','claude'],kind:'scripted'}),/MATRIX/);assert.equal(w.path.calls.length,0);
     for(const args of [[],['--fixture','--companion','missing'],['--fixture','--lens','unknown'],['--fixture','--action','bad']])assert.throws(()=>execFileSync(process.execPath,['scripts/evaluate-phase-one.mjs',...args],{stdio:'pipe'}));
   }finally{w.store.close();}
+});
+
+test('Define evaluates a term, duplicate heading occurrences count separately, and review-only CLI makes no provider calls',async()=>{
+  const doc=await exampleDocument(),scope=evaluationScope(doc,'Define'),selected=scope.blocks.find(b=>b.selected),span=selected.selected[0];assert.equal(selected.text.slice(span.start,span.end),'First');
+  const whole=buildScope(doc),structure=fixture({doc,scope:whole,lens:'structure',language:'en'}),metrics=measureOutput(structure,{doc,scope:whole,lens:'structure',language:'en',expectedHeadings:['Title','Title']});assert.equal(metrics.headingCoverage,.5);
+  const report={id:'r',sourceCommit:'source',promptVersion:PROMPT_VERSION,automaticPassed:true,runs:[{id:'run',item:'example',provider:'claude',lens:'logic',action:null}]},form=reviewForm(report),row=form.runs[0];
+  Object.assign(row,{reviewer:'Owner',reviewedAt:'2026-10-15T00:00:00+05:00',disposition:'accepted',ratings:Object.fromEntries(REVIEW_DIMENSIONS.map(k=>[k,4]))});
+  const dir=await mkdtemp(join(tmpdir(),'sharh-f-review-'));try{const input=join(dir,'report.json'),reviews=join(dir,'review.json'),output=join(dir,'reviewed.json');await writeFile(input,JSON.stringify(report));await writeFile(reviews,JSON.stringify(form));
+    execFileSync(process.execPath,['scripts/evaluate-phase-one.mjs','--report',input,'--reviews',reviews,'--out',output],{stdio:'pipe'});const reviewed=JSON.parse(await readFile(output));assert.equal(reviewed.expertReview.complete,true);assert.equal(reviewed.phaseOneAccepted,false);assert.deepEqual(reviewed.runs,report.runs);
+  }finally{await rm(dir,{recursive:true,force:true});}
 });
