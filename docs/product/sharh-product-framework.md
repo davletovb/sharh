@@ -223,7 +223,7 @@ The record types each lens produces are defined in the [output contract](../arch
 
 - **Own reader:** Chrome's built-in PDF viewer does not expose its text or selection to extensions, so Sharh has its own reader built on PDF.js, the engine behind Firefox's PDF viewer.
 - **Opening:**
-  - Links and tabs whose address ends in `.pdf` open in Sharh's reader automatically. This setting is on by default and can be turned off.
+  - On allowed sites, links and tabs whose address ends in `.pdf` open in Sharh's reader automatically. This setting is on by default and can be turned off; source permissions are requested separately.
   - Other PDFs open from the toolbar button or the context menu.
   - Local files open by drag and drop, or automatically when file-URL access is allowed.
 - **Chapters:**

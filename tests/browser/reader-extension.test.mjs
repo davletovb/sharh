@@ -55,6 +55,18 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
       try { await store.importData(archive); return await store.exportData(); } finally {store.close();}
     },archive);
     assert.deepEqual(roundTrip,archive); report.checks.browserIndexedDBRoundTrip=true;
+    const cascade=await reader.evaluate(async archive=> {
+      const {openDocumentStore}=await import('../documents.mjs'), store=await openDocumentStore({name:'round-trip'}), docId=archive.stores.docs[0].id;
+      try {
+        await store.put('runs',{id:'fixture-run',docId,target:{path:'seatline',provider:'codex'},session:{handle:'fixture-handle'},cleanupGroup:'fixture-group'});
+        await store.put('records',{runId:'fixture-run',sequence:0,record:{t:'note',text:'Stored record'}});
+        await store.put('chats',{id:'fixture-chat',docId,messages:[]});
+        await store.deleteDocument(docId);
+        const after=await store.exportData();
+        return {deleted:await store.getDocument(docId),docs:after.stores.docs.length,runs:after.stores.runs.length,records:after.stores.records.length,chats:after.stores.chats.length,maintenance:after.stores.maintenance.length};
+      }finally{store.close();}
+    },archive);
+    assert.deepEqual(cascade,{deleted:null,docs:1,runs:0,records:0,chats:0,maintenance:2}); report.checks.browserIndexedDBCascade=true;
     const dropPDF=await readFile('corpus/fixtures/pdf/two-column.pdf');
     await reader.evaluate(bytes=>{ const transfer=new DataTransfer(); transfer.items.add(new File([new Uint8Array(bytes)],'dropped.pdf',{type:'application/pdf'})); document.dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true})); },[...dropPDF]);
     await reader.waitForFunction(()=>document.querySelector('#saved-documents').textContent.includes('dropped.pdf'));
@@ -94,6 +106,12 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
       await reader.locator('#allow-source').click();
     }
     await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.filePDFWithAccess=true;
+    const localPage=await context.newPage(), localHTML=pathToFileURL(resolve('corpus/fixtures/html/article-en.html')).href;
+    await localPage.goto(localHTML);
+    const localTab=await reader.evaluate(async url=>(await chrome.tabs.query({})).find(tab=>tab.url===url).id,localHTML);
+    await reader.goto(`${base}/ui/reader.html?tab=${localTab}`);
+    await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
+    report.checks.fileHTMLWithAccess=true;
     await reader.evaluate(origin=>chrome.permissions.remove({origins:[origin+'/*']}),server.url);
     await settings.evaluate(async ({id,origin})=>chrome.developerPrivate.removeHostPermission(id,origin+'/*'),{id,origin:server.url});
     await reader.goto(`${base}/ui/reader.html?source=${encodeURIComponent(server.url+'/corpus/fixtures/pdf/outlined-book.pdf')}`);

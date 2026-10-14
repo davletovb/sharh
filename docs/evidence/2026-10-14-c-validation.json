@@ -1,0 +1,202 @@
+{
+  "kind": "c-acceptance-snapshot",
+  "date": "2026-10-14",
+  "commit": "a777ee1c6288af500124e648f274feefeb3e57e8",
+  "ci": {
+    "url": "https://github.com/davletovb/sharh/actions/runs/38531643252",
+    "runId": 38531643252,
+    "jobs": {
+      "corpus": 115744665238,
+      "companion": 115744665063
+    }
+  },
+  "unit": {
+    "passed": 75,
+    "failed": 0
+  },
+  "browser": {
+    "passed": 9,
+    "failed": 0
+  },
+  "corpus": {
+    "kind": "production-reader-corpus",
+    "items": [
+      {
+        "id": "article-en",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "481abc6cbaf4e613a80d7281d4057ad3303feb6a4039fd79c8f2e4778490541d"
+      },
+      {
+        "id": "article-ru",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "d2e5ac7d3d5f366e4bd190e50b06fac712b0cdebf639afe332055486bed222f6"
+      },
+      {
+        "id": "article-uz-Latn",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "3092a6e0e991ed88d1c9a6625b6452ec0db61c547813f1d5b088eeff03f88e08"
+      },
+      {
+        "id": "article-uz-Cyrl",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "2febb4cc2422d8f16a43722305f9e33c1b5888dc743f6f62b28e5204c5094391"
+      },
+      {
+        "id": "article-tr",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "ff6786fd7d5bc6b2e45515e8cb9dbaa91d1e9d03c475f906abf22fed66bc6e43"
+      },
+      {
+        "id": "article-ar",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "924df9a1adf7dc8c537a370d33123267f9b30e255f54c225b9f7ccb3b5459365"
+      },
+      {
+        "id": "long-book",
+        "passed": true,
+        "blocks": 193,
+        "expected": 193,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "c413d373d23f5f0dd5d8dc4c39999306ff204aba5bdd409dc70e58f41322289f"
+      },
+      {
+        "id": "multipart-1",
+        "passed": true,
+        "blocks": 5,
+        "expected": 5,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "50fcc4e9859db2a19dcde4c29c0199323873ca61229ad92e85579866d4f0384a"
+      },
+      {
+        "id": "multipart-2",
+        "passed": true,
+        "blocks": 5,
+        "expected": 5,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "03ebfac0c62f83e7b4468abd43fd0a67efe211cba81f9cee9c1eddd4a37108e5"
+      },
+      {
+        "id": "injection",
+        "passed": true,
+        "blocks": 5,
+        "expected": 5,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "2054e4c073f2f1a7590928fe27f85d4cc34ebbf8af8372c094e96db3054de889"
+      },
+      {
+        "id": "outlined-book",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "f4279511843b978e8d6a608641d8c94e47dc85d997ddd256efd3cbb68af967af"
+      },
+      {
+        "id": "book-without-outline",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "d98a4f1a4e14f23356f8c02e46ab56c787e82c0d4ec829200e41e61259ada33c"
+      },
+      {
+        "id": "two-column",
+        "passed": true,
+        "blocks": 6,
+        "expected": 6,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "a96e04a79448cab275113867ab33ca222d37c47f891f6940d1cf6ba37122d430"
+      },
+      {
+        "id": "footnotes-injection",
+        "passed": true,
+        "blocks": 12,
+        "expected": 12,
+        "headingCoverage": 1,
+        "paragraphError": 0,
+        "version": "688f1d6ad93309ea535e0e658c52bef6fff2d59d2ce13cc197f9c266f96a2b1d"
+      }
+    ],
+    "failures": []
+  },
+  "extension": {
+    "checks": {
+      "localHTML": true,
+      "selectionScope": true,
+      "pdfSelectionScope": true,
+      "renderedSelectablePDF": true,
+      "pdfHighlight": true,
+      "pageScope": true,
+      "persistedPDFReload": true,
+      "browserIndexedDBRoundTrip": true,
+      "dragDrop": true,
+      "productionPageInjection": true,
+      "pdfAutoOpen": true,
+      "chromeViewerWhenOff": true,
+      "filePDFWithAccess": true,
+      "permissionRemoval": true
+    },
+    "errors": []
+  },
+  "package": {
+    "reproducible": true,
+    "sha256": "be4e90d40473c1f7d12178c6b07f8ab5c67f31b62051dbc4421ca7dcc3214993"
+  },
+  "companion": {
+    "passed": true,
+    "checks": {
+      "discovery": true,
+      "streaming": {
+        "chunks": 2,
+        "text": "First. Second."
+      },
+      "sessionContinuation": true,
+      "historyProjection": true,
+      "maintenance": true,
+      "outputCap": true,
+      "oversizeRefusedBeforePost": true,
+      "cancellation": true,
+      "disconnectWithoutReplay": true,
+      "policyDenialNoLaunch": true,
+      "queueTimeout": true,
+      "interactiveDuringPendingMaintenance": true,
+      "interactiveDuringBackground": true,
+      "geminiOptInPersisted": true,
+      "productionExtensionRPC": true,
+      "productionForbiddenOrigin": true
+    },
+    "report": "test-results/seatline-path.json"
+  },
+  "liveProviders": false
+}

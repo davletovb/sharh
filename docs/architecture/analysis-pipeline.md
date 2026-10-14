@@ -315,6 +315,7 @@ Everything is kept in IndexedDB, with settings in `chrome.storage.local` (never 
 | `collections` | collection id | Library items and their order |
 | `glossary` | book id, term | Source term, chosen translation, note |
 | `jobs` | job id | Long-text job steps and state |
+| `maintenance` | intention id | Deduplicated Seatline forget/cleanup intentions; dispatched by D-05 |
 
 Deleting a document atomically deletes all extraction versions, blocks, sections, source files, runs, records, chats, jobs and glossary rows, and removes its collection memberships. It also schedules Seatline `forget` for their sessions and `cleanup` for their groups ([sessions](seatline-integration.md#sessions-forget-and-cleanup)). Export writes all of this, except settings, to one JSON file, and import adds validated data atomically; identical rows are accepted and conflicting rows abort the import. C stores deduplicated Seatline maintenance intentions; D-05 implements their dispatch.
 

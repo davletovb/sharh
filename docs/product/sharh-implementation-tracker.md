@@ -1,15 +1,15 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A/B and the C reader slice implemented; final C browser validation is in progress. B-01–B-04, B-06 and B-07 are DONE. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
+Status: A/B and C slices implemented. C-01–C-05 are DONE. B-01–B-04, B-06 and B-07 are DONE. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **10**
-- IMPLEMENTED — VERIFY: **8**
+- DONE: **15**
+- IMPLEMENTED — VERIFY: **3**
 - IN PROGRESS: **0**
 - BLOCKED: **0**
 - TODO: **54**
@@ -104,11 +104,11 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| C-01 | Build the document model and storage | A-05 | Blocks, sections, anchors and extraction versions follow the analysis pipeline. IndexedDB stores delete in cascade. Documents survive an export and import round trip | IMPLEMENTED — VERIFY | Codex | Implementation and unit checks complete; final packaged browser checks pending. [C evidence](../evidence/2026-10-14-c-readers.md) |
-| C-02 | Build the web page reader | A-04, C-01 | On the HTML fixtures, every annotated heading is found and ¶ counts are within 2%. Anchors resolve after a reload and after an unrelated DOM change. Highlights leave the page DOM untouched. Whole-page and region modes work, and local HTML opens | IMPLEMENTED — VERIFY | Codex | Implementation and unit checks complete; final packaged browser checks pending. [C evidence](../evidence/2026-10-14-c-readers.md) |
-| C-03 | Build the PDF reader | A-04, C-01 | The reader renders pages and selectable text. Outline chapters carry page ranges; headings are detected when there is no outline; page labels are shown. On the fixtures:<br>• hyphenation is joined;<br>• running headers and footers are removed;<br>• two-column reading order is kept;<br>• footnotes are marked as notes.<br>Highlights are drawn from text items | IMPLEMENTED — VERIFY | Codex | Implementation and unit checks complete; final packaged browser checks pending. [C evidence](../evidence/2026-10-14-c-readers.md) |
-| C-04 | Open PDFs in Sharh | C-03 | `.pdf` addresses open in the reader when the setting is on, and in Chrome's viewer when it is off. The toolbar button and the context menu open the current PDF. Drag and drop works, and so do file URLs when access is granted | IMPLEMENTED — VERIFY | Codex | Implementation and unit checks complete; final packaged browser checks pending. [C evidence](../evidence/2026-10-14-c-readers.md) |
-| C-05 | Build scopes and the scope picker | B-03, C-01 | Selection (with context blocks), section, chapter, page range and document scopes are available. The picker shows the estimated tokens and the request's UTF-8 size. A request over 1,000,000 bytes is never sent; the reader is offered a narrower scope, and a book job once H-02 exists | IMPLEMENTED — VERIFY | Codex | Implementation and unit checks complete; final packaged browser checks pending. [C evidence](../evidence/2026-10-14-c-readers.md) |
+| C-01 | Build the document model and storage | A-05 | Blocks, sections, anchors and extraction versions follow the analysis pipeline. IndexedDB stores delete in cascade. Documents survive an export and import round trip | DONE | Codex | Production reader/storage/scope acceptance passes on the annotated corpus and packaged Chromium. [C evidence](../evidence/2026-10-14-c-readers.md), [CI snapshot](../evidence/2026-10-14-c-validation.json) |
+| C-02 | Build the web page reader | A-04, C-01 | On the HTML fixtures, every annotated heading is found and ¶ counts are within 2%. Anchors resolve after a reload and after an unrelated DOM change. Highlights leave the page DOM untouched. Whole-page and region modes work, and local HTML opens | DONE | Codex | Production reader/storage/scope acceptance passes on the annotated corpus and packaged Chromium. [C evidence](../evidence/2026-10-14-c-readers.md), [CI snapshot](../evidence/2026-10-14-c-validation.json) |
+| C-03 | Build the PDF reader | A-04, C-01 | The reader renders pages and selectable text. Outline chapters carry page ranges; headings are detected when there is no outline; page labels are shown. On the fixtures:<br>• hyphenation is joined;<br>• running headers and footers are removed;<br>• two-column reading order is kept;<br>• footnotes are marked as notes.<br>Highlights are drawn from text items | DONE | Codex | Production reader/storage/scope acceptance passes on the annotated corpus and packaged Chromium. [C evidence](../evidence/2026-10-14-c-readers.md), [CI snapshot](../evidence/2026-10-14-c-validation.json) |
+| C-04 | Open PDFs in Sharh | C-03 | `.pdf` addresses open in the reader when the setting is on, and in Chrome's viewer when it is off. The toolbar button and the context menu open the current PDF. Drag and drop works, and so do file URLs when access is granted | DONE | Codex | Production reader/storage/scope acceptance passes on the annotated corpus and packaged Chromium. [C evidence](../evidence/2026-10-14-c-readers.md), [CI snapshot](../evidence/2026-10-14-c-validation.json) |
+| C-05 | Build scopes and the scope picker | B-03, C-01 | Selection (with context blocks), section, chapter, page range and document scopes are available. The picker shows the estimated tokens and the request's UTF-8 size. A request over 1,000,000 bytes is never sent; the reader is offered a narrower scope, and a book job once H-02 exists | DONE | Codex | Production reader/storage/scope acceptance passes on the annotated corpus and packaged Chromium. [C evidence](../evidence/2026-10-14-c-readers.md), [CI snapshot](../evidence/2026-10-14-c-validation.json) |
 
 ### D — Analysis engine
 

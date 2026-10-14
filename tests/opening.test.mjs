@@ -25,4 +25,7 @@ test('PDF opening honours setting, granted sites, file access, navigation races 
   granted=true; assert.equal(await hasSourceAccess(chrome,'file:///tmp/a.pdf'),false); fileAccess=true; assert.equal(await hasSourceAccess(chrome,'file:///tmp/a.pdf'),true);
   const old=url; url='https://example.org/new'; await updated(1,{url:old},{id:1,url:old}); assert.equal(updates.length,1);
   chrome.action.onClicked.listeners[0]({id:1,url:old}); await new Promise(r=>setImmediate(r)); assert.equal(updates.length,2);
+  chrome.contextMenus.onClicked.listeners[0]({menuItemId:'sharh-open-pdf',linkUrl:'https://example.org/download?id=book'},{id:1,url:'https://example.org/'});
+  await new Promise(r=>setImmediate(r)); assert.equal(updates.length,3);
+  assert.equal(new URL(updates[2].url).searchParams.get('source'),'https://example.org/download?id=book');
 });
