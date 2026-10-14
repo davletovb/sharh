@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: C implements the document model, readers, storage and scopes ([reader architecture](readers.md)); D implements the [analysis engine](analysis-engine.md). E's specialized views and F's final prompt/live quality evaluation remain scheduled. A-slice draft probes remain separately source-labelled. This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
+Status: C/D implement the readers and [analysis engine](analysis-engine.md); E supplies the workspace/views; F supplies versioned prompts and the [evaluation harness](phase-one-evaluation.md). Live quality/Phase 1 acceptance remain open. A-slice draft probes remain separately source-labelled. This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
 
 ## Overview
 

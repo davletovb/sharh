@@ -2,7 +2,7 @@
 
 A browser reading assistant that helps you see how a text thinks, and check each reading against its paragraphs. Model access uses the shared [Seatline](https://github.com/davletovb/seatline) companion. [Product and architecture documentation](docs/README.md).
 
-The A foundation slice provides a controlled multilingual corpus, Readability/PDF.js extraction prototypes, paragraph anchors, draft Structure/Logic output measurements and a fixed-ID Chrome native-authorization probe. The B slice adds the production MV3 scaffold, streaming Seatline path, sign-in policy, setup diagnostics and request pacing. The C slice adds anchored web/local HTML/PDF readers, versioned document storage, PDF opening controls and scope sizing. Analysis and lenses follow in D–F.
+Sharh includes anchored web/local HTML/PDF readers, versioned storage, a streaming Seatline analysis engine and a shared reading workspace. Summary, Structure, Logic and Thinking have versioned prompts, paragraph inspection and saved-run comparison. The evaluation harness checks the four lenses and four passage actions across the multilingual corpus. Live provider quality and Phase 1 acceptance still require the owner's reports.
 
 Node.js 24 is required:
 
@@ -24,6 +24,6 @@ Use **Read current page** from the side panel, or **Open PDF or local file** to 
 
 After building, reload Sharh in `chrome://extensions`. Use **Read current page** in the side panel, or open a PDF/local file in Sharh's reader. Choose a scope, output language and model, then **Analyze** with Summary, Structure, Logic or Thinking. Click ¶ references to inspect the source. Partial results offer Continue; saved runs and version comparison are local.
 
-Use **Enable passage actions on this site** in the panel to allow Explain, Translate, Logic and Define on web selections. PDF/local-text selections have the same toolbar. Settings holds theme and per-tier model defaults. Ask/collections and final live prompt-quality acceptance remain later tracker work.
+Use **Enable passage actions on this site** in the panel to allow Explain, Translate, Logic and Define on web selections. PDF/local-text selections have the same toolbar. Settings holds theme and per-tier model defaults. Ask/collections remain later tracker work. [Phase 1 evaluation](docs/architecture/phase-one-evaluation.md) documents `npm run evaluate -- --fixture`, live companion runs, review forms and the remaining acceptance gates.
 
 [Workspace architecture](docs/architecture/reading-workspace.md) · [E evidence and screen-reader gate](docs/evidence/2026-10-14-e-workspace.md)

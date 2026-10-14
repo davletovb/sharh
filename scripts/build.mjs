@@ -3,6 +3,7 @@ import {cp, mkdir, rm, writeFile,readFile} from 'node:fs/promises';
 await rm('dist', {recursive: true, force: true});
 await mkdir('dist', {recursive: true});
 await build({entryPoints:['src/prototypes/browser-entry.mjs'], bundle:true, format:'esm', target:'chrome124', outfile:'dist/prototype.mjs'});
+await build({entryPoints:['src/evaluation/browser-entry.mjs'],bundle:true,format:'esm',target:'chrome124',outfile:'dist/evaluation.mjs'});
 await cp('node_modules/pdfjs-dist/build/pdf.worker.mjs', 'dist/pdf.worker.mjs');
 await cp('node_modules/pdfjs-dist/standard_fonts', 'dist/standard_fonts', {recursive: true});
 await cp('probes/extension', 'dist/probe', {recursive: true});
