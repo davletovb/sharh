@@ -16,7 +16,7 @@ export class PDFView {
     state.promise=null;state.task=null;state.layer=null;state.items=null;state.content=null;state.highlights=null;state.offsets=null;
   }
   async open(pdf,doc,{observe=true}={}) {
-    this.clear();this.pdf=pdf;this.doc=doc;this.byPage=new Map();this.pinned=0;
+    this.clear();this.pdf=pdf;this.doc=doc;this.byPage=new Map();this.pinned=0;this.initialPin=true;
     for(const block of doc.blocks){if(!this.byPage.has(block.page))this.byPage.set(block.page,[]);this.byPage.get(block.page).push(block);}
     const first=await pdf.getPage(1),viewport=first.getViewport({scale:1});
     for(let index=0;index<pdf.numPages;index++) {
@@ -31,7 +31,7 @@ export class PDFView {
     const selection=getSelection();if(!selection?.rangeCount || selection.isCollapsed)return [];
     const pageOf=node=>(node.nodeType===1?node:node.parentElement)?.closest('.pdf-page');
     return [pageOf(selection.getRangeAt(0).startContainer),pageOf(selection.getRangeAt(0).endContainer)]
-      .filter(el=>el && this.container.contains(el)).map(el=>Number(el.dataset.page));
+      .map(el=>el && this.container.contains(el)?Number(el.dataset.page):null);
   }
   startObserving() {
     this.observer?.disconnect();const generation=this.generation;
@@ -39,6 +39,7 @@ export class PDFView {
       for(const entry of entries) {
         const index=Number(entry.target.dataset.page);
         if(entry.isIntersecting) {
+          if(index>0 && this.initialPin && this.pinned===0){this.pinned=null;this.initialPin=false;}
           this.near.add(index);
           this.render(index).catch(error=>{if(generation===this.generation && error.name!=='RenderingCancelledException')entry.target.dataset.error=error.message;});
         } else this.near.delete(index);
@@ -78,7 +79,7 @@ export class PDFView {
   async highlight(anchor) {
     if(!this.pdf)return null;
     const hit=await resolvePDFAnchor(this.pdf,anchor);if(!hit)return null;
-    const previous=this.pinned;this.pinned=anchor.page;
+    const previous=this.pinned;this.pinned=anchor.page;this.initialPin=false;
     const state=this.pages.get(anchor.page);state.el.scrollIntoView({block:'center'});await this.render(anchor.page);
     for(const page of this.pages.values())page.highlights?.replaceChildren();
     for(const rect of hit.rects) {
@@ -92,9 +93,9 @@ export class PDFView {
     if(!this.doc)return null;
     const selection=getSelection();if(!selection?.rangeCount || selection.isCollapsed)return null;
     const range=selection.getRangeAt(0);if(!range.intersectsNode(this.container))return null;
-    const endpoints=this.selectionPages(),first=endpoints[0]??0,last=endpoints.at(-1)??this.doc.pageCount-1,spans=[];
+    const endpoints=this.selectionPages(),first=endpoints[0]??0,last=endpoints[1]??this.doc.pageCount-1,spans=[];
     for(let page=first;page<=last;page++)for(const block of this.byPage.get(page)||[]) {
-      if(page>first && page<last || !endpoints.length){spans.push({n:block.n,start:0,end:block.text.length});continue;}
+      if(page>first && page<last || endpoints.every(page=>page===null)){spans.push({n:block.n,start:0,end:block.text.length});continue;}
       const state=this.pages.get(page);if(!state?.content)continue;
       let raw='';const selected=[];
       for(const [at,index]of block.anchor.items.entries()) {

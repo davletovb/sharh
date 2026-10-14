@@ -29,8 +29,8 @@ function articleRuns(document) {
   });
   // Readability removes the article's title heading. Restore only its own source H1.
   const first = runs[0]?.source, container = first?.closest('article,main') ?? first?.parentElement;
-  const title = container && [...container.querySelectorAll('h1')].find(h => normalizeText(h.textContent) === normalizeText(article.title));
-  if (title && !runs.some(r => r.source === title)) runs.unshift({element: title, source: title, raw: title.textContent});
+  const title = container && [...container.querySelectorAll('h1')].find(h => normalizeText(h.textContent) === normalizeText(article.title) || textMap(h).text===normalizeText(article.title));
+  if (title && !runs.some(r => r.source === title)) runs.unshift({element: title, source: title, raw: textMap(title).text});
   return runs;
 }
 export async function extractHTML(document, {mode = 'article', region = null, identity = document.URL} = {}) {

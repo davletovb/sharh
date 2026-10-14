@@ -35,10 +35,12 @@ async function operate(action) {
   }
 }
 async function readerMessage(operation,values={},tabId=sourceTab) {
+  const expected=doc;
   // Recheck permission through injection, including after a site grant is removed.
   await attachReader(tabId);
   const tab=await chrome.tabs.get(tabId);
-  if (operation!=='extract' && doc?.address && tab.url?.split('#')[0]!==doc.address.split('#')[0]) throw Error('The source tab navigated to another document. Read it again.');
+  if(operation!=='extract' && doc!==expected)throw Error('The current document changed.');
+  if (operation!=='extract' && expected?.address && tab.url?.split('#')[0]!==expected.address.split('#')[0]) throw Error('The source tab navigated to another document. Read it again.');
   const response=await chrome.tabs.sendMessage(tabId,{type:`sharh:reader:${operation}`,...values},{frameId:0});
   if (response?.error) throw Error(response.error);
   return response?.result;
@@ -66,9 +68,10 @@ async function commitDocument(value,{pdf:nextPDF=null,sourceTab:nextTab=null,loc
   pdf=nextPDF;sourceTab=nextTab;localHTML=nextHTML;
   pendingSource=null;$('allow-source').hidden=true;$('access-help').textContent='';
   setViewerSource(value.kind==='pdf'?value.address:null);
-  await showDocument(value);
-  if(prepared)prepared.startObserving();
-  if(previousPDF && previousPDF!==nextPDF)await previousPDF.loadingTask.destroy().catch(()=>{});
+  try{await showDocument(value);}finally{
+    if(prepared)prepared.startObserving();
+    if(previousPDF && previousPDF!==nextPDF)await previousPDF.loadingTask.destroy().catch(()=>{});
+  }
 }
 async function showDocument(value) {
   doc=value; lastSelection=null; $('document-title').textContent=doc.title; document.title=`${doc.title} · Sharh`;
@@ -146,13 +149,16 @@ async function readLocalHTML(candidate=localHTML) {
 }
 async function jump(block) {
   if (busy) return;
-  if (pdf) { const hit=await pdfView.highlight(block.anchor); state(hit ? `Highlighted ¶${block.n} · p. ${block.pageLabel}` : 'This paragraph could not be found.'); return; }
+  const expected=doc,show=message=>{if(doc===expected)state(message);};
+  try {
+  if (pdf) { const hit=await pdfView.highlight(block.anchor); show(hit ? `Highlighted ¶${block.n} · p. ${block.pageLabel}` : 'This paragraph could not be found.'); return; }
   if (sourceTab!==null) {
-    try { await attachReader(); const hit=await readerMessage('highlight',{anchor:block.anchor}); state(hit ? `Highlighted ¶${block.n} in the source page.` : 'This paragraph could not be found in the current page.'); return; }
-    catch { state('The source tab is unavailable. Reopen the source page and read it again to jump to this paragraph.'); return; }
+    try { const hit=await readerMessage('highlight',{anchor:block.anchor}); show(hit ? `Highlighted ¶${block.n} in the source page.` : 'This paragraph could not be found in the current page.'); return; }
+    catch { show('The source tab is unavailable. Reopen the source page and read it again to jump to this paragraph.'); return; }
   }
   for (const el of $('text-blocks').querySelectorAll('.selected')) el.classList.remove('selected');
   const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`); row.classList.add('selected'); row.scrollIntoView({block:'center'});
+  }catch(error){if(doc===expected)throw error;}
 }
 function blockSelection() {
   const selected=getSelection(); if (!selected?.rangeCount || selected.isCollapsed) return null;
