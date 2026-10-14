@@ -7,17 +7,37 @@ import {PDFView} from './pdf-view.mjs';
 import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 let doc, pdf, sourceTab=params.has('tab') ? Number(params.get('tab')) : null, localHTML, pendingSource, lastSelection=null;
+let busy=false;
 const pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
   if (sourceTab !== null) return readerMessage('selection',{version:doc.version});
   return blockSelection() || lastSelection;
-}});
+},onChapterLevel:()=>store.saveDocument(doc).catch(fail)});
 const state=text=>{ $('reader-state').textContent=text; };
-const fail=error=>state(error.message || String(error));
+const fail=error=> {
+  const hints={READABILITY_NO_ARTICLE:'No main article was found. Try Whole page or choose a region.',REGION_NOT_FOUND:'No page element matches that region selector.',NO_TEXT_BLOCKS:'No readable text was found in this source.',INVALID_ARCHIVE:'Choose a Sharh documents export file.',INVALID_DOCUMENT:'The document archive has an invalid document.',NO_SELECTION:'Select source text first.'};
+  state(hints[error.message] || error.message || String(error));
+};
+async function operate(action) {
+  if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
+  busy=true;
+  const controls=['read-current','open-file','source-address','allow-source','reextract','import-data','export-data'];
+  for (const id of controls) $(id).disabled=true;
+  $('open-address').querySelector('button').disabled=true;
+  try { await action(); } catch(error) { fail(error); }
+  finally {
+    busy=false;
+    for (const id of controls) $(id).disabled=false;
+    $('open-address').querySelector('button').disabled=false;
+    $('reextract').disabled=doc?.kind!=='html' || (sourceTab===null && !localHTML);
+  }
+}
 async function readerMessage(operation,values={}) {
   // Recheck permission through injection, including after a site grant is removed.
   await attachReader();
+  const tab=await chrome.tabs.get(sourceTab);
+  if (operation!=='extract' && doc?.address && tab.url?.split('#')[0]!==doc.address.split('#')[0]) throw Error('The source tab navigated to another document. Read it again.');
   const response=await chrome.tabs.sendMessage(sourceTab,{type:`sharh:reader:${operation}`,...values},{frameId:0});
   if (response?.error) throw Error(response.error);
   return response?.result;
@@ -104,6 +124,7 @@ async function readLocalHTML() {
   await store.saveDocument(value,{html:localHTML.text,mime:'text/html'}); await showDocument(value);
 }
 async function jump(block) {
+  if (busy) return;
   if (pdf) { const hit=await pdfView.highlight(block.anchor); state(hit ? `Highlighted ¶${block.n} · p. ${block.pageLabel}` : 'This paragraph could not be found.'); return; }
   if (sourceTab!==null) {
     try { await attachReader(); const hit=await readerMessage('highlight',{anchor:block.anchor}); state(hit ? `Highlighted ¶${block.n} in the source page.` : 'This paragraph could not be found in the current page.'); return; }
@@ -142,40 +163,40 @@ async function savedList() {
   for (const item of rows) {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
-    open.addEventListener('click',()=>reopen(item.id).catch(fail));
-    remove.addEventListener('click',async()=> { try { await store.deleteDocument(item.id); if(doc?.id===item.id) { await resetPDF(); doc=null; $('scope-picker').hidden=true; $('text-blocks').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; } await savedList(); state('Document and its saved data deleted.'); } catch(error) { fail(error); } });
+    open.addEventListener('click',()=>operate(()=>reopen(item.id)));
+    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); if(doc?.id===item.id) { await resetPDF(); doc=null; $('scope-picker').hidden=true; $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
     row.append(title,open,remove); $('saved-documents').append(row);
   }
 }
-$('read-current').addEventListener('click',async()=> {
-  try {
+$('read-current').addEventListener('click',()=>operate(async()=> {
     const tabs=await chrome.tabs.query({lastFocusedWindow:true});
     const current=tabs.find(t=>t.active && !t.url?.startsWith(chrome.runtime.getURL(''))) || tabs.filter(t=>!t.url?.startsWith(chrome.runtime.getURL(''))).sort((a,b)=>(b.lastAccessed||0)-(a.lastAccessed||0))[0];
     if (!current) throw Error('Open a web page and use Read current page from the Sharh panel.');
     await readTab(current.id);
-  } catch(error) { fail(error); }
-});
-$('reextract').addEventListener('click',()=> (localHTML ? readLocalHTML() : readTab(sourceTab)).catch(fail));
+}));
+$('reextract').addEventListener('click',()=>operate(()=>localHTML ? readLocalHTML() : readTab(sourceTab)));
 $('show-text').addEventListener('click',()=> { $('text-blocks').hidden=!$('text-blocks').hidden; $('show-text').textContent=$('text-blocks').hidden ? 'Show numbered text' : 'Hide numbered text'; });
-$('open-file').addEventListener('change',event=>openFile(event.target.files[0]).catch(fail));
-$('open-address').addEventListener('submit',event=>{ event.preventDefault(); openPDFAddress($('source-address').value).catch(fail); });
+$('open-file').addEventListener('change',event=>{const file=event.target.files[0];operate(()=>openFile(file));});
+$('open-address').addEventListener('submit',event=>{ event.preventDefault(); operate(()=>openPDFAddress($('source-address').value)); });
 $('allow-source').addEventListener('click',()=> {
   if (!pendingSource) return;
   // permissions.request must begin directly in the user gesture.
-  chrome.permissions.request({origins:[sourceOrigin(pendingSource)]}).then(async granted=> {
+  const permission=chrome.permissions.request({origins:[sourceOrigin(pendingSource)]});
+  operate(async()=> {
+    const granted=await permission;
     if (!granted) throw Error('Source access was not granted.');
     if (sourceTab!==null) await readTab(sourceTab); else await openPDFAddress(pendingSource);
-  }).catch(fail);
+  });
 });
 $('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type:'sharh:chrome-viewer',source:doc.address}).then(response=>{if(response?.error)throw Error(response.error);}).catch(fail));
 document.addEventListener('dragover',event=>{ if ([...event.dataTransfer.types].includes('Files')) { event.preventDefault(); document.body.classList.add('dragover'); } });
 document.addEventListener('dragleave',()=>document.body.classList.remove('dragover'));
-document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); openFile(event.dataTransfer.files[0]).catch(fail); });
-$('export-data').addEventListener('click',async()=> { try { const archive=await store.exportData(), url=URL.createObjectURL(new Blob([JSON.stringify(archive)],{type:'application/json'})), a=document.createElement('a'); a.href=url; a.download='sharh-documents.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); state('Documents exported.'); } catch(error) { fail(error); } });
-$('import-data').addEventListener('change',async event=> { try { const file=event.target.files[0]; if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); } catch(error) { fail(error); } finally { event.target.value=''; } });
+document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
+$('export-data').addEventListener('click',()=>operate(async()=> { const archive=await store.exportData(), url=URL.createObjectURL(new Blob([JSON.stringify(archive)],{type:'application/json'})), a=document.createElement('a'); a.href=url; a.download='sharh-documents.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); state('Documents exported.'); }));
+$('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
 await savedList();
-try {
+await operate(async()=> {
   if (params.has('source')) { sourceTab=null; await openPDFAddress(params.get('source')); }
   else if (params.has('doc')) await reopen(params.get('doc'));
   else if (sourceTab!==null) await readTab(sourceTab);
-} catch(error) { fail(error); }
+});

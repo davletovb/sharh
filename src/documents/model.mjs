@@ -66,14 +66,14 @@ export function validateDocument(doc) {
   if (!doc || typeof doc !== 'object' || !/^[a-f0-9]{64}$/.test(doc.id) || !/^[a-f0-9]{64}$/.test(doc.version) ||
       !['html', 'pdf'].includes(doc.kind) || typeof doc.identity !== 'string' || typeof doc.title !== 'string' ||
       typeof doc.extractorVersion !== 'string' || !Array.isArray(doc.blocks) || !Array.isArray(doc.sections) ||
-      !doc.blocks.length || !Number.isSafeInteger(doc.chapterLevel) || doc.chapterLevel < 1) throw Error('INVALID_DOCUMENT');
+      !doc.blocks.length || !Number.isSafeInteger(doc.chapterLevel) || doc.chapterLevel < 1 || doc.chapterLevel > 64) throw Error('INVALID_DOCUMENT');
   const sections = new Map(doc.sections.map(s => [s.id, s]));
   if (sections.size !== doc.sections.length) throw Error('DUPLICATE_SECTION');
   if (doc.kind === 'pdf' && (!Number.isSafeInteger(doc.pageCount) || doc.pageCount < 1 || !Array.isArray(doc.pageLabels) || doc.pageLabels.length !== doc.pageCount || doc.pageLabels.some(label => typeof label !== 'string'))) throw Error('INVALID_PDF_PAGES');
   for (const [index, block] of doc.blocks.entries()) {
     if (block.n !== index + 1 || !['para','heading','quote','list','caption','note','table'].includes(block.kind) ||
         typeof block.text !== 'string' || !block.text || !block.text.isWellFormed() || block.text.includes('\0') ||
-        (block.kind === 'heading' && (!Number.isInteger(block.level) || block.level < 1)) ||
+        (block.kind === 'heading' && (!Number.isInteger(block.level) || block.level < 1 || block.level > 64)) ||
         (block.section != null && !sections.has(block.section))) throw Error('INVALID_BLOCK');
     const a = block.anchor;
     if (doc.kind === 'html') {
@@ -85,7 +85,7 @@ export function validateDocument(doc) {
         a.items.some(i => !Number.isSafeInteger(i) || i < 0) || !Array.isArray(a.separators) || a.separators.length !== a.items.length || a.separators.some(s => typeof s !== 'string')) throw Error('INVALID_PDF_ANCHOR');
   }
   for (const section of doc.sections) {
-    if (typeof section.id !== 'string' || typeof section.title !== 'string' || !Number.isInteger(section.level) || section.level < 1 ||
+    if (typeof section.id !== 'string' || typeof section.title !== 'string' || !Number.isInteger(section.level) || section.level < 1 || section.level > 64 ||
         !Number.isInteger(section.first) || !Number.isInteger(section.last) || section.first < 1 || section.last < section.first || section.last > doc.blocks.length ||
         (section.parent != null && !sections.has(section.parent))) throw Error('INVALID_SECTION');
     const visited = new Set([section.id]); let parent = section.parent;

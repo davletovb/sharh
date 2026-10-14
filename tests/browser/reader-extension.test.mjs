@@ -33,6 +33,13 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     assert.ok(await reader.locator('.textLayer span').count()>4);
     const textRect=await reader.locator('.textLayer span').filter({hasText:'Public partici-'}).first().boundingBox();
     assert.ok(textRect.width>0 && textRect.height>0);
+    await reader.evaluate(()=> {
+      const spans=[...document.querySelectorAll('.textLayer span')], first=spans.find(el=>el.textContent==='Public partici-'), second=spans.find(el=>el.textContent.startsWith('pation gives'));
+      const range=document.createRange(); range.setStart(first.firstChild,7); range.setEnd(second.firstChild,5); getSelection().removeAllRanges(); getSelection().addRange(range);
+    });
+    await reader.locator('#scope-kind').selectOption('selection');
+    await reader.waitForFunction(()=>document.querySelector('#scope-size').textContent.includes('UTF-8 bytes'));
+    report.checks.pdfSelectionScope=true;
     await reader.locator('#scope-kind').selectOption('pages'); await reader.locator('#scope-first').fill('2'); await reader.locator('#scope-last').fill('2'); await reader.locator('#scope-last').dispatchEvent('change');
     await reader.waitForFunction(()=>document.querySelector('#scope-help').textContent.startsWith('Estimated'));
     await reader.locator('#outline button').first().click(); await reader.waitForFunction(()=>document.querySelector('.pdf-highlight'));

@@ -9,7 +9,7 @@ test('document identities, extraction versions and model validation keep numberi
   const a=await exampleDocument(), b=await exampleDocument('https://example.org/other');
   assert.notEqual(a.id,b.id); assert.notEqual(a.version,b.version);
   assert.equal(validateDocument(structuredClone(a)).id,a.id);
-  for (const mutate of [d=>d.blocks[1].n=1,d=>d.sections[0].parent='s2',d=>d.sections[1].last=99,d=>d.blocks[2].anchor.quote.exact='forged']) {
+  for (const mutate of [d=>d.blocks[1].n=1,d=>d.sections[0].parent='s2',d=>d.sections[1].last=99,d=>d.sections[0].level=1e9,d=>d.blocks[2].anchor.quote.exact='forged']) {
     const invalid=structuredClone(a); mutate(invalid); assert.throws(()=>validateDocument(invalid));
   }
 });
