@@ -2,7 +2,8 @@ import {normalizeText} from '../documents/model.mjs';
 export const normalizeQuotation = text => normalizeText(text)
   .replace(/[\u2018\u2019\u201a\u201b\u02bb\u02bc\u02b9\u0060\uff07]/gu,"'")
   .replace(/[\u201c\u201d\u201e\u201f\u00ab\u00bb\u2039\u203a\uff02]/gu,'"')
-  .replace(/[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]/gu,'-');
+  .replace(/[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]/gu,'-')
+  .replace(/\.(?:\s*\.){2,}/gu,'…');
 
 export class QuotationIndex {
   constructor(blocks) { this.blocks=new Map(blocks.map(b=>[b.n,normalizeQuotation(b.text)])); }

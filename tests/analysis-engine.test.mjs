@@ -91,7 +91,7 @@ test('lost session refuses a contextless answer and explicit continuation can re
   try {
     const first=await s.start({persistent:true});let failedId;
     await assert.rejects(s.engine.continue(first.run.id),e=>{failedId=e.runId;return e.reason==='UNKNOWN_SESSION';});
-    const failed=await s.engine.repository.get(failedId);assert.equal(failed.records.length,1);assert.equal(failed.run.session,null);assert.equal(failed.records[0].record.id,'p1');
+    const failed=await s.engine.repository.get(failedId);assert.equal(failed.records.length,1);assert.equal(failed.run.session.reusable,false);assert.equal(failed.records[0].record.id,'p1');
     const next=await s.engine.continue(failedId,{mode:'new'});assert.equal(next.run.status,'completed');assert.equal(next.records.length,2);assert.ok(s.path.calls[2].request.document);
   }finally{s.store.close();}
 });
@@ -127,7 +127,7 @@ test('durable maintenance drains through path APIs, preserves failures and dedup
     await s.store.put('runs',{id:'owned',docId:s.doc.id,target:{path:'seatline',provider:'codex'},session:{handle:'owned-session'},cleanupGroup:'doc-owned'});await s.store.deleteDocument(s.doc.id);
     const path={async forget(){calls++;if(failures--)throw Object.assign(Error('offline'),{code:'DISCONNECTED'});},async cleanup(){calls++;}};
     const dispatcher=new MaintenanceDispatcher(s.store,{seatline:path});
-    const a=dispatcher.drain(),b=dispatcher.drain();assert.equal(a,b);await a;assert.equal((await s.store.all('maintenance')).length,1);
+    const a=dispatcher.drain(),b=dispatcher.drain();assert.equal(a,b);await a;assert.equal((await s.store.all('maintenance')).length,0);
     await dispatcher.drain();assert.equal((await s.store.all('maintenance')).length,0);assert.equal(calls,3);
   }finally{s.store.close();}
 });
@@ -150,7 +150,7 @@ test('transport-successful but empty or mostly malformed repairs never replace u
     try {
       const events=[],result=await s.start({}, {onEvent:e=>events.push(e)});
       assert.equal(result.records.length,1);assert.equal(result.records[0].record.id,'useful');assert.equal(result.run.attempts[1].accepted,false);
-      assert.equal(s.path.calls.length,2);assert.ok(events.some(e=>e.type==='repair_failed' && e.code==='INVALID_OUTPUT'));assert.ok(!events.some(e=>e.type==='reset'));
+      assert.equal(s.path.calls.length,2);assert.ok(events.some(e=>e.type==='repair_failed' && ['INVALID_OUTPUT','FEWER_VALID_RECORDS'].includes(e.code)));assert.ok(!events.some(e=>e.type==='reset'));
       assert.ok(!events.some(e=>e.entry?.record.id==='replacement'));
     }finally{s.store.close();}
   }

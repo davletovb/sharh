@@ -224,7 +224,7 @@ Validation runs line by line as text streams in. A record is drawn as soon as it
 2. **Parsing:** `JSON.parse`; anything that is not an object is dropped.
 3. **Type:** `t` must be allowed for the lens.
 4. **Fields:**
-   - required fields must be present with the right types;
+   - required fields must be present with the right types; optional null/blank values are omitted;
    - enumerations must be valid;
    - strings are capped (`text` at 1,200 characters, `quote` at 400) and stripped of control characters.
 5. **References:**
@@ -237,17 +237,17 @@ Validation runs line by line as text streams in. A record is drawn as soon as it
      - collapsed whitespace;
      - one form for each family of quotation marks, apostrophes (including the Uzbek ʻ variants) and dashes;
      - soft hyphens removed.
-   - A quotation containing `…` matches when its parts appear in order.
+   - A quotation containing `…`, `...` or `. . .` matches when its parts appear in order.
    - A failing quotation is removed from the record, and the record is marked *quotation not found*.
 7. **Identifiers:**
    - Duplicate ids are renamed.
    - References to ids not yet seen wait until `end`, then dangling ones are dropped.
    - Parent cycles in `sec` are broken.
-8. **Completion:** without `end`, the run is marked truncated and offers *continue*. On a session that is a follow-up turn; elsewhere it is a new run.
+8. **Completion:** without `end`, the run is marked truncated and offers *continue*. End-only output is valid when there is nothing more to report. Trailing chatter is counted without forcing repair or continuation. On a session, continuation sends the next task and a short tail; elsewhere it is a new run with compact history. The complete outgoing frame is checked before allocating a new version; `TOO_LARGE` is not offered for continuation.
 9. **Repair:**
-   - If fewer than 80% of record lines are valid, or none are, Sharh makes one repair turn.
+   - If fewer than 80% of record lines are valid, or none are and the output is not a clean empty completion, Sharh makes one repair turn.
    - The repair turn sends the faulty output (not the document) and the contract, and asks for the same content in the right form.
-   - The repaired output goes through validation again.
+   - The repaired output goes through validation again and replaces the first attempt only if it validates and preserves at least its valid-record count. Retained history is seeded locally, outside the repair output cap.
 
 Each run stores its metrics:
 

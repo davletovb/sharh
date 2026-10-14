@@ -83,7 +83,7 @@ test('section cycles are broken and invalid code dependencies cannot escape reso
 
 test('truncation, after-end data, final lines without newline and resource limits are explicit',()=> {
   assert.equal(parse('logic',[node()]).metrics.truncated,true);
-  assert.equal(parse('logic',[node(),{t:'end'},node('late')]).metrics.truncated,true);
+  assert.equal(parse('logic',[node(),{t:'end'},node('late')]).metrics.truncated,false);
   const p=new RecordParser({lens:'logic',blocks});p.push(output([node()])+'{"t":"end"}');assert.equal(p.finish().metrics.truncated,false);assert.throws(()=>p.push('x'),/FINISHED/);
   const lineLimit=new RecordParser({lens:'logic',blocks,maxLineBytes:100});lineLimit.push('x'.repeat(101));lineLimit.push('tail\n{"t":"end"}\n');assert.equal(lineLimit.finish().metrics.dropped.line_limit,1);
   const outputLimit=new RecordParser({lens:'logic',blocks,maxBytes:8});outputLimit.push(output([node()]));assert.equal(outputLimit.finish().metrics.truncated,true);

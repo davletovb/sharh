@@ -4,13 +4,23 @@ import {SeatlinePreferences} from './lib/preferences.mjs';
 import {installOpening,createReaderMenus} from './lib/opening.mjs';
 import {openDocumentStore} from '../src/documents/store.mjs';
 import {MaintenanceDispatcher} from '../src/analysis/maintenance.mjs';
+import {SESSION_HANDLE} from '../src/paths/limits.mjs';
 installOpening(chrome);
 const preferences = new SeatlinePreferences(chrome.storage);
 const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), {
   disconnectMessage: () => chrome.runtime.lastError?.message || ''
 });
 const path = new SeatlinePath({client, policy: () => preferences.value});
-const maintenance=openDocumentStore().then(store=>new MaintenanceDispatcher(store,{seatline:path}));
+const databases=new Map();
+function documentServices(name='sharh') {
+  if(typeof name!=='string' || !name || name.length>128)throw Error('INVALID_DATABASE');
+  if(!databases.has(name)) {
+    const documents=openDocumentStore({name});
+    databases.set(name,{documents,maintenance:documents.then(store=>new MaintenanceDispatcher(store,{seatline:path}))});
+  }
+  return databases.get(name);
+}
+const {maintenance}=documentServices();
 // Retry durable deletion intentions on worker activation. Failed rows remain local.
 preferences.refresh().then(()=>maintenance).then(dispatcher=>dispatcher.drain()).catch(()=>{});
 chrome.runtime.onInstalled.addListener(() => {
@@ -64,7 +74,17 @@ chrome.runtime.onConnect.addListener((port) => {
         case 'run':
           result = await path.run(message.target, message.request, {
             signal: controller.signal,
-            onEvent: (event) => send({id: message.id, event})
+            onEvent: (event) => {
+              // Keep broker-owned handles even if the requesting page closes or its document
+              // was deleted before the session event arrived. This never parses model text.
+              if(event.type==='session' && message.request.session?.mode!=='none' && typeof event.handle==='string' && SESSION_HANDLE.test(event.handle) &&
+                typeof message.analysisRunId==='string' && message.analysisRunId.length<=128) {
+                const service=documentServices(message.analysisDatabase);
+                service.documents.then(store=>store.rememberSession({id:message.analysisRunId,target:message.target,cleanupGroup:message.request.cleanupGroup},event.handle))
+                  .then(exists=>exists?null:service.maintenance.then(dispatcher=>dispatcher.drain())).catch(()=>{});
+              }
+              send({id:message.id,event});
+            }
           });
           if (message.request.priority === 'interactive')
             await chrome.storage.local.set({seatlineTarget: result.target}).catch(() => {});

@@ -1,4 +1,4 @@
-import {allowedTypes,validateFields} from './contract.mjs';
+import {allowedTypes,validateFields,assertCanonicalRecords} from './contract.mjs';
 import {QuotationIndex} from './quotes.mjs';
 import {bytes} from '../paths/limits.mjs';
 
@@ -17,23 +17,11 @@ export class RecordParser {
   count(group,reason,n=1) { this.metrics[group][reason]=(this.metrics[group][reason]??0)+n; }
   seed(entries) {
     if(this.metrics.lines || this.buffer)throw Error('SEED_MUST_BE_FIRST');
-    this.seeding=true;
-    for(const prior of entries) {
-      this.seedFlags=prior.flags??[];
-      const normalized=structuredClone(prior.record);
-      // Validation deliberately removes invalid anchors/quotes. Restore only invalid sentinels
-      // before revalidation, so the canonical unanchored record remains representable.
-      if(normalized.t==='sec' && normalized.span?.length===0 && this.seedFlags.includes('unanchored'))normalized.span=[0,0];
-      if(normalized.t==='excerpt') {
-        if(normalized.ref===undefined && this.seedFlags.includes('unanchored'))normalized.ref=0;
-        if(normalized.quote===undefined && this.seedFlags.includes('quotation_not_found'))normalized.quote='…';
-      }
-      this.line(JSON.stringify(normalized));
-      const entry=this.pending.at(-1)?.sequence===this.metrics.lines?this.pending.at(-1):this.entries.at(-1);
-      if(entry)entry.flags=[...new Set([...entry.flags,...prior.flags??[]])];
-    }
-    this.seeding=false;this.sequenceBase=this.metrics.lines;this.metrics.lines=0;this.metrics.recordLines=0;
-    this.metrics.referencesRemoved=0;this.metrics.quotationsVerified=0;this.metrics.quotationsFailed=0;
+    assertCanonicalRecords(entries,this.lens,{scope:this.scope,sections:this.sections});
+    const retained=entries.map((entry,i)=>({sequence:i+1,record:structuredClone(entry.record),flags:[...(entry.flags??[])],retained:true}));
+    for(const entry of retained)if(entry.record.id)this.ids.set(entry.record.id,entry);
+    for(const entry of retained)this.emit(entry);
+    this.sequenceBase=retained.length;
   }
   push(text) {
     if(this.finished)throw Error('PARSER_FINISHED');
@@ -53,8 +41,8 @@ export class RecordParser {
     const line=raw.trim();
     if(!line) {this.count('skipped','empty');return;}
     if(/^```/.test(line)) {this.count('skipped','fence');return;}
+    if(this.endReceived) {this.afterEnd=true;this.count('skipped','after_end');return;}
     this.metrics.recordLines++;
-    if(this.endReceived) {this.afterEnd=true;this.count('dropped','after_end');return;}
     if(bytes(line)>this.maxLineBytes) {this.count('dropped','line_limit');return;}
     if(!line.startsWith('{')) {this.count('skipped','prose');this.count('dropped','framing');return;}
     let input;
@@ -66,8 +54,7 @@ export class RecordParser {
       this.meta=r;this.metrics.recordLines--;return;
     }
     if(r.t==='end') {this.endReceived=true;this.metrics.recordLines--;return;}
-    if(this.seeding)flags.push(...this.seedFlags);
-    const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags,...(this.seeding?{retained:true}:{})};
+    const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags};
     if(r.refs) {
       const before=r.refs.length;r.refs=r.refs.filter(n=>this.scope.has(n));
       this.metrics.referencesRemoved+=before-r.refs.length;
@@ -139,9 +126,10 @@ export class RecordParser {
     if(this.discarding && !this.buffer)this.line('');
     else if(this.buffer.trim())this.line(this.buffer);
     this.buffer='';this.resolve();this.finished=true;
-    this.metrics.truncated=truncated || this.capped===true || !this.endReceived || this.afterEnd;
+    this.metrics.truncated=truncated || this.capped===true || !this.endReceived;
     this.metrics.totalMs=this.now()-this.started;this.metrics.usage=usage;
-    this.metrics.validRate=this.metrics.recordLines?this.metrics.newValidRecords/this.metrics.recordLines:0;
+    this.metrics.emptyCompletion=this.metrics.recordLines===0 && this.endReceived && !this.metrics.truncated;
+    this.metrics.validRate=this.metrics.recordLines?this.metrics.newValidRecords/this.metrics.recordLines:this.metrics.emptyCompletion?1:0;
     this.result={records:this.entries.sort((a,b)=>a.sequence-b.sequence),metrics:structuredClone(this.metrics),meta:this.meta??null};
     return this.result;
   }

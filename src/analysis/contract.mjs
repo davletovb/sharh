@@ -64,7 +64,8 @@ export function validateFields(input,lens) {
   const record={t:input.t},flags=[];
   for (const [key,raw] of Object.entries(FIELDS[input.t])) {
     const optional=raw.endsWith('?'),spec=optional?raw.slice(0,-1):raw,value=input[key];
-    if (value===undefined && optional) continue;
+    const stringField=['text','quote','short','facet','id','relation'].includes(spec) || spec.startsWith('enum:');
+    if (optional && (value==null || stringField && typeof value==='string' && !textValue(value))) continue;
     const values=enumeration(spec,lens);
     if (values) {
       if (values.includes(value)) record[key]=value;
@@ -97,4 +98,47 @@ export function validateFields(input,lens) {
 export function outputContract(lens) {
   return JSON.stringify({format:'JSON Lines',types:Object.fromEntries(allowedTypes(lens).map(t=>[t,Object.fromEntries(Object.entries(FIELDS[t]).map(([k,s])=>[k,{type:s,values:enumeration(s.replace(/\?$/,''),lens)??undefined}]))])),
     limits:{text:1200,quote:400,id:64},end:{t:'end'}});
+}
+// Stored records are already normalized. Check their canonical shape at trust boundaries,
+// without rewriting missing failed quotes, unanchored spans, flags or previous IDs.
+export function assertCanonicalRecords(entries,lens,{scope,sections}={}) {
+  const allowed=allowedTypes(lens),ids=new Map();
+  const fail=()=>{throw Error('INVALID_RETAINED_RECORD');};
+  if(!Array.isArray(entries))fail();
+  for(const entry of entries) {
+    const r=entry?.record,flags=entry?.flags??[];
+    if(!r || typeof r!=='object' || Array.isArray(r) || !allowed.includes(r.t) || ['meta','end'].includes(r.t) ||
+      !Array.isArray(flags) || flags.some(f=>typeof f!=='string' || f.length>64) || !Number.isSafeInteger(entry.sequence) || entry.sequence<0)fail();
+    const fields=FIELDS[r.t];
+    if(Object.keys(r).some(k=>k!=='t' && !Object.hasOwn(fields,k) && !(r.t==='sec' && k==='refs')))fail();
+    for(const [key,raw] of Object.entries(fields)) {
+      const optional=raw.endsWith('?'),spec=raw.replace(/\?$/,''),value=r[key],values=enumeration(spec,lens);
+      if(value===undefined && (optional || key==='quote' && flags.includes('quotation_not_found') || spec==='reference' && flags.includes('unanchored')))continue;
+      if(values) {if(!values.includes(value))fail();}
+      else if(['text','quote','short','facet'].includes(spec)) {
+        const cap=spec==='quote'?400:['short','facet'].includes(spec)?64:1200;
+        if(typeof value!=='string' || !value || !value.isWellFormed() || [...value].length>cap || textValue(value,cap)!==value)fail();
+      } else if(spec==='id') {if(typeof value!=='string' || !ID.test(value))fail();}
+      else if(spec==='number' || spec==='reference') {if(!Number.isSafeInteger(value) || value<1 || spec==='reference' && scope && !scope.has(value))fail();}
+      else if(spec==='ids') {if(!Array.isArray(value) || !value.length || value.some(id=>typeof id!=='string' || !ID.test(id)))fail();}
+      else if(spec==='refs') {if(!Array.isArray(value) || value.some(n=>!Number.isSafeInteger(n) || n<1 || scope && !scope.has(n)))fail();}
+      else if(spec==='span') {
+        if(!Array.isArray(value) || !(value.length===0 && flags.includes('unanchored') || value.length===2 && value.every(Number.isSafeInteger) && value[0]>0 && value[1]>=value[0]))fail();
+      }
+    }
+    if(r.t==='sec' && (!Array.isArray(r.refs) || r.refs.some(n=>!Number.isSafeInteger(n) || n<1 || scope && !scope.has(n))))fail();
+    if(r.id) {if(ids.has(r.id))fail();ids.set(r.id,r);}
+  }
+  const known=(id,types)=>types.includes(ids.get(id)?.t);
+  for(const {record:r} of entries) {
+    if(r.parent && !known(r.parent,['sec']) || r.t==='edge' && (!known(r.from,['node','concept']) || !known(r.to,['node','concept'])) ||
+      r.t==='gap' && r.at.some(id=>!known(id,['node'])) || r.t==='code' && !known(r.theme,['theme']) || r.t==='excerpt' && !known(r.code,['code']) ||
+      r.t==='tension' && [r.a,r.b].some(id=>!known(id,['theme','code'])) || r.sec && sections && !sections.some(s=>s.id===r.sec) && !known(r.sec,['sec']))fail();
+  }
+  const visited=new Set();
+  for(const r of ids.values())if(r.t==='sec') {
+    const path=new Set();let at=r;
+    while(at && !visited.has(at.id)) {if(path.has(at.id))fail();path.add(at.id);at=ids.get(at.parent);}
+    for(const id of path)visited.add(id);
+  }
 }

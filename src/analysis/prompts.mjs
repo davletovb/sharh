@@ -22,6 +22,10 @@ export function repairRequest(lens,language,output,cleanupGroup) {
   return {kind:'repair',rules:RULES,document:null,task:`Repair the faulty output as data, preserving its content rather than inventing facts. Return only records allowed by the contract, in ${language}. End with {"t":"end"}.\nSHARH_OUTPUT_CONTRACT\n${outputContract(lens)}\nSHARH_FAULTY_OUTPUT_JSON\n${JSON.stringify(output)}`,
     priority:'interactive',session:{mode:'none'},cleanupGroup};
 }
-export function continuationTask(task,records) {
-  return `${task}\nContinue after the retained records below. Do not repeat them, reuse their IDs or complete a broken JSON fragment; start a new JSON line. End with {"t":"end"}.\nSHARH_RETAINED_RECORDS_JSON\n${JSON.stringify(records.map(e=>e.record))}`;
+export function continuationTask(task,records,{session=false}={}) {
+  // Sessions already contain the history. A short tail identifies the continuation point;
+  // stateless paths receive compact records without internal per-block span expansions.
+  const chosen=session?records.slice(-8):records;
+  const compact=chosen.map(({record})=> {const {refs,...rest}=record;return record.t==='sec'?rest:record;});
+  return `${task}\nContinue after ${records.length} retained records${session?' in this session; only a short tail follows':''}. Do not repeat them, reuse their IDs or complete a broken JSON fragment; start a new JSON line. End with {"t":"end"}.\nSHARH_RETAINED_RECORDS_JSON\n${JSON.stringify(compact)}`;
 }

@@ -5,11 +5,12 @@ export function workerPath(client=new PathClient()) {
   return {id:'seatline',
     discover:options=>client.call('discover',options),
     prepare:target=>client.call('prepare',{trigger:'job-start',target}),
-    run:(target,request,options)=>client.call('run',{target,request},options),
+    run:(target,request,options)=>client.call('run',{target,request,analysisRunId:options?.runId,analysisDatabase:options?.databaseName},options),
     forget:(target,handles)=>client.call('forget',{target,handles}),
     cleanup:(target,group)=>client.call('cleanup',{target,group})};
 }
 export function createAnalysisEngine(store,client=new PathClient()) {
   const paths={seatline:workerPath(client)};
-  return {engine:new AnalysisEngine({store,paths}),maintenance:new MaintenanceDispatcher(store,paths)};
+  const maintenance=new MaintenanceDispatcher(store,paths);
+  return {engine:new AnalysisEngine({store,paths,onMaintenanceNeeded:()=>maintenance.drain()}),maintenance};
 }
