@@ -1,8 +1,21 @@
 import contract from '../../config/seatline-contract.json' with {type: 'json'};
-import {NativeSeatline, OUTPUT_CAPS, bytes} from './native-seatline.mjs';
+import {NativeSeatline} from './native-seatline.mjs';
+import {
+  MAX_REQUEST_BYTES,
+  MODEL_ID,
+  SESSION_HANDLE,
+  CLEANUP_GROUP,
+  sealTurn,
+  outputLimit,
+  checkRequest
+} from './limits.mjs';
 import {PathError} from './errors.mjs';
 import {RequestPacer} from './pacing.mjs';
-const cached = {mode: 'cached', max_age_ms: 30000},
+const maxAge = contract.reading_policy.readiness.cached_max_age_ms;
+const readinessRefusals = new Set(['READINESS_CHANGED', 'READINESS_EXPIRED', 'READINESS_UNVERIFIED']);
+const object = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const validText = (value) => typeof value === 'string' && value.isWellFormed() && !value.includes('\0');
+const cached = {mode: 'cached', max_age_ms: maxAge},
   fresh = {mode: 'fresh'};
 const labels = {claude: 'Claude Code', codex: 'Codex', gemini: 'Gemini (Antigravity)', grok: 'Grok'};
 const levels = ['low', 'medium', 'high', 'xhigh', 'max'];
@@ -42,7 +55,7 @@ export function providerInfo(provider, status = {}, policy = {}) {
       toolIsolation: caps.tool_isolation === true,
       schemaOutput: false,
       promptCaching: false,
-      maxRequestBytes: 1000000,
+      maxRequestBytes: MAX_REQUEST_BYTES,
       reportsUsage: ['claude', 'codex'].includes(provider)
     }
   };
@@ -76,26 +89,27 @@ function validate(target, request) {
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_TARGET');
   if (
     target.model != null &&
-    (typeof target.model !== 'string' ||
-      (target.model !== '' && !/^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/.test(target.model)))
+    (typeof target.model !== 'string' || (target.model !== '' && !MODEL_ID.test(target.model)))
   )
     throw new PathError('MODEL_UNSUPPORTED', 'INVALID_MODEL_ID');
   if (
     !['analysis', 'chat', 'search', 'repair'].includes(request.kind) ||
-    typeof request.task !== 'string' ||
-    typeof request.rules !== 'string' ||
-    (request.document != null && typeof request.document !== 'string') ||
+    !validText(request.task) ||
+    !validText(request.rules) ||
+    (request.document != null && !validText(request.document)) ||
     !['interactive', 'background'].includes(request.priority)
   )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_REQUEST');
   if (
     request.cleanupGroup != null &&
-    (typeof request.cleanupGroup !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(request.cleanupGroup))
+    (typeof request.cleanupGroup !== 'string' || !CLEANUP_GROUP.test(request.cleanupGroup))
   )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_CLEANUP_GROUP');
-  if (request.history && !Array.isArray(request.history))
+  if (request.history != null && !Array.isArray(request.history))
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
-  if (request.history?.some((m) => !['user', 'assistant'].includes(m.role) || typeof m.text !== 'string'))
+  if (
+    request.history?.some((m) => !object(m) || !['user', 'assistant'].includes(m.role) || !validText(m.text))
+  )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
   if (
     request.session !== undefined &&
@@ -109,9 +123,11 @@ function validate(target, request) {
   if (
     !['none', 'start', 'continue'].includes(mode) ||
     (mode === 'continue' &&
-      (typeof request.session.handle !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(request.session.handle)))
+      (typeof request.session.handle !== 'string' || !SESSION_HANDLE.test(request.session.handle)))
   )
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_SESSION');
+  if (!request.task.trim() && (mode === 'continue' || !request.document?.trim()))
+    throw new PathError('OPTION_UNSUPPORTED', 'EMPTY_PROMPT');
   if (mode !== 'none' && !['chat', 'analysis'].includes(request.kind))
     throw new PathError('OPTION_UNSUPPORTED', 'PERSISTENT_SESSION_UNSUPPORTED');
   if (request.tier && !['quick', 'analysis', 'synthesis'].includes(request.tier))
@@ -123,9 +139,12 @@ export function turnFor(target, request) {
   const prompt = continued
     ? request.task
     : [request.document, request.task].filter((v) => v != null && v !== '').join('\n\n');
-  return {
+  return sealTurn({
     system: continued ? null : request.rules || null,
-    messages: [...(continued ? [] : request.history || []), {role: 'user', text: prompt}],
+    messages: [
+      ...(continued ? [] : (request.history || []).map(({role, text}) => ({role, text}))),
+      {role: 'user', text: prompt}
+    ],
     model: target.model || null,
     ...(target.effort ? {reasoning_effort: target.effort} : {}),
     ...(target.serviceTier ? {service_tier: target.serviceTier} : {}),
@@ -134,7 +153,7 @@ export function turnFor(target, request) {
     continuation: continued ? request.session.handle : null,
     cleanup_group: request.cleanupGroup || null,
     check_sign_in: false
-  };
+  });
 }
 export class SeatlinePath {
   id = 'seatline';
@@ -171,7 +190,7 @@ export class SeatlinePath {
       contract.providers.map(async (provider) => {
         try {
           const previous = this.cache.get(provider);
-          return !fresh && previous && this.now() - previous.at < 30000
+          return !fresh && previous && this.now() - previous.at < maxAge
             ? providerInfo(provider, previous.status, this.policy())
             : await this.readiness(provider, fresh);
         } catch (error) {
@@ -183,53 +202,51 @@ export class SeatlinePath {
       })
     );
   }
-  async prepare(target) {
+  async prepare(target, {signal} = {}) {
     const provider = target?.provider;
     if (!contract.providers.includes(provider)) return;
     if (this.now() - (this.lastPrepare.get(provider) ?? -Infinity) < 10000) return;
     this.lastPrepare.set(provider, this.now());
     try {
       const epoch = this.connectionEpoch;
-      const result = await this.client.request(provider, 'prepare', cached);
+      const result = await this.client.request(provider, 'prepare', cached, {signal});
       if (epoch === this.connectionEpoch) this.cache.set(provider, {status: result.status, at: this.now()});
     } catch {
       /* unsolicited warm-up stays quiet */
     }
   }
-  prepareFor(trigger, target) {
+  prepareFor(trigger, target, options) {
     if (!['panel-document', 'passage-toolbar', 'model-picker', 'job-start'].includes(trigger))
       return Promise.resolve();
-    return this.prepare(target);
+    return this.prepare(target, options);
   }
   async run(target, request, {signal, onEvent = () => {}} = {}) {
     validate(target, request);
     // Measure before connecting even for a policy denial, so oversized scopes never reach Native Messaging.
     const turn = turnFor(target, request),
       kind = request.tier || request.kind;
-    const limit = request.limits?.maxOutputBytes ?? OUTPUT_CAPS[kind];
-    if (!Number.isSafeInteger(limit) || limit < 1 || limit > OUTPUT_CAPS[kind])
-      throw new PathError('TOO_LARGE', 'INVALID_OUTPUT_LIMIT');
-    if (
-      bytes(
-        JSON.stringify({
-          id: '0'.repeat(36),
-          provider: target.provider,
-          method: 'send_ready_with_policy',
-          params: {turn, freshness: cached, allowed_sign_in: ['subscription']},
-          scheduling: {interactive: true, events: true}
-        })
-      ) > 1000000
-    )
-      throw new PathError('TOO_LARGE', 'REQUEST_TOO_LARGE');
+    const limit = outputLimit(kind, request.limits?.maxOutputBytes);
+    const scheduling =
+      request.priority === 'interactive' ? {interactive: true, events: true} : {events: true};
+    checkRequest({
+      id: '0'.repeat(36),
+      provider: target.provider,
+      method: 'send_ready_with_policy',
+      params: {turn, freshness: cached, allowed_sign_in: allowedSignIn(target.provider, this.policy())},
+      scheduling
+    });
     return this.pacer.run(
       target.provider,
       request.priority,
       async () => {
-        if (request.priority === 'background') await this.prepareFor('job-start', target);
         if (!allowedSignIn(target.provider, this.policy()).length)
           throw new PathError('POLICY_DENIED', 'SIGN_IN_POLICY_DENIED');
         for (let attempt = 0; ; attempt++) {
-          const info = await this.readiness(target.provider, attempt > 0, signal);
+          const previous = this.cache.get(target.provider);
+          const info =
+            !attempt && previous && this.now() - previous.at < maxAge
+              ? providerInfo(target.provider, previous.status, this.policy())
+              : await this.readiness(target.provider, attempt > 0, signal);
           assertReady(info, target, request, this.policy());
           try {
             const result = await this.client.request(
@@ -238,11 +255,13 @@ export class SeatlinePath {
               {turn, freshness: cached, allowed_sign_in: allowedSignIn(target.provider, this.policy())},
               {
                 signal,
-                onEvent,
+                onEvent: (event) => {
+                  if (event.type === 'failed' && !attempt && readinessRefusals.has(event.reason)) return;
+                  onEvent(event);
+                },
                 kind,
                 maxOutputBytes: limit,
-                scheduling:
-                  request.priority === 'interactive' ? {interactive: true, events: true} : {events: true},
+                scheduling,
                 onStatus: (status) =>
                   assertReady(
                     providerInfo(target.provider, status, this.policy()),
@@ -256,11 +275,14 @@ export class SeatlinePath {
           } catch (error) {
             if (error.reason === 'OUTPUT_CAP_EXCEEDED')
               return {...error.partial, target: {...target}, truncated: true};
-            if (
-              !attempt &&
-              ['READINESS_CHANGED', 'READINESS_EXPIRED', 'READINESS_UNVERIFIED'].includes(error.reason)
-            )
+            if (!attempt && readinessRefusals.has(error.reason)) {
+              try {
+                onEvent({type: 'retrying', reason: error.reason});
+              } catch {
+                throw new PathError('PROVIDER_FAILED', 'CALLBACK_FAILED');
+              }
               continue;
+            }
             this.cache.delete(target.provider);
             throw error;
           }
@@ -274,7 +296,7 @@ export class SeatlinePath {
       target?.path !== 'seatline' ||
       !contract.providers.includes(target.provider) ||
       !Array.isArray(sessionHandles) ||
-      sessionHandles.some((h) => typeof h !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(h))
+      sessionHandles.some((h) => typeof h !== 'string' || !SESSION_HANDLE.test(h))
     )
       throw new PathError('OPTION_UNSUPPORTED', 'INVALID_SESSION');
     return this.pacer.maintain(target.provider, async () => {
@@ -287,7 +309,7 @@ export class SeatlinePath {
       target?.path !== 'seatline' ||
       !contract.providers.includes(target.provider) ||
       typeof group !== 'string' ||
-      !/^[A-Za-z0-9_-]{1,64}$/.test(group)
+      !CLEANUP_GROUP.test(group)
     )
       throw new PathError('OPTION_UNSUPPORTED', 'INVALID_CLEANUP_GROUP');
     return this.pacer.maintain(target.provider, () =>

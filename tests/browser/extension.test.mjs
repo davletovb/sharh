@@ -61,6 +61,20 @@ test('packaged MV3 worker, settings and side panel load with fixed identity and 
       () => document.querySelector('#check-state').textContent === 'Fresh check complete.'
     );
     assert.equal(await page.locator('[data-state="companion_missing"]').count(), 4);
+    await page.evaluate(async () => {
+      const {PathClient} = await import('./client.mjs');
+      window.recoveringClient = new PathClient();
+      await window.recoveringClient.call('discover', {fresh: true});
+    });
+    const session = await context.newCDPSession(page);
+    await session.send('ServiceWorker.enable');
+    await session.send('ServiceWorker.stopAllWorkers');
+    await page.waitForFunction(() => window.recoveringClient.port === null);
+    const recovered = await page.evaluate(() => window.recoveringClient.call('discover', {fresh: true}));
+    assert.equal(recovered.length, 4);
+    assert.ok(recovered.every((p) => p.error.reason === 'HOST_NOT_FOUND'));
+    await session.detach();
+
     const panel = await context.newPage();
     await panel.goto(`chrome-extension://${id}/ui/panel.html`);
     assert.equal(await panel.title(), 'Sharh');
@@ -80,7 +94,10 @@ test('packaged MV3 worker, settings and side panel load with fixed identity and 
             attempts++;
             onEvent({type: 'queued', ahead: 2});
             if (attempts === 1)
-              throw Object.assign(Error('Seatline is busy. Retry when a slot is free.'), {code: 'BUSY'});
+              throw Object.assign(Error('Seatline is busy. Retry when a slot is free.'), {
+                code: 'BUSY',
+                reason: 'QUEUE_FULL'
+              });
             return {truncated: false};
           }
         },

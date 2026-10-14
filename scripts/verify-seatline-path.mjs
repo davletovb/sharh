@@ -103,6 +103,10 @@ try {
     ...request,
     kind: 'chat',
     document: 'first scope',
+    history: [
+      {role: 'user', text: 'earlier question', id: 'm1', createdAt: 1},
+      {role: 'assistant', text: 'earlier answer', id: 'm2'}
+    ],
     session: {mode: 'start'}
   });
   assert.ok(start.session);
@@ -120,6 +124,9 @@ try {
   const invocations = await readFile(join(world.providers, 'codex-invocations'), 'utf8');
   assert.match(invocations, /resume/);
   report.checks.sessionContinuation = true;
+  const firstChat = sendFrames.at(-2).params.turn;
+  assert.ok(firstChat.messages.every((m) => Object.keys(m).sort().join() === 'role,text'));
+  report.checks.historyProjection = true;
   await path.forget(target, [start.session]);
   await path.cleanup(target, request.cleanupGroup);
   report.checks.maintenance = true;
@@ -259,11 +266,14 @@ try {
     }
   );
   await timeout(backgroundStarted.promise);
+  const pendingMaintenance = path.cleanup(target, 'doc-pending-maintenance');
   const action = await timeout(path.run(target, {...request, task: 'answers passage action'}));
   assert.ok(action.text.includes('passage action'));
   assert.equal(backgroundDone, false);
   backgroundAbort.abort();
   await backgroundSettled;
+  await pendingMaintenance;
+  report.checks.interactiveDuringPendingMaintenance = true;
   report.checks.interactiveDuringBackground = true;
 
   // Actual installed production extension, worker RPC, settings and two concurrent extension pages share one native connection.
@@ -309,6 +319,28 @@ try {
   assert.ok(uiResult.result.text);
   assert.ok(uiResult.events.includes('delta'));
   report.checks.productionExtensionRPC = true;
+  await context.close();
+  context = null;
+  const hostPath = join(profile, 'NativeMessagingHosts/com.seatline.host.json');
+  const forbidden = JSON.parse(await readFile(hostPath, 'utf8'));
+  forbidden.allowed_origins = [];
+  await writeFile(hostPath, JSON.stringify(forbidden));
+  context = await chromium.launchPersistentContext(profile, {
+    ...browserOptions(),
+    channel: 'chromium',
+    env: world.env,
+    args: ['--no-sandbox', `--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+    ignoreDefaultArgs: ['--disable-extensions']
+  });
+  const deniedPage = await context.newPage();
+  await deniedPage.goto(`${world.origin}ui/settings.html`);
+  await deniedPage.locator('#check').click();
+  await deniedPage.waitForFunction(
+    () => document.querySelector('#check-state').textContent === 'Fresh check complete.'
+  );
+  assert.equal(await deniedPage.locator('[data-state="sharh_not_authorized"]').count(), 4);
+  report.checks.productionForbiddenOrigin = true;
+
   assert.ok(frames.every((f) => !['send', 'send_ready'].includes(f.method)));
   report.passed = true;
 } catch (error) {

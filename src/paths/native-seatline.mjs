@@ -1,19 +1,12 @@
 // Adapted from Lineleaf NativeSeatline at c6403c5; streaming/persistent/pacing extensions are Sharh's.
 import contract from '../../config/seatline-contract.json' with {type: 'json'};
 import {PathError, cancelled, failure, nativeFailure} from './errors.mjs';
+import {SESSION_HANDLE, bytes, codePointBytes, checkRequest, outputLimit, OUTPUT_CAPS} from './limits.mjs';
+export {bytes, OUTPUT_CAPS} from './limits.mjs';
 const TERMINAL = new Set(['completed', 'failed', 'stopped']);
 const REPORTS = new Set(['status', 'readiness', 'prepare']);
 const UNSENT = Symbol('unsent');
 const object = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-export const bytes = (value) => new TextEncoder().encode(value).length;
-export const OUTPUT_CAPS = Object.freeze({
-  quick: 32768,
-  repair: 32768,
-  analysis: 262144,
-  chat: 262144,
-  search: 262144,
-  synthesis: 524288
-});
 const timer = (fn, ms) => {
   const t = setTimeout(fn, ms);
   t.unref?.();
@@ -122,16 +115,10 @@ export class NativeSeatline {
     } = {}
   ) {
     if (signal?.aborted) throw cancelled();
-    if (
-      !Number.isSafeInteger(maxOutputBytes) ||
-      maxOutputBytes < 1 ||
-      maxOutputBytes > (OUTPUT_CAPS[kind] || OUTPUT_CAPS.analysis)
-    )
-      throw new PathError('TOO_LARGE', 'INVALID_OUTPUT_LIMIT');
+    outputLimit(kind, maxOutputBytes);
     const id = crypto.randomUUID(),
       frame = {id, provider, method, params, ...(scheduling ? {scheduling} : {})};
-    if (bytes(JSON.stringify(frame)) > contract.reading_policy.max_request_bytes)
-      throw new PathError('TOO_LARGE', 'REQUEST_TOO_LARGE');
+    checkRequest(frame);
     await untilReady(this.connect(), signal);
     if (signal?.aborted) throw cancelled();
     if (!this.port) throw Object.assign(new PathError('DISCONNECTED'), {[UNSENT]: true});
@@ -169,15 +156,19 @@ export class NativeSeatline {
   }
   receive(frame) {
     try {
-      if (!object(frame) || bytes(JSON.stringify(frame)) > contract.frame.max_bytes) throw Error();
+      // Chrome Native Messaging and the stdio adapter enforce the frame byte cap before decoding.
+      if (!object(frame)) throw Error();
       if (this.readyResolve) {
-        if (
-          Object.keys(frame).sort().join() !== 'type,version' ||
-          frame.type !== 'ready' ||
-          frame.version !== contract.protocol
-        ) {
+        if (frame.type !== 'ready' || !Number.isSafeInteger(frame.version) || frame.version < 0)
+          throw Error();
+        if (frame.version > contract.protocol)
+          return this.close(
+            new PathError('UPDATE_REQUIRED', 'EXTENSION_UPDATE_REQUIRED', false, {
+              hint: 'Update Sharh to work with this Seatline version.'
+            })
+          );
+        if (frame.version < contract.protocol)
           return this.close(new PathError('UPDATE_REQUIRED', 'PROTOCOL_VERSION'));
-        }
         clearTimeout(this.readyTimer);
         const resolve = this.readyResolve;
         this.readyResolve = this.readyReject = null;
@@ -197,24 +188,25 @@ export class NativeSeatline {
         event = frame.event;
       if (!item) throw Error();
       if (item.cancellation) {
-        if (TERMINAL.has(event.type)) this.finish(item, item.cancellation);
-        return;
+        if (TERMINAL.has(event.type)) {
+          this.finish(item, item.cancellation);
+          return;
+        }
+        // Retain final accounting/source metadata while an output-capped turn drains; never append more text.
+        if (item.cancellation.reason !== 'OUTPUT_CAP_EXCEEDED' || !['usage', 'source'].includes(event.type))
+          return;
       }
       const generating = item.method === 'send_ready_with_policy';
       switch (event.type) {
         case 'delta':
-          if (
-            !generating ||
-            typeof event.text !== 'string' ||
-            !event.text.isWellFormed() ||
-            bytes(event.text) > 16384
-          )
-            throw Error();
-          if (item.bytes + bytes(event.text) > item.maxOutputBytes) {
+          if (!generating || typeof event.text !== 'string' || !event.text.isWellFormed()) throw Error();
+          const deltaBytes = bytes(event.text);
+          if (deltaBytes > 16384) throw Error();
+          if (item.bytes + deltaBytes > item.maxOutputBytes) {
             // Keep a whole-code-point prefix of the final chunk without crossing the UTF-8 cap.
             let prefix = '';
             for (const point of event.text) {
-              const size = bytes(point);
+              const size = codePointBytes(point);
               if (item.bytes + size > item.maxOutputBytes) break;
               item.bytes += size;
               prefix += point;
@@ -224,13 +216,12 @@ export class NativeSeatline {
             this.cancel(
               item.id,
               new PathError('TOO_LARGE', 'OUTPUT_CAP_EXCEEDED', false, {
-                truncated: true,
-                partial: this.result(item)
+                truncated: true
               })
             );
             return;
           }
-          item.bytes += bytes(event.text);
+          item.bytes += deltaBytes;
           item.text += event.text;
           break;
         case 'status':
@@ -253,11 +244,7 @@ export class NativeSeatline {
           }
           break;
         case 'session':
-          if (
-            !item.persistent ||
-            typeof event.handle !== 'string' ||
-            !/^[A-Za-z0-9_-]{1,256}$/.test(event.handle)
-          )
+          if (!item.persistent || typeof event.handle !== 'string' || !SESSION_HANDLE.test(event.handle))
             throw Error();
           item.session = event.handle;
           break;
@@ -345,11 +332,14 @@ export class NativeSeatline {
     if (!item || item.cancellation) return;
     item.cancellation = error;
     clearTimeout(item.timer);
-    item.timer = timer(() => this.close(error), this.drainTimeout);
+    item.timer = timer(
+      () => this.close(new PathError('DISCONNECTED', 'CANCEL_DRAIN_TIMEOUT', true)),
+      this.drainTimeout
+    );
     try {
       this.port.postMessage({id: crypto.randomUUID(), method: 'cancel', target: id});
     } catch {
-      this.close(error);
+      this.close(new PathError('DISCONNECTED', 'CANCEL_POST_FAILED', true));
     }
   }
   finish(item, error) {
@@ -359,6 +349,7 @@ export class NativeSeatline {
     this.pending.delete(item.id);
     this.retired.add(item.id);
     if (this.retired.size > 256) this.retired.delete(this.retired.values().next().value);
+    if (error?.reason === 'OUTPUT_CAP_EXCEEDED') error.partial = this.result(item);
     error ? item.reject(error) : item.resolve(this.result(item));
     this.scheduleIdle();
   }

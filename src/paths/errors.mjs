@@ -17,7 +17,7 @@ const hints = {
 };
 export class PathError extends Error {
   constructor(code, reason = code, retryable = false, details = {}) {
-    super(hints[code] || hints.PROVIDER_FAILED);
+    super(details.hint || hints[code] || hints.PROVIDER_FAILED);
     this.name = 'PathError';
     Object.assign(this, {code, reason, retryable, hint: this.message}, details);
   }
@@ -51,13 +51,20 @@ export function failure(event, method) {
     reason === 'INVALID_REQUEST' && ['readiness', 'prepare', 'send_ready_with_policy'].includes(method)
       ? 'UPDATE_REQUIRED'
       : reasons[reason] || 'PROVIDER_FAILED';
-  return new PathError(code, reason, event.retryable === true, {nativeCode: event.code});
+  return new PathError(code, reason, event.retryable === true, {
+    nativeCode: event.code,
+    ...(reason === 'SESSION_LIMIT_REACHED'
+      ? {
+          hint: 'Seatline’s session limit is reached. End unused chats or forget old sessions before starting a new one.'
+        }
+      : {})
+  });
 }
 export function nativeFailure(message = '', beforeReady = false) {
-  if (/not found|not registered|specified native messaging host/i.test(message))
-    return new PathError('NOT_INSTALLED', 'HOST_NOT_FOUND');
-  if (/forbidden|not allowed|access.*denied/i.test(message) || beforeReady)
+  if (/forbidden|not allowed|access.*denied/i.test(message))
     return new PathError('NOT_AUTHORIZED', 'ORIGIN_NOT_AUTHORIZED');
+  if (/not found|not registered/i.test(message)) return new PathError('NOT_INSTALLED', 'HOST_NOT_FOUND');
+  if (beforeReady) return new PathError('NOT_AUTHORIZED', 'ORIGIN_NOT_AUTHORIZED');
   return new PathError('DISCONNECTED', 'PORT_DISCONNECTED', true);
 }
 export const cancelled = () => new PathError('CANCELLED');

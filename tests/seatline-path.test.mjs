@@ -231,7 +231,7 @@ test('all setup diagnostics name the distinct integration states, and the author
   const id = 'npmhefooiolfpmhicinblelaideeejcm';
   assert.equal(
     authorizeCommand(id),
-    `seatline-companion authorize sharh claude,codex,gemini,grok chrome-extension://${id}/ --cache-title=Sharh`
+    `seatline-companion authorize sharh codex,claude,gemini,grok chrome-extension://${id}/ --cache-title=Sharh`
   );
   assert.throws(() => authorizeCommand('bad id'));
   const info = providerInfo('codex', status());
@@ -256,7 +256,7 @@ test('all setup diagnostics name the distinct integration states, and the author
   assert.equal(runState({type: 'queued', ahead: 3}), 'Waiting for a free slot (3 ahead)');
   assert.match(runState({type: 'busy', retryAfter: 30000}), /30 seconds/);
 });
-test('pacing reserves one background turn, sends interactive immediately, and serializes idle maintenance before new work', async () => {
+test('interactive work passes pending maintenance while a background turn runs; maintenance precedes the next background turn', async () => {
   const held = [];
   const h = harness((f, r) => {
     if (f.method === 'send_ready_with_policy') {
@@ -278,7 +278,9 @@ test('pacing reserves one background turn, sends interactive immediately, and se
     later = path.run(target, request);
   await tick();
   assert.ok(!h.sent.some((f) => f.method === 'cleanup'));
-  assert.equal(held.length, 2);
+  assert.equal(held.length, 3);
+  held[2][1]({type: 'completed'});
+  await later;
   held[1][1]({type: 'completed'});
   await interactive;
   held[0][1]({type: 'completed'});
@@ -287,8 +289,7 @@ test('pacing reserves one background turn, sends interactive immediately, and se
   await tick();
   assert.equal(held.length, 4);
   const cleanupIndex = h.sent.findIndex((f) => f.method === 'cleanup');
-  assert.ok(cleanupIndex > h.sent.indexOf(held[1][0]) && cleanupIndex < h.sent.indexOf(held[2][0]));
-  held[2][1]({type: 'completed'});
+  assert.ok(cleanupIndex > h.sent.indexOf(held[2][0]) && cleanupIndex < h.sent.indexOf(held[3][0]));
   held[3][1]({type: 'completed'});
   await Promise.all([b2, later]);
   h.client.close();

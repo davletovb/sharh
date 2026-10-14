@@ -1,3 +1,4 @@
+import {watchPanelContext} from './panel-context.mjs';
 import {bindRuns} from './runs.mjs';
 import {PathClient} from './client.mjs';
 import {diagnostic} from '../../src/paths/diagnostics.mjs';
@@ -28,6 +29,5 @@ export const {run} = bindRuns(client, {
   stop: document.querySelector('#stop')
 });
 
-const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-if (/^(https?:|file:)/.test(tab?.url || ''))
-  prepare('panel-document', {path: 'seatline', provider: 'claude'}).catch(() => {});
+const stopWatching = watchPanelContext(client);
+window.addEventListener('pagehide', stopWatching, {once: true});

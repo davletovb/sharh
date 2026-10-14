@@ -12,4 +12,4 @@ await cp('config/seatline-contract.json', 'dist/probe/contract.json');
 await writeFile('dist/index.html', '<!doctype html><meta charset="utf-8"><title>Sharh extraction prototype</title><style>::highlight(sharh-reference){background:#ffd660;color:#16171c}</style><script type="module">import * as prototype from "./prototype.mjs"; window.prototype = prototype;</script>');
 
 await cp('extension','dist/sharh',{recursive:true});
-await build({entryPoints:['extension/worker.mjs','extension/ui/settings.mjs','extension/ui/panel.mjs','extension/ui/runs.mjs','extension/ui/client.mjs'],bundle:true,format:'esm',target:'chrome124',outbase:'extension',outdir:'dist/sharh',outExtension:{'.js':'.mjs'}});
+await build({entryPoints:['extension/worker.mjs','extension/ui/settings.mjs','extension/ui/panel.mjs','extension/ui/runs.mjs','extension/ui/client.mjs','extension/ui/panel-context.mjs','extension/lib/preferences.mjs'],bundle:true,format:'esm',target:'chrome124',outbase:'extension',outdir:'dist/sharh',outExtension:{'.js':'.mjs'}});

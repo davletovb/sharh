@@ -12,7 +12,7 @@ export function delay(ms, signal) {
     signal?.addEventListener('abort', abort, {once: true});
   });
 }
-// Local waiting never consumes a broker queue slot. Maintenance establishes a provider barrier immediately.
+// Local waiting never consumes a broker slot. Interactive turns may pass waiting maintenance until it starts.
 export class RequestPacer {
   constructor({sleep = delay, onActivity = () => {}} = {}) {
     this.sleep = sleep;
@@ -49,14 +49,20 @@ export class RequestPacer {
     for (let i = 0; i < this.waiting.length; i++) {
       const item = this.waiting[i],
         {provider, priority} = item;
-      if (this.maintenance.has(provider)) continue;
+      if (this.maintenance.has(provider)) {
+        this.wait(item, 'maintenance');
+        continue;
+      }
       if (priority === 'maintenance') {
         if (this.active.get(provider)) continue;
       } else if (
-        this.waiting.some((j) => j.provider === provider && j.priority === 'maintenance') ||
+        (this.waiting.some((j) => j.provider === provider && j.priority === 'maintenance') &&
+          (priority === 'background' || !this.active.get(provider))) ||
         (priority === 'background' && this.background)
-      )
+      ) {
+        this.wait(item, priority === 'background' && this.background ? 'background' : 'maintenance');
         continue;
+      }
       this.waiting.splice(i--, 1);
       item.signal?.removeEventListener('abort', item.abort);
       if (priority === 'maintenance') this.maintenance.add(provider);
@@ -74,6 +80,15 @@ export class RequestPacer {
         });
     }
     this.activity();
+  }
+  wait(item, reason) {
+    if (item.waitReason === reason) return;
+    item.waitReason = reason;
+    try {
+      item.onEvent({type: 'queued', ahead: this.waiting.indexOf(item), local: true, reason});
+    } catch {
+      /* optional queue observer */
+    }
   }
   activity() {
     this.onActivity(this.waiting.length + [...this.active.values()].reduce((a, b) => a + b, 0));

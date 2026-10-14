@@ -31,7 +31,10 @@ export function bindRuns(client, {state, retry, stop}) {
       return result;
     } catch (error) {
       state.textContent = error.hint || error.message;
-      retry.hidden = !['BUSY', 'DISCONNECTED', 'RATE_LIMITED', 'TIMEOUT'].includes(error.code);
+      retry.hidden =
+        error.code === 'BUSY'
+          ? !['QUEUE_FULL', 'QUEUE_TIMEOUT'].includes(error.reason)
+          : !['DISCONNECTED', 'RATE_LIMITED', 'TIMEOUT'].includes(error.code);
       throw error;
     } finally {
       active = null;

@@ -87,7 +87,8 @@ export const path = {
 
 - **Events passed to `onEvent`:**
   - `queued` (with `ahead`), `admitted`, `started`, `delta` (text), `source` (a web source), `usage` (input and output tokens);
-  - `session` (a handle to keep) and `session_lost`.
+  - `session` (a handle to keep) and `session_lost`;
+  - `retrying` for a readiness recovery, and `queued` with `local: true` for local background/maintenance waits. A logical run emits only its final terminal event, not a failed attempt that is being retried.
 - **Result:** `text`, `sources`, `usage`, the `session` handle if any, and the `target` actually used. `truncated: true` means an output cap stopped the turn; the retained text is a whole-character UTF-8 prefix. The optional tier sets the maximum cap: Quick/repair 32 KiB, Analysis/chat/search 256 KiB, Synthesis 512 KiB; `limits.maxOutputBytes` may lower it.
 - **Failure:**
   - One error type, with a path-neutral `code`:

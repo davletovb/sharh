@@ -1,17 +1,11 @@
 import {NativeSeatline} from '../src/paths/native-seatline.mjs';
 import {SeatlinePath} from '../src/paths/seatline.mjs';
-let policy = {allowGeminiCloud: false};
-const loaded = chrome.storage.local.get('seatlinePolicy').then((value) => {
-  policy = {allowGeminiCloud: value.seatlinePolicy?.allowGeminiCloud === true};
-});
+import {SeatlinePreferences} from './lib/preferences.mjs';
+const preferences = new SeatlinePreferences(chrome.storage);
 const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), {
   disconnectMessage: () => chrome.runtime.lastError?.message || ''
 });
-const path = new SeatlinePath({client, policy: () => policy});
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.seatlinePolicy)
-    policy = {allowGeminiCloud: changes.seatlinePolicy.newValue?.allowGeminiCloud === true};
-});
+const path = new SeatlinePath({client, policy: () => preferences.value});
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({openPanelOnActionClick: true});
 });
@@ -48,20 +42,22 @@ chrome.runtime.onConnect.addListener((port) => {
     const controller = new AbortController();
     running.set(message.id, controller);
     try {
-      await loaded;
+      await preferences.refresh();
       let result;
       switch (message.method) {
         case 'discover':
           result = await path.discover({fresh: message.fresh === true});
           break;
         case 'prepare':
-          result = await path.prepareFor(message.trigger, message.target);
+          result = await path.prepareFor(message.trigger, message.target, {signal: controller.signal});
           break;
         case 'run':
           result = await path.run(message.target, message.request, {
             signal: controller.signal,
             onEvent: (event) => send({id: message.id, event})
           });
+          if (message.request.priority === 'interactive')
+            await chrome.storage.local.set({seatlineTarget: result.target}).catch(() => {});
           break;
         case 'forget':
           result = await path.forget(message.target, message.handles);

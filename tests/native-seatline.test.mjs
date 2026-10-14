@@ -228,7 +228,7 @@ test('capped final chunks preserve whole Unicode characters and partial counters
 test('native setup failures distinguish missing and forbidden hosts without posting', async () => {
   for (const [message, code] of [
     ['Specified native messaging host not found.', 'NOT_INSTALLED'],
-    ['Access to native messaging host is forbidden.', 'NOT_AUTHORIZED']
+    ['Access to the specified native messaging host is forbidden.', 'NOT_AUTHORIZED']
   ]) {
     let connects = 0;
     const client = new NativeSeatline(() => {

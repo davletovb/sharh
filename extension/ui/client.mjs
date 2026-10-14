@@ -1,9 +1,16 @@
-// All extension surfaces share the service worker's single native connection.
+import {PathError, cancelled} from '../../src/paths/errors.mjs';
+// All surfaces share the worker's native connection. Reconnect the UI port for new calls, never replay lost work.
 export class PathClient {
   constructor() {
-    this.port = chrome.runtime.connect({name: 'sharh:path'});
+    this.port = null;
     this.pending = new Map();
-    this.port.onMessage.addListener((message) => {
+  }
+  connect() {
+    if (this.port) return this.port;
+    const port = chrome.runtime.connect({name: 'sharh:path'});
+    this.port = port;
+    port.onMessage.addListener((message) => {
+      if (this.port !== port) return;
       const item = this.pending.get(message.id);
       if (!item) return;
       if (message.event) {
@@ -20,19 +27,44 @@ export class PathClient {
         ? item.reject(Object.assign(Error(message.error.hint), message.error))
         : item.resolve(message.result);
     });
-    this.port.onDisconnect.addListener(() => {
-      for (const item of this.pending.values()) {
-        item.dispose();
-        item.reject(Object.assign(Error('Seatline disconnected.'), {code: 'DISCONNECTED'}));
-      }
-      this.pending.clear();
+    port.onDisconnect.addListener(() => {
+      void chrome.runtime.lastError;
+      this.drop(port);
     });
+    return port;
+  }
+  drop(port) {
+    if (this.port !== port) return;
+    this.port = null;
+    for (const item of this.pending.values()) {
+      item.dispose();
+      item.reject(new PathError('DISCONNECTED', 'WORKER_DISCONNECTED', true));
+    }
+    this.pending.clear();
+    try {
+      port.disconnect();
+    } catch {
+      /* already closed */
+    }
   }
   call(method, params = {}, {signal, onEvent} = {}) {
-    if (signal?.aborted) return Promise.reject(Object.assign(Error('Stopped'), {code: 'CANCELLED'}));
+    if (signal?.aborted) return Promise.reject(cancelled());
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
-      const abort = () => this.port.postMessage({id: crypto.randomUUID(), method: 'cancel', target: id});
+      let port;
+      try {
+        port = this.connect();
+      } catch {
+        reject(new PathError('DISCONNECTED', 'WORKER_UNAVAILABLE', true));
+        return;
+      }
+      const abort = () => {
+        try {
+          port.postMessage({id: crypto.randomUUID(), method: 'cancel', target: id});
+        } catch {
+          this.drop(port);
+        }
+      };
       this.pending.set(id, {
         resolve,
         reject,
@@ -41,11 +73,9 @@ export class PathClient {
       });
       signal?.addEventListener('abort', abort, {once: true});
       try {
-        this.port.postMessage({id, method, ...params});
-      } catch (error) {
-        this.pending.delete(id);
-        signal?.removeEventListener('abort', abort);
-        reject(error);
+        port.postMessage({...params, id, method});
+      } catch {
+        this.drop(port);
       }
     });
   }

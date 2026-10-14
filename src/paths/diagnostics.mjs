@@ -1,6 +1,7 @@
+import contract from '../../config/seatline-contract.json' with {type: 'json'};
 export function authorizeCommand(extensionId) {
   if (!/^[a-p]{32}$/.test(extensionId)) throw Error('INVALID_EXTENSION_ID');
-  return `seatline-companion authorize sharh claude,codex,gemini,grok chrome-extension://${extensionId}/ --cache-title=Sharh`;
+  return `seatline-companion authorize ${contract.app} ${contract.providers.join(',')} chrome-extension://${extensionId}/ --cache-title=Sharh`;
 }
 const states = {
   companion_missing: [
@@ -11,6 +12,7 @@ const states = {
     'Sharh not authorized',
     'Run the authorize command above. It replaces the grant; include every provider and origin you use.'
   ],
+  extension_too_old: ['Sharh too old', 'Update Sharh to work with this Seatline version.'],
   companion_too_old: [
     'Companion too old',
     'Update Seatline from a new build, then run seatline-companion install.'
@@ -39,6 +41,7 @@ export function diagnostic(info) {
   let state;
   if (reason === 'HOST_NOT_FOUND') state = 'companion_missing';
   else if (['ORIGIN_NOT_AUTHORIZED', 'READY_TIMEOUT'].includes(reason)) state = 'sharh_not_authorized';
+  else if (reason === 'EXTENSION_UPDATE_REQUIRED') state = 'extension_too_old';
   else if (code === 'UPDATE_REQUIRED') state = 'companion_too_old';
   else if (reason === 'APP_NOT_AUTHORIZED') state = 'provider_not_authorized';
   else if (reason === 'EXECUTABLE_NOT_FOUND' || (!info.error && info.availability === 'not_found'))
@@ -58,6 +61,11 @@ export function diagnostic(info) {
   return {state, title: states[state][0], hint: states[state][1]};
 }
 export function runState(event) {
+  if (event.type === 'retrying') return 'Refreshing readiness…';
+  if (event.type === 'queued' && event.local)
+    return event.reason === 'maintenance'
+      ? 'Waiting for Seatline maintenance.'
+      : 'Waiting for the current background turn.';
   if (event.type === 'queued') return `Waiting for a free slot (${event.ahead} ahead)`;
   if (event.type === 'busy')
     return event.retryAfter
