@@ -35,7 +35,7 @@ test('E: packaged panel/settings themes, all streaming views, keyboard inspectio
    await document.fonts.ready;
    window.e.observer=new PerformanceObserver(list=>{for(const entry of list.getEntries())e.longTasks.push(entry.duration);});e.observer.observe({type:'longtask',buffered:false});
   });
-  const lens=page.locator('.analysis-controls select');await lens.selectOption('logic');await page.locator('.analysis-controls input[type=number]').fill('200');await page.getByRole('button',{name:'Analyze',exact:true}).click();
+  const lens=page.locator('.analysis-controls select');await lens.selectOption('logic');await page.locator('.analysis-controls input[type=number]').fill('200');await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('.analysis-results .finding').length>0 && e.workspace.active);
   await page.waitForFunction(()=>document.querySelectorAll('.analysis-map .map-node').length>0 && e.workspace.active);
   report.checks.incrementalMapAndCards=true;
@@ -46,7 +46,7 @@ test('E: packaged panel/settings themes, all streaming views, keyboard inspectio
   assert.equal(await page.locator('.analysis-results svg[onload]').count(),0);assert.match(await page.locator('.analysis-results').textContent(),/<svg/);
   await page.locator('.analysis-map .map-node').first().focus();await page.keyboard.press('Enter');await page.locator('.finding-inspector').waitFor();assert.match(await page.locator('.finding-inspector').textContent(),/Inferred/);assert.ok((await page.evaluate(()=>e.refs)).includes(3));report.checks.keyboardInspection=true;
   for(const current of ['summary','structure','logic','thinking']){
-   await lens.selectOption(current);await page.getByRole('button',{name:'Analyze',exact:true}).click();await page.waitForFunction(()=>!e.workspace.active && document.querySelector('.run-state').textContent.startsWith('Completed'));await page.evaluate(()=>e.workspace.view.settled());
+   await lens.selectOption(current);await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();await page.waitForFunction(()=>!e.workspace.active && document.querySelector('.run-state').textContent.startsWith('Completed'));await page.evaluate(()=>e.workspace.view.settled());
    if(current==='summary'){assert.equal(await page.locator('.finding.sum').count(),4);assert.equal(await page.locator('.finding.arc').count(),5);}
    if(current==='structure'){await page.waitForFunction(()=>document.querySelectorAll('.analysis-map .map-node').length===2);await page.getByRole('button',{name:'Collapse branch'}).first().click();await page.waitForFunction(()=>document.querySelectorAll('.analysis-map .map-node').length===1);assert.equal(await page.locator('.finding.sec:visible').count(),1);await page.getByRole('button',{name:'Expand branch'}).click();}
    if(current==='logic'){assert.equal(await page.locator('.finding.gap').count(),1);assert.equal(await page.locator('.finding.step').count(),1);}
@@ -75,8 +75,8 @@ test('E: actual optional-site selection toolbar opens the panel once, carries co
   // Keyboard reaches a closed-shadow toolbar without exposing source-page script access.
   await source.evaluate(()=>document.activeElement?.blur());for(let i=0;i<30;i++){await source.keyboard.press('Tab');if(await source.evaluate(()=>document.activeElement?.hasAttribute('data-sharh-toolbar')))break;}
   assert.ok(await source.evaluate(()=>document.activeElement?.hasAttribute('data-sharh-toolbar')));await source.keyboard.press('Enter');
-  await reader.waitForFunction(async()=>{const w=await chrome.windows.getCurrent(),key='sharh:panel-context:'+w.id;return !!(await chrome.storage.session.get(key))[key];});
-  const saved=await reader.evaluate(async()=>{const w=await chrome.windows.getCurrent(),key='sharh:panel-context:'+w.id;return (await chrome.storage.session.get(key))[key];});assert.ok(saved.docId);report.checks.actionOpensAndCarriesContext=true;
+  const savedHandle=await reader.waitForFunction(async()=>Object.entries(await chrome.storage.session.get(null)).filter(([key])=>key.startsWith('sharh:panel-context:')).map(([,value])=>value).find(value=>value?.docId)??false);
+  const saved=await savedHandle.jsonValue();assert.ok(saved.docId);report.checks.actionOpensAndCarriesContext=true;
   await reader.evaluate(origin=>chrome.permissions.remove({origins:[origin+'/*']}),server.url);
   await source.waitForFunction(()=>document.querySelector('[data-sharh-toolbar]').getBoundingClientRect().height===0);report.checks.revokedPermissionHidesToolbar=true;
   await reader.locator('#open-file').setInputFiles('corpus/fixtures/pdf/footnotes-injection.pdf');await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered=true]'));

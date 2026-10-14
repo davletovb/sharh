@@ -68,7 +68,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
   await page.locator('.analysis-controls select').selectOption('logic');
   await page.locator('.analysis-controls textarea').fill('fixture:truncate');
-  await page.getByRole('button',{name:'Analyze',exact:true}).click();
+  await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Partial result saved'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Completed'));
