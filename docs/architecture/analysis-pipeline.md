@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Proposed. This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
+Status: Production design proposed; A-slice extraction and draft-output prototypes are implemented (see the [foundation decision](../decisions/a-foundations.md)). This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
 
 ## Overview
 
@@ -103,14 +103,14 @@ The document comes before the task, so runs on the same scope share the longest 
 
 ```
 <document title="Print and the Making of Publics" lang="en" scope="Chapter 3, pp. 45–78">
-## 3.1 The pamphlet economy
+¶40 [heading 2] 3.1 The pamphlet economy
 ¶41 [p. 45] In the decades after 1640, the number of printed pamphlets…
 ¶42 [p. 46] Printers depended on…
 ¶43 [p. 46] [note] See Raymond, Pamphlets and Pamphleteering…
 </document>
 ```
 
-- Headings appear as Markdown headings without numbers. Structure records cite the ¶ ranges of sections.
+- Headings keep paragraph numbers and an explicit heading level, as all other blocks do. Structure records cite the ¶ ranges of sections. The A-03 draft probe serializes these same fields as a JSON document object, so source text cannot close a document delimiter.
 - Context blocks for selection tasks are marked `[context]`, and the selection is marked `[selected]`.
 - The opening tag carries the document's language when it is known, so the model does not have to guess between, for example, Uzbek Latin and Turkish.
 

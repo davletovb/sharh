@@ -1,0 +1,132 @@
+{
+  "kind": "synthetic-corpus-extraction",
+  "items": [
+    {
+      "id": "article-en",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "90dd72ac8e9bb0312b6cf6c2d2891b3c1457995621abfe47362531b5dff27c40",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "article-ru",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "e2eda697f8cfc525d470b6f223115589fc1c89f48eb7fac60b979bf313c0961c",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "article-uz-Latn",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "1d8fb521926beca394fb852209596a0a4be7210de90f6a681a5ec3bbb58713ff",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "article-uz-Cyrl",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "b5d3856927ab371f21b94a4c81fdf22eaebfe6cd6b2d8eb069e14f77e7895591",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "article-tr",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "76f12ddb5d2c1823842de6c084ab054a6b2331480c7cf5f0a3dcde00ed28e938",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "article-ar",
+      "passed": true,
+      "blocks": 6,
+      "headings": 3,
+      "version": "23113d4d56c2920a463c7643a80668564bb57c59a13356f5c2689f19787997c8",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "long-book",
+      "passed": true,
+      "blocks": 193,
+      "headings": 13,
+      "version": "204ee7b9313a89e679534963acc16584a6e3c977329efa24962a2c8b61722fb8",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "multipart-1",
+      "passed": true,
+      "blocks": 5,
+      "headings": 2,
+      "version": "9cce97fb3886b33c1d18b258ff328efcee74fbf3919f244d4c4cd3f9fba2e8f3",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "multipart-2",
+      "passed": true,
+      "blocks": 5,
+      "headings": 2,
+      "version": "0cd2e63c24e196c292fa5284d839346037ea9e3daa0a8202a0061a1f854beae7",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "injection",
+      "passed": true,
+      "blocks": 5,
+      "headings": 2,
+      "version": "37f17a7905287d8e22a5173449b47f4c3b0de321b23bd5dbce53c0ef545fdb43",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "outlined-book",
+      "passed": true,
+      "blocks": 6,
+      "headings": 2,
+      "version": "09ee155f26245545367e9fb2a82c30d918bb809f5bde2072557472f9cc9f903a",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "book-without-outline",
+      "passed": true,
+      "blocks": 6,
+      "headings": 2,
+      "version": "f3236d83445614bcd842999fb64e02d72095d04869eb00dbccf4591c1838b72d",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "two-column",
+      "passed": true,
+      "blocks": 6,
+      "headings": 2,
+      "version": "4e7ab5c822b0d63704d0325d07fbc98a91f44ca82c20121d30e09c3935819f9a",
+      "reloadAnchor": true,
+      "highlight": true
+    },
+    {
+      "id": "footnotes-injection",
+      "passed": true,
+      "blocks": 12,
+      "headings": 2,
+      "version": "21048453500cc32e17abef28fd1b2fcd190d3fc45a238a1c6ebf4d7d0286d811",
+      "reloadAnchor": true,
+      "highlight": true
+    }
+  ],
+  "failures": []
+}

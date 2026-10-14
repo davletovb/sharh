@@ -2,12 +2,13 @@
 
 Sharh is a browser reading assistant for web pages and PDFs. It shows how a text is built, how its argument moves and the model of thinking behind it, in many languages. Every finding is anchored to the paragraph it rests on. Models are reached first through the owner's [Seatline](https://github.com/davletovb/seatline) companion; an API-key path follows later.
 
-Status: framework proposed on 2026-10-13. Nothing is implemented yet; progress is recorded in the [implementation tracker](product/sharh-implementation-tracker.md).
+Status: the A foundation slice now provides corpus fixtures, extraction/anchoring prototypes and Seatline contract/output probes. The product extension is not implemented yet. Progress and remaining live checks are recorded in the [implementation tracker](product/sharh-implementation-tracker.md).
 
 ## Reading order
 
 | Document | Covers |
 | --- | --- |
+| [Foundation decision](decisions/a-foundations.md) | The A-slice toolchain, scope defaults, verification commands and remaining owner-machine gates |
 | [Product framework](product/sharh-product-framework.md) | What Sharh is, its principles, the experience, the lens catalog, readers, languages, privacy, quality targets, phases and open decisions |
 | [Implementation tracker](product/sharh-implementation-tracker.md) | The authoritative progress record: work items with dependencies, acceptance criteria, status, owners and evidence; upstream Seatline needs; the decision log |
 | [Analysis pipeline](architecture/analysis-pipeline.md) | The document model and paragraph anchors, scopes, prompt assembly, the JSON Lines output contract, validation, long texts, second-reader alignment, storage and views |
