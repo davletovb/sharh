@@ -141,5 +141,31 @@ test('fake path exposes timing, nonstreaming-sized chunks, cancellation and UTF-
 
 test('successful format repair cannot erase a path-reported output truncation or its continue action',async()=> {
   const s=await setup([{text:'{broken fragment',truncated:true},{text:good}]);
-  try {const result=await s.start();assert.equal(result.run.status,'truncated');assert.equal(result.run.canContinue,true);assert.equal(result.run.metrics.truncated,true);assert.equal(result.records.length,1);assert.equal(s.path.calls.length,2);}finally{s.store.close();}
+  try {const result=await s.start();assert.equal(result.run.status,'truncated');assert.equal(result.run.canContinue,true);assert.equal(result.run.metrics.truncated,true);assert.equal(result.run.attempts[1].metrics.truncated,false);assert.equal(result.records.length,1);assert.equal(s.path.calls.length,2);}finally{s.store.close();}
+});
+
+test('transport-successful but empty or mostly malformed repairs never replace useful validated records',async()=> {
+  for(const repair of [jsonl({t:'end'}),jsonl(row('replacement'),'{bad}','{bad}',{t:'end'})]) {
+    const s=await setup([{text:jsonl(row('useful'),'{bad}','{bad}',{t:'end'})},{text:repair}]);
+    try {
+      const events=[],result=await s.start({}, {onEvent:e=>events.push(e)});
+      assert.equal(result.records.length,1);assert.equal(result.records[0].record.id,'useful');assert.equal(result.run.attempts[1].accepted,false);
+      assert.equal(s.path.calls.length,2);assert.ok(events.some(e=>e.type==='repair_failed' && e.code==='INVALID_OUTPUT'));assert.ok(!events.some(e=>e.type==='reset'));
+      assert.ok(!events.some(e=>e.entry?.record.id==='replacement'));
+    }finally{s.store.close();}
+  }
+});
+
+test('continuation repair seeds immutable history locally, preserving more history than the repair output cap',async()=> {
+  const history=Array.from({length:80},(_,i)=>row('old'+i,{text:`IMMUTABLE_HISTORY_${i} `+'x'.repeat(600)}));
+  assert.ok(Buffer.byteLength(jsonl(...history))>32768);
+  const s=await setup([{text:jsonl(...history),truncated:true},{text:jsonl(row('new-partial'),'{bad}','{bad}',{t:'end'})},
+    {text:jsonl({t:'edge',from:'old0',to:'corrected',rel:'supports'},row('corrected'),{t:'end'})}]);
+  try {
+    const first=await s.start(),result=await s.engine.continue(first.run.id,{mode:'new'});
+    assert.equal(result.run.status,'completed');assert.equal(result.records.length,82);assert.equal(result.run.metrics.retainedRecords,80);assert.equal(result.run.metrics.newValidRecords,2);
+    assert.equal(result.run.metrics.validRate,1);assert.equal(result.run.attempts[1].accepted,true);assert.equal(s.path.calls[2].request.document,null);
+    assert.ok(!s.path.calls[2].request.task.includes('IMMUTABLE_HISTORY_'));assert.ok(s.path.calls[2].request.task.includes('new-partial'));
+    assert.deepEqual(result.records.slice(0,80).map(e=>e.record),first.records.map(e=>e.record));assert.equal(result.records.some(e=>e.record.id==='new-partial'),false);
+  }finally{s.store.close();}
 });

@@ -9,6 +9,15 @@ import {PDFDocument,StandardFonts} from 'pdf-lib';
 import {browserOptions,serveRepository,fixtureBrowser} from '../../scripts/lib/browser-fixtures.mjs';
 import {installBrowserTestAPI} from '../helpers/browser-api-loader.mjs';
 const id='npmhefooiolfpmhicinblelaideeejcm',base=`chrome-extension://${id}`;
+async function waitForChromeEscape(page) {
+  try {await page.waitForURL(url=>!url.href.startsWith(base),{waitUntil:'commit'});}
+  catch(error) {
+    // The fixture is deliberately HTTP 404. Chrome can commit its error page while
+    // Playwright rejects the navigation waiter; that is still a successful escape.
+    if(!error.message.includes('net::ERR_HTTP_RESPONSE_CODE_FAILURE'))throw error;
+  }
+  assert.ok(!page.url().startsWith(base),'navigation must actually leave Sharh');
+}
 test('failed opens preserve the current reader, pending PDF grants resume the requested source, and auto-open has an escape',async()=> {
   const profile=await mkdtemp(join(tmpdir(),'sharh-c-review-')),server=await serveRepository(),report={checks:{},errors:[]};let context;
   try {
@@ -51,9 +60,9 @@ test('failed opens preserve the current reader, pending PDF grants resume the re
     await failure.waitForURL(url=>url.href.startsWith(base+'/ui/reader.html?source='));await failure.waitForFunction(()=>document.querySelector('#reader-state').textContent.includes('HTTP 404'));
     assert.equal(await failure.locator('#chrome-viewer').isVisible(),true);report.checks.failedAutoOpenEscape=true;
     const control=await context.newCDPSession(reader);await control.send('ServiceWorker.enable');await control.send('ServiceWorker.stopAllWorkers');await control.detach();
-    await failure.goBack({waitUntil:'commit'}).catch(()=>{});await failure.waitForURL(url=>!url.href.startsWith(base),{waitUntil:'commit'});await failure.waitForTimeout(600);assert.ok(!failure.url().startsWith(base));report.checks.backAfterWorkerRestart=true;
+    await failure.goBack({waitUntil:'commit'}).catch(()=>{});await waitForChromeEscape(failure);await failure.waitForTimeout(600);assert.ok(!failure.url().startsWith(base));report.checks.backAfterWorkerRestart=true;
     await failure.goForward({waitUntil:'domcontentloaded'}).catch(()=>{});await failure.waitForFunction(()=>document.querySelector('#chrome-viewer')?.hidden===false);
-    await failure.locator('#chrome-viewer').click();await failure.waitForURL(url=>!url.href.startsWith(base),{waitUntil:'commit'});report.checks.escapeFromFailedFetch=true;
+    await failure.locator('#chrome-viewer').click();await waitForChromeEscape(failure);report.checks.escapeFromFailedFetch=true;
     await reader.goto(`${base}/ui/reader.html?doc=missing`);await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.includes('could not be found'));report.checks.staleDocumentURL=true;
     assert.deepEqual(report.errors,[]);
   }finally{await context?.close();await server.close();await rm(profile,{recursive:true,force:true});await mkdir('test-results',{recursive:true});await writeFile('test-results/c-review-ui.json',JSON.stringify(report,null,2)+'\n');}

@@ -41,11 +41,14 @@ test('D engine in packaged Chromium: timed streaming text view, repair, continua
     assert.equal(await page.locator('#analysis-fixture article').count(),3);assert.equal(await page.locator('#analysis-fixture img').count(),0);
     const continuation=await page.evaluate(async()=> {
       const {FakePath,AnalysisEngine,buildScope}=SharhTest;
-      const path=new FakePath({sessions:false,delayMs:1,scripts:[{text:'{"t":"note","text":"Kept partial","refs":[3]}\n',truncated:true},{text:'{"t":"note","text":"Next part","refs":[4]}\n{"t":"end"}\n'}]});
+      const path=new FakePath({sessions:false,delayMs:1,scripts:[{text:'{"t":"note","text":"Kept partial","refs":[3]}\n',truncated:true},
+        {text:'{"t":"note","text":"Next part","refs":[4]}\n{broken}\n{broken}\n{"t":"end"}\n'},
+        {text:'{"t":"note","text":"Next part","refs":[4]}\n{"t":"end"}\n'}]});
       const engine=new AnalysisEngine({store:d.store,paths:{fake:path}}),first=await engine.start({doc:d.doc,scope:buildScope(d.doc),lens:'summary',target:{path:'fake',provider:'fixture'}});
-      const next=await engine.continue(first.run.id);return {id:next.run.id,previousId:next.run.previousId,status:next.run.status,records:next.records.length,hasDocument:!!path.calls[1].request.document};
+      const next=await engine.continue(first.run.id);return {id:next.run.id,previousId:next.run.previousId,status:next.run.status,records:next.records.length,hasDocument:!!path.calls[1].request.document,
+        repairAttempts:next.run.attempts.length,repairExcludedHistory:!path.calls[2].request.task.includes('Kept partial')};
     });
-    assert.equal(continuation.status,'completed');assert.equal(continuation.records,2);assert.ok(continuation.hasDocument);report.checks.continuation=continuation;
+    assert.equal(continuation.status,'completed');assert.equal(continuation.records,2);assert.ok(continuation.hasDocument);assert.equal(continuation.repairAttempts,2);assert.ok(continuation.repairExcludedHistory);report.checks.continuation=continuation;
     await page.reload();await installBrowserTestAPI(page);
     const persisted=await page.evaluate(async id=>{const store=await SharhTest.openDocumentStore({name:'d-browser'});try{return await new SharhTest.RunRepository(store).get(id);}finally{store.close();}},continuation.id);
     assert.equal(persisted.records.length,2);assert.equal(persisted.run.previousId,continuation.previousId);report.checks.reload=true;

@@ -63,7 +63,7 @@ export class AnalysisEngine {
         if(index===0) {enqueue({},[entry]);notify(onEvent,{type:'record',runId:run.id,attempt:index,entry});}
       }});
       let parser=createParser();
-      if(index===0 && retained.length)parser.seed(retained);
+      if(retained.length)parser.seed(retained);
       let error=null;
       try {
         result=await path.run(run.target,request,{signal:combined,onEvent:event=> {
@@ -82,7 +82,8 @@ export class AnalysisEngine {
       } catch(e) {error=e;}
       if(contextLost) {notify(onEvent,{type:'reset',runId:run.id});enqueue({},[],{replace:true});parser=createParser();parser.seed(retained);}
       const parsed=parser.finish({truncated:!!error || result?.truncated===true,usage:result?.usage??null});
-      const summary={kind:request.kind,metrics:parsed.metrics,...(error?{error:{code:error.code??'PROVIDER_FAILED',reason:error.reason??error.message}}:{})};
+      const summary={kind:request.kind,metrics:parsed.metrics,accepted:!error && parsed.metrics.validRate>=0.8 && parsed.metrics.newValidRecords>0,
+        ...(error?{error:{code:error.code??'PROVIDER_FAILED',reason:error.reason??error.message}}:{})};
       attempts.push(summary);
       await writes;if(writeError)throw writeError;
       return {...parsed,raw,result,error};
@@ -98,18 +99,17 @@ export class AnalysisEngine {
         notify(onEvent,{type:'reset',runId:run.id});enqueue({},[],{replace:true});
         final=await attempt(prompt.request,0);
       }
-      if(!final.error && (final.metrics.validRate<0.8 || final.metrics.validRecords===0) && !combined.aborted) {
+      if(!final.error && (final.metrics.validRate<0.8 || final.metrics.newValidRecords===0) && !combined.aborted) {
         const capped=final.result?.truncated===true;
         notify(onEvent,{type:'repairing',runId:run.id});
         // Raw output is quoted as JSON data; a repair turn never receives the source document.
-        const faulty=(retained.length?retained.map(e=>JSON.stringify(e.record)).join('\n')+'\n':'')+final.raw;
-        const repaired=await attempt(repairRequest(run.lens,run.config.language,faulty,run.cleanupGroup),1);
-        if(!repaired.error) {
+        const repaired=await attempt(repairRequest(run.lens,run.config.language,final.raw,run.cleanupGroup),1);
+        if(!repaired.error && repaired.metrics.validRate>=0.8 && repaired.metrics.newValidRecords>0) {
           // Repair may fix a missing end marker, but cannot recover content cut off by a path cap.
-          repaired.metrics.truncated ||= capped;
-          final=repaired;session=null;notify(onEvent,{type:'reset',runId:run.id});
+          final={...repaired,metrics:{...repaired.metrics,truncated:repaired.metrics.truncated || capped}};
+          session=null;notify(onEvent,{type:'reset',runId:run.id});
           for(const entry of final.records)notify(onEvent,{type:'record',runId:run.id,attempt:1,entry});
-        } else notify(onEvent,{type:'repair_failed',runId:run.id,code:repaired.error.code??'PROVIDER_FAILED'});
+        } else notify(onEvent,{type:'repair_failed',runId:run.id,code:repaired.error?.code??'INVALID_OUTPUT'});
       }
       if(combined.aborted && !final.error) {final.error=cancelled();final.metrics.truncated=true;}
       const status=final.error?(final.error.code==='CANCELLED'?'cancelled':'failed'):final.metrics.truncated?'truncated':final.metrics.validRate<0.8 || !final.metrics.validRecords?'invalid':'completed';
