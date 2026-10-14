@@ -24,16 +24,17 @@ export class AnalysisEngine {
     const prompt=assemblePrompt(doc,scope,{...config,session:{mode:persistent?'start':'none'}});
     return {...prompt,...requestPreview(target,prompt.request)};
   }
-  async launch({doc,scope,target,prompt,path,retained=[],previousId=null,signal,onEvent}) {
+  async launch({doc,scope,target,prompt,path,retained=[],previousId=null,signal,onEvent,onBegin}) {
     preflightRequest(target,prompt.request);
     const id=this.repository.id();
     return this.ownership.hold(id,async()=> {
       if(signal?.aborted)throw cancelled();
       const run=await this.repository.begin(doc,scope,prompt,target,{id,previousId,allowStale:!!previousId});
+      try{await onBegin?.(run);}catch(error){await this.repository.interrupt(run.id,{code:'SETUP_FAILED',reason:error.message}).catch(()=>{});throw Object.assign(error,{runId:run.id});}
       return this.execute({run,doc,scope,prompt,path,retained,signal,onEvent});
     });
   }
-  async start({doc,scope,target,persistent=false,...config},{signal,onEvent}={}) {
+  async start({doc,scope,target,persistent=false,...config},{signal,onEvent,onBegin}={}) {
     await this.ready;if(signal?.aborted)throw cancelled();
     doc=structuredClone(doc);scope=structuredClone(scope);target=structuredClone(target);
     const path=this.path(target);
@@ -43,7 +44,7 @@ export class AnalysisEngine {
       const info=(await path.discover()).find(p=>p.provider===target.provider);
       if(!info?.capabilities.sessions)prompt=assemblePrompt(doc,scope,config);
     }
-    return this.launch({doc,scope,target,prompt,path,signal,onEvent});
+    return this.launch({doc,scope,target,prompt,path,signal,onEvent,onBegin});
   }
   async prepareContinuation(id,{mode='auto',signal}={}) {
     if(!['auto','new'].includes(mode))throw Error('INVALID_CONTINUATION');

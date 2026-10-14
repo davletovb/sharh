@@ -1,10 +1,11 @@
 import {textOffsets,contentHash} from '../documents/model.mjs';
 const boundarySelector='h1,h2,h3,h4,h5,h6,p,blockquote,li,pre,figcaption,table,td,th,div,section,article,main,body';
-const excludedSelector='script,style,nav,footer,aside,[hidden],[aria-hidden="true"],[data-sharh-toolbar],.social-share,.share-buttons';
+const excludedSelector='script,style,[hidden],[aria-hidden="true"],[data-sharh-toolbar],.social-share,.share-buttons';
 export const blockSelector='h1,h2,h3,h4,h5,h6,p,blockquote,li,pre,figcaption,table';
-function entries(root,{exclude=true}={}) {
-  const walker=root.ownerDocument.createTreeWalker(root,5,{acceptNode(node){return exclude && node.nodeType===1 && node.matches(excludedSelector)?2:1;}}), out=[];
-  if(exclude && root.closest(excludedSelector))return out;
+function entries(root,{exclude=true,includeNavigation=false}={}) {
+  const excluded=includeNavigation?excludedSelector:`nav,footer,aside,${excludedSelector}`;
+  const walker=root.ownerDocument.createTreeWalker(root,5,{acceptNode(node){return exclude && node.nodeType===1 && node.matches(excluded)?2:1;}}), out=[];
+  if(exclude && root.closest(excluded))return out;
   let previousBoundary,breaks=0;
   for(let node;(node=walker.nextNode());) {
     if(node.nodeType===1){if(node.tagName==='BR')breaks++;continue;}
@@ -15,9 +16,9 @@ function entries(root,{exclude=true}={}) {
   return out;
 }
 export const textNodes=(root,options)=>entries(root,options).map(e=>e.node);
-export function textMap(root) {
+export function textMap(root,options) {
   const rawStarts=new Map(),spans=[],chunks=[];let rawSize=0,signature;
-  for(const {node,breaks} of entries(root)) {
+  for(const {node,breaks} of entries(root,options)) {
     if(breaks && chunks.length){chunks.push('\n');rawSize++;}
     rawStarts.set(node,rawSize);spans.push({node,start:rawSize,end:rawSize+node.data.length});chunks.push(node.data);rawSize+=node.data.length;
   }
@@ -49,9 +50,9 @@ export function textMap(root) {
     position(range){return {start:normalized.offset(rawPosition(range.startContainer,range.startOffset,false)),end:normalized.offset(rawPosition(range.endContainer,range.endOffset,true),true)};}
   };
 }
-export function collectRuns(root) {
+export function collectRuns(root,options) {
   const runs=[];let last;
-  for(const {node,boundary,breaks} of entries(root)) {
+  for(const {node,boundary,breaks} of entries(root,options)) {
     const table=node.parentElement.closest('table');
     const owner=table && root.contains(table)?table:node.parentElement.closest(blockSelector) || boundary || root;
     if(!root.contains(owner)){last=null;continue;}

@@ -87,3 +87,36 @@ test('passage worker serializes pending intentions, validates sender/navigation/
  allowed=false;assert.match((await send()).error,/Enable passage actions/);assert.equal((await storage.get(passageKey(2)))[passageKey(2)].id,saved.id);
  allowed=true;currentURL='https://example.org/another';assert.match((await send()).error,/source page changed/);let replied=false;assert.equal(listener(message,{...sender,id:'another-extension'},()=>{replied=true;}),undefined);assert.equal(replied,false);
 });
+
+test('passage extraction covers article-excluded sidebars and cross-region selections while preserving fallback anchors',async()=> {
+ const {extractSelectedHTML,extractHTML,resolveHTMLAnchor}=await import('../src/readers/html.mjs'),d=dom();document.title='A long article';document.body.innerHTML='<article><h1>A long article</h1><p>'+('A public argument and its evidence. '.repeat(30))+'</p><p id="tail">The article ends here.</p></article><aside><p id="outside">An appendix beside the main article.</p></aside>';
+ const choose=(first,last=first)=>{const r=document.createRange();r.setStart(first.firstChild,0);r.setEnd(last.firstChild,last.firstChild.length);getSelection().removeAllRanges();getSelection().addRange(r);};
+ try{choose(document.querySelector('article p'));const main=await extractSelectedHTML(document);assert.equal(main.extraction.mode,'article');assert.equal(main.extraction.includeNavigation,undefined);
+ choose(document.getElementById('outside'));const side=await extractSelectedHTML(document);assert.equal(side.extraction.includeNavigation,true);const block=side.extraction.blocks.find(b=>b.text==='An appendix beside the main article.');assert.ok(side.selection.spans.some(s=>s.n===block.n));assert.equal(resolveHTMLAnchor(document,block.anchor).text,block.text);
+ const unrelated=document.createElement('p');unrelated.textContent='Unrelated insertion';document.body.prepend(unrelated);assert.equal(resolveHTMLAnchor(document,block.anchor).text,block.text);
+ choose(document.getElementById('tail'),document.getElementById('outside'));const mixed=await extractSelectedHTML(document);assert.equal(mixed.extraction.includeNavigation,true);assert.equal(mixed.selection.spans.length,2);
+ const standard=await extractHTML(document,{mode:'whole'});assert.ok(!standard.blocks.some(b=>b.text===block.text));
+ }finally{d.window.close();}
+});
+
+test('passage intentions survive setup failure and acknowledge only a durably accepted run before provider launch',async()=> {
+ const {acceptPassage}=await import('../extension/ui/passage-handoff.mjs'),d=dom(),storage=memory(),session=memory();session.remove=async key=>session.set({[key]:undefined});
+ const store=await openDocumentStore({indexedDB:new IDBFactory()}),doc=await exampleDocument();await store.saveDocument(doc);const key='pending',intent={id:'intent-one',docId:doc.id,version:doc.version,action:'Explain',selection:{spans:[{n:5,start:0,end:8}]}};await session.set({[key]:intent});
+ const path=new FakePath({scripts:[{text:jsonl({t:'note',text:'Accepted passage',refs:[5]},end)}],wait:async()=>{}}),engine=new AnalysisEngine({store,paths:{fake:path}});let workspace;
+ try{await assert.rejects(acceptPassage({key,storage:session,store,engine,show:async()=>{throw Error('TRANSIENT_SETUP');}}),/TRANSIENT_SETUP/);assert.deepEqual((await session.get(key))[key],intent);assert.equal(path.calls.length,0);
+ workspace=await createWorkspace(document.getElementById('host'),{store,engine,client:{call:async m=>m==='discover'?path.discover():null},storage,changes});await workspace.ready;
+ await assert.rejects(acceptPassage({key,storage:session,store,engine,show:()=>workspace.setDocument(doc),onPassage:async()=>{throw Error('DISCOVERY_FAILED');}}),/DISCOVERY_FAILED/);assert.deepEqual((await session.get(key))[key],intent);
+ const run=path.run.bind(path);path.run=async(...args)=>{assert.equal((await session.get(key))[key],undefined);assert.ok((await engine.repository.list(doc.id)).some(r=>r.passageIntentId===intent.id));return run(...args);};
+ const result=await acceptPassage({key,storage:session,store,engine,show:()=>workspace.setDocument(doc),onPassage:(...args)=>workspace.passage(...args)});assert.equal(result.run.status,'completed');assert.equal(path.calls.length,1);assert.equal((await session.get(key))[key],undefined);
+ }finally{workspace?.dispose();store.close();d.window.close();}
+});
+
+test('failed passage acknowledgement sends nothing and panel recovery opens its accepted run without replay',async()=> {
+ const {acceptPassage}=await import('../extension/ui/passage-handoff.mjs'),d=dom(),storage=memory(),session=memory(),store=await openDocumentStore({indexedDB:new IDBFactory()}),doc=await exampleDocument();await store.saveDocument(doc);
+ const key='pending',intent={id:'intent-two',docId:doc.id,version:doc.version,action:'Define',selection:{spans:[{n:5,start:0,end:8}]}};await session.set({[key]:intent});session.remove=async()=>{throw Error('ACK_STORAGE_FAILED');};
+ const path=new FakePath({scripts:[],wait:async()=>{}}),engine=new AnalysisEngine({store,paths:{fake:path}});let workspace;
+ try{workspace=await createWorkspace(document.getElementById('host'),{store,engine,client:{call:async m=>m==='discover'?path.discover():null},storage,changes});await workspace.ready;
+ await assert.rejects(acceptPassage({key,storage:session,store,engine,show:()=>workspace.setDocument(doc),onPassage:(...args)=>workspace.passage(...args)}),/ACK_STORAGE_FAILED/);assert.equal(path.calls.length,0);assert.deepEqual((await session.get(key))[key],intent);const accepted=(await engine.repository.list(doc.id))[0];assert.equal(accepted.status,'interrupted');assert.equal(accepted.passageIntentId,intent.id);
+ session.remove=async key=>session.set({[key]:undefined});let opened;const next=await acceptPassage({key,storage:session,store,engine,show:()=>workspace.setDocument(doc),onPassage:()=>{throw Error('MUST_NOT_REPLAY');},onSaved:async id=>{opened=id;await workspace.openSaved(id);}});assert.equal(opened,accepted.id);assert.equal(next.restored,true);assert.equal(path.calls.length,0);assert.equal((await session.get(key))[key],undefined);
+ }finally{workspace?.dispose();store.close();d.window.close();}
+});

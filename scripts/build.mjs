@@ -14,7 +14,7 @@ await writeFile('dist/index.html', '<!doctype html><meta charset="utf-8"><title>
 await cp('extension','dist/sharh',{recursive:true});
 await build({entryPoints:['extension/worker.mjs','extension/ui/settings.mjs','extension/ui/panel.mjs','extension/ui/runs.mjs','extension/ui/client.mjs','extension/ui/panel-context.mjs','extension/lib/preferences.mjs','extension/ui/reader.mjs','extension/ui/graph-worker.mjs'],bundle:true,format:'esm',target:'chrome124',outbase:'extension',outdir:'dist/sharh',outExtension:{'.js':'.mjs'}});
 // These private helpers are inlined into their consumers. Do not ship their raw source copies.
-for(const file of ['ui/pdf-view.mjs','ui/scope-picker.mjs','ui/scope-controls.mjs','ui/analysis.mjs','ui/workspace.mjs','ui/views.mjs','ui/model-picker.mjs','ui/dom.mjs','ui/theme.mjs','ui/passage-toolbar.mjs','lib/opening.mjs','lib/passages.mjs'])await rm(`dist/sharh/${file}`);
+for(const file of ['ui/pdf-view.mjs','ui/scope-picker.mjs','ui/scope-controls.mjs','ui/analysis.mjs','ui/workspace.mjs','ui/views.mjs','ui/model-picker.mjs','ui/dom.mjs','ui/theme.mjs','ui/passage-toolbar.mjs','ui/passage-handoff.mjs','lib/opening.mjs','lib/passages.mjs'])await rm(`dist/sharh/${file}`);
 await build({entryPoints:['extension/content/reader.mjs'],bundle:true,format:'iife',target:'chrome124',outfile:'dist/sharh/content/reader.mjs'});
 await cp('node_modules/pdfjs-dist/build/pdf.worker.mjs','dist/sharh/pdf.worker.mjs');
 await cp('node_modules/pdfjs-dist/standard_fonts','dist/sharh/standard_fonts',{recursive:true});

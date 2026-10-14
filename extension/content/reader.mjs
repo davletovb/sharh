@@ -1,4 +1,4 @@
-import {extractHTML, highlightHTML, selectedHTMLBlocks} from '../../src/readers/html.mjs';
+import {extractHTML, extractSelectedHTML, highlightHTML, selectedHTMLBlocks} from '../../src/readers/html.mjs';
 import {installSelectionToolbar} from '../ui/passage-toolbar.mjs';
 // One listener per frame, including after an extension UI reconnect. Executed in Chrome's isolated world.
 if (!globalThis.__sharhReader) {
@@ -7,7 +7,7 @@ if (!globalThis.__sharhReader) {
   const toolbar=installSelectionToolbar({document,shadow:true,
     onPrepare:()=>chrome.runtime.sendMessage({type:'sharh:passage:prepare'}).catch(()=>{}),
     enabled:async()=>{const response=await chrome.runtime.sendMessage({type:'sharh:passage:enabled'});return response?.result===true;},
-    selection:async()=>{current=await extractHTML(document,{mode:current?.mode??'article',region:current?.region??null});return selectedHTMLBlocks(document,current.blocks);},
+    selection:async()=>{const result=await extractSelectedHTML(document,{mode:current?.mode??'article',region:current?.region??null,includeNavigation:current?.includeNavigation===true});current=result.extraction;return result.selection;},
     onAction:(action,selection)=>chrome.runtime.sendMessage({type:'sharh:passage:invoke',action,selection,extraction:current}).then(response=>{if(response?.error)throw Error(response.error);})});
   chrome.runtime.onMessage.addListener((message, sender, reply) => {
     if (sender.id !== chrome.runtime.id || !message?.type?.startsWith('sharh:reader:')) return;

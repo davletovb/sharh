@@ -1,0 +1,325 @@
+{
+  "sourceCommit": "ce2a264eb4e641147ef4af0ced6ec49389a8e2b5",
+  "ciRun": "https://github.com/davletovb/sharh/actions/runs/38587839760",
+  "liveProviderClaim": false,
+  "unitTests": 139,
+  "browserTests": 15,
+  "views": {
+    "checks": {
+      "incrementalMapAndCards": true,
+      "streaming": {
+        "records": 200,
+        "maxRenderMs": 0.5,
+        "longTasks": [],
+        "maxTask": 0
+      },
+      "keyboardInspection": true,
+      "allPhaseOneViews": true,
+      "typography": {
+        "serif": true,
+        "arabic": true,
+        "rtl": "rtl"
+      },
+      "savedVersionComparison": true
+    },
+    "a11y": {
+      "panel-light": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 23
+      },
+      "panel-dark": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 23
+      },
+      "settings-light": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 24
+      },
+      "settings-dark": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 24
+      },
+      "summary-parchment": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 23
+      },
+      "summary-ink": {
+        "violations": [],
+        "incomplete": [],
+        "passes": 23
+      },
+      "structure-parchment": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 27
+      },
+      "structure-ink": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 27
+      },
+      "logic-parchment": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 27
+      },
+      "logic-ink": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 27
+      },
+      "thinking-parchment": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 25
+      },
+      "thinking-ink": {
+        "violations": [],
+        "incomplete": [
+          {
+            "id": "aria-prohibited-attr",
+            "nodes": 1
+          },
+          {
+            "id": "color-contrast",
+            "nodes": 5
+          }
+        ],
+        "passes": 25
+      }
+    },
+    "errors": [],
+    "passed": true
+  },
+  "passages": {
+    "checks": {
+      "optionalPermissionToolbar": true,
+      "actionOpensAndCarriesContext": true,
+      "revokedPermissionHidesToolbar": true,
+      "pdfToolbarKeyboard": true
+    },
+    "errors": [],
+    "passed": true
+  },
+  "engineCompanion": {
+    "kind": "production-analysis-engine-real-broker-stand-ins",
+    "liveProviderClaim": false,
+    "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "checks": {
+      "productionEngineStreaming": true,
+      "validatedPersistentContinuation": true,
+      "storedVersionsAndMetrics": true,
+      "realForgetCleanupAndCascade": true,
+      "workerJournalsSessionAfterPageCloses": true,
+      "packagedWorkspaceAnalyzeContinueReloadCompare": true
+    },
+    "result": {
+      "first": {
+        "status": "truncated",
+        "records": 4,
+        "session": true,
+        "metrics": {
+          "lines": 5,
+          "recordLines": 4,
+          "validRecords": 4,
+          "newValidRecords": 4,
+          "retainedRecords": 0,
+          "dropped": {},
+          "skipped": {},
+          "referencesRemoved": 0,
+          "quotationsVerified": 1,
+          "quotationsFailed": 0,
+          "duplicateIdentifiers": 0,
+          "danglingIdentifiers": 0,
+          "parentCycles": 0,
+          "timeToFirstRecordMs": 33.5,
+          "totalMs": 37.40000000000873,
+          "outputBytes": 424,
+          "truncated": true,
+          "usage": {
+            "input_tokens": 100,
+            "output_tokens": 100
+          },
+          "emptyCompletion": false,
+          "validRate": 1
+        }
+      },
+      "next": {
+        "status": "completed",
+        "records": 6,
+        "version": 2,
+        "previousId": true,
+        "metrics": {
+          "lines": 3,
+          "recordLines": 2,
+          "validRecords": 6,
+          "newValidRecords": 2,
+          "retainedRecords": 4,
+          "dropped": {},
+          "skipped": {},
+          "referencesRemoved": 0,
+          "quotationsVerified": 0,
+          "quotationsFailed": 0,
+          "duplicateIdentifiers": 0,
+          "danglingIdentifiers": 0,
+          "parentCycles": 0,
+          "timeToFirstRecordMs": 26.19999999999709,
+          "totalMs": 29.10000000000582,
+          "outputBytes": 198,
+          "truncated": false,
+          "usage": {
+            "input_tokens": 100,
+            "output_tokens": 100
+          },
+          "emptyCompletion": false,
+          "validRate": 1
+        }
+      },
+      "events": [
+        "run",
+        "queued",
+        "admitted",
+        "status",
+        "launched",
+        "session",
+        "started",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "usage",
+        "completed",
+        "record",
+        "run",
+        "run",
+        "record",
+        "record",
+        "record",
+        "record",
+        "queued",
+        "admitted",
+        "status",
+        "launched",
+        "session",
+        "started",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "usage",
+        "completed",
+        "record",
+        "run"
+      ],
+      "queued": 2,
+      "drained": [
+        "completed",
+        "completed"
+      ],
+      "remaining": 0,
+      "runs": 0,
+      "records": 0
+    },
+    "orphanJournal": {
+      "owned": 1,
+      "queued": 2,
+      "forget": true,
+      "status": "interrupted",
+      "remaining": 0,
+      "drained": true
+    },
+    "passed": true
+  },
+  "seatlinePath": {
+    "kind": "production-seatline-path-stand-ins",
+    "liveProviderClaim": false,
+    "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "checks": {
+      "discovery": true,
+      "streaming": {
+        "chunks": 2,
+        "text": "First. Second."
+      },
+      "sessionContinuation": true,
+      "historyProjection": true,
+      "maintenance": true,
+      "outputCap": true,
+      "oversizeRefusedBeforePost": true,
+      "cancellation": true,
+      "disconnectWithoutReplay": true,
+      "policyDenialNoLaunch": true,
+      "queueTimeout": true,
+      "interactiveDuringPendingMaintenance": true,
+      "interactiveDuringBackground": true,
+      "geminiOptInPersisted": true,
+      "productionExtensionRPC": true,
+      "productionForbiddenOrigin": true
+    },
+    "passed": true
+  },
+  "package": {
+    "reproducible": true,
+    "sha256": "8b4390a232bc1e2615234838fb733fa9ddb4d157d49107c5a9e176456b383c17"
+  }
+}

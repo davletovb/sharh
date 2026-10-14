@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: A/B foundations, C readers and D engine implemented; E workspace/views in acceptance validation. F owns final prompts and live lens quality. See the [foundation decision](../decisions/a-foundations.md) for settled scope and unresolved live gates. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance); progress is recorded in the [implementation tracker](sharh-implementation-tracker.md).
+Status: A/B foundations, C readers and D engine implemented; E workspace/views implemented, with the owner screen-reader gate still open. F owns final prompts and live lens quality. See the [foundation decision](../decisions/a-foundations.md) for settled scope and unresolved live gates. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance); progress is recorded in the [implementation tracker](sharh-implementation-tracker.md).
 
 ## What Sharh is
 

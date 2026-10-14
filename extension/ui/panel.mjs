@@ -10,6 +10,7 @@ import {createAnalysisEngine} from './analysis.mjs';
 import {createWorkspace} from './workspace.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
 import {scopeControls} from './scope-controls.mjs';
+import {acceptPassage} from './passage-handoff.mjs';
 const $=id=>document.getElementById(id),client=new PathClient(),store=await openDocumentStore(),{engine}=createAnalysisEngine(store);
 const {id:windowId}=await chrome.windows.getCurrent();const contextKey=`sharh:panel-context:${windowId}`;
 let sourceTab=null,current=null,workspace,lastSelection=null;
@@ -57,12 +58,15 @@ const stopWatching=watchPanelContext(client);window.addEventListener('pagehide',
 const key=passageKey(windowId);
 async function consumePassage(){
   return navigator.locks.request(key,async()=>{
-    const value=(await chrome.storage.session.get(key))[key];if(!value)return;
-    // Consume once across panel reopen/reload. A failed action remains in saved run history.
-    await chrome.storage.session.remove(key);const doc=await store.getDocument(value.docId,value.version);if(!doc)throw Error('The selected document was deleted.');
-    await showDocument(doc,{tabId:value.sourceTab,selection:value.selection});$('scope-kind').value='selection';await picker.refresh();await workspace.passage(value.action,value.selection);
+    try{await acceptPassage({key,storage:chrome.storage.session,store,engine,
+      show:async(doc,value)=>{await showDocument(doc,{tabId:value.sourceTab,selection:value.selection});$('scope-kind').value='selection';await picker.refresh();},
+      onPassage:(...args)=>workspace.passage(...args),onSaved:id=>workspace.openSaved(id)});
+      $('retry-passage').hidden=$('dismiss-passage').hidden=true;
+    }catch(error){const pending=(await chrome.storage.session.get(key))[key];$('retry-passage').hidden=$('dismiss-passage').hidden=!pending;throw error;}
   });
 }
+$('retry-passage').addEventListener('click',()=>consumePassage().catch(fail));
+$('dismiss-passage').addEventListener('click',()=>{chrome.storage.session.remove(key).then(()=>{$('retry-passage').hidden=$('dismiss-passage').hidden=true;$('read-state').textContent='Pending passage dismissed.';}).catch(fail);});
 chrome.storage.onChanged.addListener((changes,area)=>{if(area==='session' && changes[key]?.newValue)consumePassage().catch(fail);});
 const saved=(await chrome.storage.session.get(contextKey))[contextKey];
 if(saved){const doc=await store.getDocument(saved.docId,saved.version);if(doc)await showDocument(doc,{tabId:saved.sourceTab});}

@@ -92,11 +92,11 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     }catch(error){if(stamp===epoch){fail(error);if(error.runId){selectedRun=await engine.repository.get(error.runId);if(selectedRun){runMeta.textContent=metadata(selectedRun.run);resume.hidden=freshResume.hidden=!(selectedRun.run.canContinue && !selectedRun.run.continuedBy);}}}throw error;}
     finally{if(controller===abort){controller=null;stop.hidden=true;for(const control of controls.querySelectorAll('input,select,textarea'))control.disabled=false;modelPicker.setDisabled(false);history.inert=false;updatePreview();if(stamp===epoch)await savedRuns({select:selectedRun?.run.id});}}
   }
-  async function run(extra={}) {
+  async function run(extra={},startOptions={}) {
     await ready;if(!usable(modelPicker.info))throw Error('Choose a signed-in, accepted provider with tool isolation, or open Seatline settings.');
     if(!doc || !scope)throw Error('Open a document and choose its scope first.');if(!budget.reportValidity())return;
     const config=configuration(extra);const measured=engine.preview(config);if(!measured.fits)throw Error(measured.hint);
-    return work(opts=>engine.start(config,opts),config.lens,doc);
+    return work(opts=>engine.start(config,{...opts,...startOptions}),config.lens,doc);
   }
   async function continueRun(mode='auto') {
     if(!selectedRun)throw Error('Choose a partial run.');const id=selectedRun.run.id,preview=await engine.previewContinuation(id,{mode});
@@ -117,7 +117,8 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   openArea('analyze');history.hidden=true;updatePreview();
   return {ready,run,async setDocument(value){epoch++;loading++;controller?.abort();doc=value;scope=value?buildScope(value):null;selectedRun=null;title.textContent=value?.title??'Choose a document';inspection.hidden=true;comparison.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;results.replaceChildren();runMeta.textContent='';resume.hidden=freshResume.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;},
     setScope(value){scope=value;updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
-    async passage(action,selection){if(!Object.hasOwn(PASSAGE_ACTIONS,action))throw Error('Unknown passage action.');await ready;scope=buildScope(doc,{kind:'selection',spans:selection.spans});await modelPicker.setTier('quick');changed();const lensName=action==='Logic'?'logic':'passage';return run({scope,lens:lensName,focus:`Passage action: ${action}. ${PASSAGE_ACTIONS[action]}`});},
+    async passage(action,selection,{intentId,onAccepted}={}){if(!Object.hasOwn(PASSAGE_ACTIONS,action))throw Error('Unknown passage action.');await ready;scope=buildScope(doc,{kind:'selection',spans:selection.spans});await modelPicker.setTier('quick');changed();const lensName=action==='Logic'?'logic':'passage';return run({scope,lens:lensName,focus:`Passage action: ${action}. ${PASSAGE_ACTIONS[action]}`},{onBegin:async run=>{if(intentId)await engine.repository.write(run.id,{passageIntentId:intentId});await onAccepted?.(run);}});},
+    openSaved:loadRun,
     get document(){return doc;},get selectionScope(){return scope;},get target(){return modelPicker.target;},get active(){return !!controller;},get view(){return view;},
     dispose(){epoch++;controller?.abort();view?.dispose();for(const v of compareViews)v.dispose();modelPicker.dispose();appearance.dispose();root.remove();}};
 }

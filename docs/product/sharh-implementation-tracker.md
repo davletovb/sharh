@@ -1,16 +1,16 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A/B, C and D slices implemented; E-01–E-07 in progress. D-01–D-06 are DONE with deterministic CI browser/real-broker evidence. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
+Status: A/B, C, D and E implemented. E-01–E-06 are DONE; E-07 retains its owner-machine screen-reader gate. D-01–D-06 are DONE with deterministic CI browser/real-broker evidence. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **21**
-- IMPLEMENTED — VERIFY: **3**
-- IN PROGRESS: **7**
+- DONE: **27**
+- IMPLEMENTED — VERIFY: **4**
+- IN PROGRESS: **0**
 - BLOCKED: **0**
 - TODO: **41**
 
@@ -125,13 +125,13 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| E-01 | Build the panel shell and themes | B-01 | The header shows the document, scope, size, output language and target. The Analyze, Ask and Library areas exist. Ink-and-gold and parchment themes follow the system setting. Bundled reading fonts cover Uzbek Latin and Cyrillic, and right-to-left text renders correctly | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-02 | Build the model picker and task tiers | B-03, E-01 | Targets are grouped by path and provider, with sign-in and capability badges. Effort and speed controls appear only where a target accepts them. A model ID field appears where no models are suggested. The four tiers have defaults and a per-run override | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-03 | Build the Phase 1 streaming views | D-02, D-06, E-01 | The views are:<br>• summary cards and the arc timeline;<br>• the outline and mind map;<br>• the argument graph with steps and gaps;<br>• the concept map, causal chain and facet cards.<br>Records render as they arrive, with no main-thread task over 100 ms while 200 records stream in. Every map has a text-outline equivalent | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-04 | Jump to ¶ and inspect | C-02, C-03, E-03 | Any reference scrolls to and highlights its paragraph in the page or the PDF. A stale anchor falls back to text search, or says it cannot be found. Selecting a node shows its paragraph and its *stated* or *inferred* label | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-05 | Build the passage toolbar | B-04, C-02, C-03, D-01, E-01 | On an enabled site or in the PDF reader, a selection shows Explain, Translate, Logic and Define. Requests carry the context blocks, and results open in the panel in the output language. Sites are enabled through optional permissions | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-06 | Show saved runs and versions | D-05, E-03 | Reopening a document lists earlier runs without new requests. Running a lens again shows its versions, and two versions can be compared side by side | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
-| E-07 | Make it accessible | E-02, E-03, E-05 | Automated accessibility checks (for example axe-core) pass on the panel, views and settings in both themes. The keyboard reaches every control, and reduced motion is respected. **Live:** a screen-reader pass is recorded | IN PROGRESS | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); implementation complete, deterministic CI acceptance pending |
+| E-01 | Build the panel shell and themes | B-01 | The header shows the document, scope, size, output language and target. The Analyze, Ask and Library areas exist. Ink-and-gold and parchment themes follow the system setting. Bundled reading fonts cover Uzbek Latin and Cyrillic, and right-to-left text renders correctly | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-02 | Build the model picker and task tiers | B-03, E-01 | Targets are grouped by path and provider, with sign-in and capability badges. Effort and speed controls appear only where a target accepts them. A model ID field appears where no models are suggested. The four tiers have defaults and a per-run override | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-03 | Build the Phase 1 streaming views | D-02, D-06, E-01 | The views are:<br>• summary cards and the arc timeline;<br>• the outline and mind map;<br>• the argument graph with steps and gaps;<br>• the concept map, causal chain and facet cards.<br>Records render as they arrive, with no main-thread task over 100 ms while 200 records stream in. Every map has a text-outline equivalent | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-04 | Jump to ¶ and inspect | C-02, C-03, E-03 | Any reference scrolls to and highlights its paragraph in the page or the PDF. A stale anchor falls back to text search, or says it cannot be found. Selecting a node shows its paragraph and its *stated* or *inferred* label | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-05 | Build the passage toolbar | B-04, C-02, C-03, D-01, E-01 | On an enabled site or in the PDF reader, a selection shows Explain, Translate, Logic and Define. Requests carry the context blocks, and results open in the panel in the output language. Sites are enabled through optional permissions | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-06 | Show saved runs and versions | D-05, E-03 | Reopening a document lists earlier runs without new requests. Running a lens again shows its versions, and two versions can be compared side by side | DONE | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); [baseline CI snapshot](../evidence/2026-10-14-e-validation.json); panel/views/passage/history and real-broker controls pass; final reviewed head linked on PR #6 |
+| E-07 | Make it accessible | E-02, E-03, E-05 | Automated accessibility checks (for example axe-core) pass on the panel, views and settings in both themes. The keyboard reaches every control, and reduced motion is respected. **Live:** a screen-reader pass is recorded | IMPLEMENTED — VERIFY | Codex | [E workspace evidence](../evidence/2026-10-14-e-workspace.md); 12 axe scans have zero violations; owner screen-reader report remains required |
 
 ### F — Lenses and evaluation
 
