@@ -24,7 +24,8 @@ export async function hasSourceAccess(chrome, value) {
   return chrome.permissions.contains({origins:[sourceOrigin(value)]});
 }
 export async function openCurrentPDF(chrome, tab, source = tab?.url) {
-  if (!Number.isInteger(tab?.id) || !isPDFAddress(source)) throw Error('Open a .pdf address first.');
+  if (!Number.isInteger(tab?.id)) throw Error('Open the PDF in a browser tab first.');
+  sourceURL(source); // Explicit opening also supports PDF endpoints without a .pdf suffix.
   return chrome.tabs.update(tab.id, {url:readerURL(chrome.runtime,{source,tabId:tab.id})});
 }
 export function installOpening(chrome) {
@@ -70,6 +71,6 @@ export function installOpening(chrome) {
 export async function createReaderMenus(chrome) {
   await chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:false});
   await chrome.contextMenus.removeAll();
-  chrome.contextMenus.create({id:'sharh-open-pdf',title:'Open PDF in Sharh',contexts:['page','link'],documentUrlPatterns:['http://*/*','https://*/*','file:///*'],targetUrlPatterns:['http://*/*.pdf*','https://*/*.pdf*','file:///*.pdf*']});
+  chrome.contextMenus.create({id:'sharh-open-pdf',title:'Open PDF in Sharh',contexts:['page','link'],documentUrlPatterns:['http://*/*','https://*/*','file:///*']});
   chrome.contextMenus.create({id:'sharh-read-page',title:'Read page in Sharh',contexts:['page','selection'],documentUrlPatterns:['http://*/*','https://*/*','file:///*']});
 }

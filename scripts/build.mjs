@@ -18,6 +18,10 @@ await cp('node_modules/pdfjs-dist/build/pdf.worker.mjs','dist/sharh/pdf.worker.m
 await cp('node_modules/pdfjs-dist/standard_fonts','dist/sharh/standard_fonts',{recursive:true});
 await cp('node_modules/pdfjs-dist/wasm','dist/sharh/wasm',{recursive:true});
 await cp('node_modules/pdfjs-dist/web/pdf_viewer.css','dist/sharh/pdf_viewer.css');
+await mkdir('dist/sharh/licenses',{recursive:true});
+await cp('node_modules/pdfjs-dist/LICENSE','dist/sharh/licenses/PDFjs.txt');
+await cp('node_modules/@mozilla/readability/LICENSE.md','dist/sharh/licenses/Readability.md');
+await cp('node_modules/@noble/hashes/LICENSE','dist/sharh/licenses/noble-hashes.txt');
 // Browser acceptance imports the same production primitives without any test-only routes in the worker.
 await build({entryPoints:['src/readers/browser-entry.mjs'],bundle:true,format:'esm',target:'chrome124',outfile:'dist/readers.mjs'});
 await build({entryPoints:['src/documents/store.mjs'],bundle:true,format:'esm',target:'chrome124',outfile:'dist/sharh/documents.mjs'});

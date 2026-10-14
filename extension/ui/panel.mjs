@@ -5,6 +5,13 @@ import {diagnostic} from '../../src/paths/diagnostics.mjs';
 import {readerURL,isPDFAddress} from '../lib/opening.mjs';
 const client = new PathClient();
 document.querySelector('#open-reader').addEventListener('click',()=>chrome.tabs.create({url:readerURL(chrome.runtime)}));
+document.querySelector('#open-current-pdf').addEventListener('click',async()=> {
+  try {
+    const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});
+    if (!tab?.url) throw Error('Open the PDF and click the Sharh toolbar button first.');
+    await chrome.tabs.create({url:readerURL(chrome.runtime,{source:tab.url})});
+  } catch(error) { document.querySelector('#read-state').textContent=error.message; }
+});
 document.querySelector('#read-page').addEventListener('click',async()=> {
   try {
     const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});

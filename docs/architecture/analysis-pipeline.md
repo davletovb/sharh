@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Production design proposed; A-slice extraction and draft-output prototypes are implemented (see the [foundation decision](../decisions/a-foundations.md)). This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
+Status: C implements the document model, readers, storage and scopes ([reader architecture](readers.md)); the analysis engine remains proposed. A-slice extraction and draft-output prototypes are implemented (see the [foundation decision](../decisions/a-foundations.md)). This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
 
 ## Overview
 
@@ -305,8 +305,10 @@ Everything is kept in IndexedDB, with settings in `chrome.storage.local` (never 
 | Store | Key | Holds |
 | --- | --- | --- |
 | `docs` | document id | Source address or file name, title, kind, language, extraction version |
-| `blocks` | document id, ¶ | Block fields and anchors |
-| `sections` | document id, section id | Section tree |
+| `extractions` | document id, extraction version | Retained extraction metadata |
+| `sources` | document id, extraction version | Saved HTML or PDF bytes |
+| `blocks` | document id, extraction version, ¶ | Block fields and anchors |
+| `sections` | document id, extraction version, section id | Section tree |
 | `runs` | run id | Document, lens, scope, path, provider, model, effort, prompt version, status, metrics, time |
 | `records` | run id, sequence | Validated records and their flags |
 | `chats` | chat id | Document, scope, path, provider, session token, messages |
@@ -314,7 +316,7 @@ Everything is kept in IndexedDB, with settings in `chrome.storage.local` (never 
 | `glossary` | book id, term | Source term, chosen translation, note |
 | `jobs` | job id | Long-text job steps and state |
 
-Deleting a document deletes its blocks, runs, records and chats. It also schedules Seatline `forget` for their sessions and `cleanup` for their groups ([sessions](seatline-integration.md#sessions-forget-and-cleanup)). Export writes all of this, except settings, to one JSON file, and import restores it.
+Deleting a document atomically deletes all extraction versions, blocks, sections, source files, runs, records, chats, jobs and glossary rows, and removes its collection memberships. It also schedules Seatline `forget` for their sessions and `cleanup` for their groups ([sessions](seatline-integration.md#sessions-forget-and-cleanup)). Export writes all of this, except settings, to one JSON file, and import adds validated data atomically; identical rows are accepted and conflicting rows abort the import. C stores deduplicated Seatline maintenance intentions; D-05 implements their dispatch.
 
 ## Views
 

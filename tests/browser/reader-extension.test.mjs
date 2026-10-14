@@ -52,12 +52,18 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     await reader.evaluate(bytes=>{ const transfer=new DataTransfer(); transfer.items.add(new File([new Uint8Array(bytes)],'dropped.pdf',{type:'application/pdf'})); document.dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true})); },[...dropPDF]);
     await reader.waitForFunction(()=>document.querySelector('#saved-documents').textContent.includes('dropped.pdf'));
     report.checks.dragDrop=true;
-    // This controls Chrome's own settings in an isolated test profile, as the owner would in chrome://extensions.
+    // Preapprove the synthetic host in an isolated profile, then activate the real optional grant
+    // through permissions.request in a click handler (the same approach as Lineleaf's installed tests).
     const settings=await context.newPage(); await settings.goto(`chrome://extensions/?id=${id}`);
     await settings.evaluate(async ({id,origin})=> {
       await chrome.developerPrivate.addHostPermission(id,origin+'/*');
       await chrome.developerPrivate.updateExtensionConfiguration({extensionId:id,fileAccess:true});
     },{id,origin:server.url});
+    await reader.evaluate(origin=> {
+      const button=document.createElement('button'); button.id='fixture-grant'; button.textContent='Grant fixture site';
+      button.onclick=async()=>{window.fixtureGranted=await chrome.permissions.request({origins:[origin+'/*']});}; document.body.append(button);
+    },server.url);
+    await reader.locator('#fixture-grant').click(); await reader.waitForFunction(()=>window.fixtureGranted===true);
     const source=await context.newPage(); await source.goto(`${server.url}/corpus/fixtures/html/article-en.html`);
     const tabId=await reader.evaluate(async sourceURL=>(await chrome.tabs.query({})).find(t=>t.url===sourceURL).id,source.url());
     await reader.goto(`${base}/ui/reader.html?tab=${tabId}`);
@@ -76,8 +82,12 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     const fileURL=pathToFileURL(resolve('corpus/fixtures/pdf/book-without-outline.pdf')).href;
     await reader.goto(`${base}/ui/reader.html?source=${encodeURIComponent(fileURL)}`);
     const fileGrant=await reader.evaluate(async()=>chrome.permissions.contains({origins:['file:///*']}));
-    if (!fileGrant) await settings.evaluate(async id=>chrome.developerPrivate.addHostPermission(id,'file:///*'),id);
-    await reader.reload(); await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.filePDFWithAccess=true;
+    if (!fileGrant) {
+      await settings.evaluate(async id=>chrome.developerPrivate.addHostPermission(id,'file:///*'),id);
+      await reader.locator('#allow-source').click();
+    }
+    await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')); report.checks.filePDFWithAccess=true;
+    await reader.evaluate(origin=>chrome.permissions.remove({origins:[origin+'/*']}),server.url);
     await settings.evaluate(async ({id,origin})=>chrome.developerPrivate.removeHostPermission(id,origin+'/*'),{id,origin:server.url});
     await reader.goto(`${base}/ui/reader.html?source=${encodeURIComponent(server.url+'/corpus/fixtures/pdf/outlined-book.pdf')}`);
     await reader.waitForFunction(()=>document.querySelector('#allow-source').hidden===false); report.checks.permissionRemoval=true;
