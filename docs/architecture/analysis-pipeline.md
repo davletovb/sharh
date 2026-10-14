@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: C implements the document model, readers, storage and scopes ([reader architecture](readers.md)); the analysis engine remains proposed. A-slice extraction and draft-output prototypes are implemented (see the [foundation decision](../decisions/a-foundations.md)). This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
+Status: C implements the document model, readers, storage and scopes ([reader architecture](readers.md)); D implements the [analysis engine](analysis-engine.md). E's specialized views and F's final prompt/live quality evaluation remain scheduled. A-slice draft probes remain separately source-labelled. This document defines the path-neutral engine, from extracted text to rendered views. How turns reach models is covered in [model paths](model-paths.md) and [Seatline integration](seatline-integration.md).
 
 ## Overview
 
@@ -110,7 +110,7 @@ The document comes before the task, so runs on the same scope share the longest 
 </document>
 ```
 
-- Headings keep paragraph numbers and an explicit heading level, as all other blocks do. Structure records cite the ¶ ranges of sections. The A-03 draft probe serializes these same fields as a JSON document object, so source text cannot close a document delimiter.
+- Headings keep paragraph numbers and an explicit heading level, as all other blocks do. Structure records cite the ¶ ranges of sections. D and the A-03 draft probe serialize these same fields as a JSON document object, so source text cannot close a document delimiter; D uses `n` for ¶ and retains source metadata and selection offsets.
 - Context blocks for selection tasks are marked `[context]`, and the selection is marked `[selected]`.
 - The opening tag carries the document's language when it is known, so the model does not have to guess between, for example, Uzbek Latin and Turkish.
 
@@ -224,7 +224,7 @@ Validation runs line by line as text streams in. A record is drawn as soon as it
 2. **Parsing:** `JSON.parse`; anything that is not an object is dropped.
 3. **Type:** `t` must be allowed for the lens.
 4. **Fields:**
-   - required fields must be present with the right types;
+   - required fields must be present with the right types; optional null/blank values are omitted;
    - enumerations must be valid;
    - strings are capped (`text` at 1,200 characters, `quote` at 400) and stripped of control characters.
 5. **References:**
@@ -237,17 +237,17 @@ Validation runs line by line as text streams in. A record is drawn as soon as it
      - collapsed whitespace;
      - one form for each family of quotation marks, apostrophes (including the Uzbek ʻ variants) and dashes;
      - soft hyphens removed.
-   - A quotation containing `…` matches when its parts appear in order.
+   - A quotation containing `…`, `...` or `. . .` matches when its parts appear in order.
    - A failing quotation is removed from the record, and the record is marked *quotation not found*.
 7. **Identifiers:**
    - Duplicate ids are renamed.
    - References to ids not yet seen wait until `end`, then dangling ones are dropped.
    - Parent cycles in `sec` are broken.
-8. **Completion:** without `end`, the run is marked truncated and offers *continue*. On a session that is a follow-up turn; elsewhere it is a new run.
+8. **Completion:** without `end`, the run is marked truncated and offers *continue*. End-only output is valid when there is nothing more to report. Trailing chatter is counted without forcing repair or continuation. On a session, continuation sends the next task and a short tail; elsewhere it is a new run with compact history. The complete outgoing frame is checked before allocating a new version; `TOO_LARGE` is not offered for continuation.
 9. **Repair:**
-   - If fewer than 80% of record lines are valid, or none are, Sharh makes one repair turn.
+   - If fewer than 80% of record lines are valid, or none are and the output is not a clean empty completion, Sharh makes one repair turn.
    - The repair turn sends the faulty output (not the document) and the contract, and asks for the same content in the right form.
-   - The repaired output goes through validation again.
+   - The repaired output goes through validation again and replaces the first attempt only if it validates and preserves at least its valid-record count. Retained history is seeded locally, outside the repair output cap.
 
 Each run stores its metrics:
 
@@ -317,7 +317,7 @@ Everything is kept in IndexedDB, with settings in `chrome.storage.local` (never 
 | `jobs` | job id | Long-text job steps and state |
 | `maintenance` | intention id | Deduplicated Seatline forget/cleanup intentions; dispatched by D-05 |
 
-Deleting a document atomically deletes all extraction versions, blocks, sections, source files, runs, records, chats, jobs and glossary rows, and removes its collection memberships. It also schedules Seatline `forget` for their sessions and `cleanup` for their groups ([sessions](seatline-integration.md#sessions-forget-and-cleanup)). Export writes all of this, except settings, to one JSON file, and import adds validated data atomically; identical rows are accepted and conflicting rows abort the import. C stores deduplicated Seatline maintenance intentions; D-05 implements their dispatch.
+Deleting a document atomically deletes all extraction versions, blocks, sections, source files, runs, records, chats, jobs and glossary rows, and removes its collection memberships. It also schedules Seatline `forget` for their sessions and `cleanup` for their groups ([sessions](seatline-integration.md#sessions-forget-and-cleanup)). Export writes portable document data to one JSON file, excluding settings, maintenance and live session/cleanup bindings. PDF bytes use base64. Import adds validated data atomically; identical rows are accepted and conflicting rows abort the import. C stores deduplicated Seatline maintenance intentions; D-05 dispatches them through the worker on activation and after deletion, retaining failed intentions for retry.
 
 ## Views
 

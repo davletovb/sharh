@@ -1,0 +1,230 @@
+{
+  "kind": "d-analysis-ci-validation",
+  "sourceCommit": "8be206096f340047640326ec595cc08c9fa37a26",
+  "workflowRun": 38548748062,
+  "url": "https://github.com/davletovb/sharh/actions/runs/38548748062",
+  "liveProviderClaim": false,
+  "unitTests": {
+    "passed": 107,
+    "failed": 0
+  },
+  "browserTests": {
+    "passed": 12,
+    "failed": 0
+  },
+  "browser": {
+    "checks": {
+      "streaming200TextRecords": {
+        "status": "completed",
+        "maxRenderMs": 2.099999999976717,
+        "firstBeforeEnd": true,
+        "id": "182985dd-14fc-406c-ab83-934672545b07",
+        "metrics": {
+          "lines": 201,
+          "recordLines": 200,
+          "validRecords": 200,
+          "newValidRecords": 200,
+          "retainedRecords": 0,
+          "dropped": {},
+          "skipped": {},
+          "referencesRemoved": 0,
+          "quotationsVerified": 0,
+          "quotationsFailed": 0,
+          "duplicateIdentifiers": 0,
+          "danglingIdentifiers": 0,
+          "parentCycles": 0,
+          "timeToFirstRecordMs": 6.2999999999883585,
+          "totalMs": 1012.1999999999534,
+          "outputBytes": 13102,
+          "truncated": false,
+          "usage": null,
+          "validRate": 1
+        }
+      },
+      "repair": {
+        "status": "completed",
+        "attempts": 2,
+        "records": 3,
+        "calls": [
+          {
+            "kind": "analysis",
+            "hasDocument": true
+          },
+          {
+            "kind": "repair",
+            "hasDocument": false
+          }
+        ]
+      },
+      "continuation": {
+        "id": "5aa34d24-ec7a-4116-9f25-e94d40be23bf",
+        "previousId": "8680a86e-2174-44f3-ac01-47244ba42b15",
+        "status": "completed",
+        "records": 2,
+        "hasDocument": true
+      },
+      "reload": true
+    },
+    "errors": [],
+    "passed": true
+  },
+  "engineCompanion": {
+    "kind": "production-analysis-engine-real-broker-stand-ins",
+    "liveProviderClaim": false,
+    "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "checks": {
+      "productionEngineStreaming": true,
+      "validatedPersistentContinuation": true,
+      "storedVersionsAndMetrics": true,
+      "realForgetCleanupAndCascade": true
+    },
+    "result": {
+      "first": {
+        "status": "truncated",
+        "records": 4,
+        "session": true,
+        "metrics": {
+          "lines": 5,
+          "recordLines": 4,
+          "validRecords": 4,
+          "newValidRecords": 4,
+          "retainedRecords": 0,
+          "dropped": {},
+          "skipped": {},
+          "referencesRemoved": 0,
+          "quotationsVerified": 1,
+          "quotationsFailed": 0,
+          "duplicateIdentifiers": 0,
+          "danglingIdentifiers": 0,
+          "parentCycles": 0,
+          "timeToFirstRecordMs": 45,
+          "totalMs": 49.600000000034925,
+          "outputBytes": 424,
+          "truncated": true,
+          "usage": {
+            "input_tokens": 100,
+            "output_tokens": 100
+          },
+          "validRate": 1
+        }
+      },
+      "next": {
+        "status": "completed",
+        "records": 6,
+        "version": 2,
+        "previousId": true,
+        "metrics": {
+          "lines": 3,
+          "recordLines": 2,
+          "validRecords": 6,
+          "newValidRecords": 2,
+          "retainedRecords": 4,
+          "dropped": {},
+          "skipped": {},
+          "referencesRemoved": 0,
+          "quotationsVerified": 0,
+          "quotationsFailed": 0,
+          "duplicateIdentifiers": 0,
+          "danglingIdentifiers": 0,
+          "parentCycles": 0,
+          "timeToFirstRecordMs": 37,
+          "totalMs": 45.40000000002328,
+          "outputBytes": 198,
+          "truncated": false,
+          "usage": {
+            "input_tokens": 100,
+            "output_tokens": 100
+          },
+          "validRate": 1
+        }
+      },
+      "events": [
+        "run",
+        "queued",
+        "admitted",
+        "status",
+        "launched",
+        "session",
+        "started",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "usage",
+        "completed",
+        "record",
+        "run",
+        "run",
+        "record",
+        "record",
+        "record",
+        "queued",
+        "admitted",
+        "status",
+        "launched",
+        "session",
+        "started",
+        "delta",
+        "delta",
+        "record",
+        "delta",
+        "delta",
+        "delta",
+        "usage",
+        "completed",
+        "record",
+        "record",
+        "run"
+      ],
+      "queued": 2,
+      "drained": [
+        "completed",
+        "completed"
+      ],
+      "remaining": 0,
+      "runs": 0,
+      "records": 0
+    },
+    "passed": true
+  },
+  "seatlinePath": {
+    "kind": "production-seatline-path-stand-ins",
+    "liveProviderClaim": false,
+    "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "checks": {
+      "discovery": true,
+      "streaming": {
+        "chunks": 2,
+        "text": "First. Second."
+      },
+      "sessionContinuation": true,
+      "historyProjection": true,
+      "maintenance": true,
+      "outputCap": true,
+      "oversizeRefusedBeforePost": true,
+      "cancellation": true,
+      "disconnectWithoutReplay": true,
+      "policyDenialNoLaunch": true,
+      "queueTimeout": true,
+      "interactiveDuringPendingMaintenance": true,
+      "interactiveDuringBackground": true,
+      "geminiOptInPersisted": true,
+      "productionExtensionRPC": true,
+      "productionForbiddenOrigin": true
+    },
+    "passed": true
+  },
+  "package": {
+    "reproducible": true,
+    "sha256": "37145a7897a8ffae60b8feed88c6a54177372876329376fed3aa5a7437ecc0a2"
+  }
+}

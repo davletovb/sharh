@@ -1,5 +1,10 @@
 import {validateDocument} from './model.mjs';
 import {equalData,portableRow,encodeBytes,decodeBytes} from './archive.mjs';
+import {idbRequest as result,transactionDone as done,transaction} from './idb.mjs';
+import {queueBindings,queueMaintenance,sessionHandles} from './runtime-bindings.mjs';
+import {SESSION_HANDLE} from '../paths/limits.mjs';
+import {assertCanonicalRecords} from '../analysis/contract.mjs';
+import {QuotationIndex} from '../analysis/quotes.mjs';
 export const STORE_KEYS = Object.freeze({
   docs: 'id', extractions: ['docId','version'], blocks: ['docId','version','n'], sections: ['docId','version','id'],
   sources: ['docId','version'], runs: 'id', records: ['runId','sequence'], chats: 'id',
@@ -7,8 +12,6 @@ export const STORE_KEYS = Object.freeze({
 });
 const stores = Object.keys(STORE_KEYS);
 const archiveStores=stores.filter(name=>name!=='maintenance');
-const result = request => new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
-const done = tx => new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = () => reject(tx.error || Error('TRANSACTION_ABORTED')); tx.onerror = () => {}; });
 const metadata = ({blocks, sections, ...doc}) => doc;
 const strip = ({docId, ...row}) => row;
 export async function openDocumentStore({indexedDB = globalThis.indexedDB, name = 'sharh'} = {}) {
@@ -43,7 +46,20 @@ export class DocumentStore {
   async all(name) { const tx = this.db.transaction(name), complete = done(tx); const rows = await result(tx.objectStore(name).getAll()); await complete; return rows; }
   async put(name, row) {
     if (!stores.includes(name) || ['docs','extractions','blocks','sections','sources'].includes(name)) throw Error('USE_SAVE_DOCUMENT');
-    const tx = this.db.transaction(name, 'readwrite'), complete = done(tx); tx.objectStore(name).put(row); await complete;
+    const tx = this.db.transaction(name, 'readwrite'), complete = done(tx);
+    if(name==='maintenance')queueMaintenance(tx,row);else tx.objectStore(name).put(row);await complete;
+  }
+  async rememberSession(context,handle) {
+    if(typeof handle!=='string' || !SESSION_HANDLE.test(handle))throw Error('INVALID_SESSION');
+    return transaction(this.db,['runs','maintenance'],'readwrite',async tx=> {
+      const run=await result(tx.objectStore('runs').get(context.id));
+      if(run) {
+        if(run.target?.path!==context.target.path || run.target?.provider!==context.target.provider)throw Error('SESSION_TARGET_CHANGED');
+        const handles=sessionHandles(run);
+        if(!handles.includes(handle))tx.objectStore('runs').put({...run,sessionHandles:[...handles,handle]});
+      } else queueBindings(tx,{target:context.target,sessionHandles:[handle],cleanupGroup:context.cleanupGroup});
+      return !!run;
+    });
   }
   async saveDocument(doc, source) {
     validateDocument(doc);
@@ -65,18 +81,9 @@ export class DocumentStore {
     const tx = this.db.transaction(stores, 'readwrite'), complete = done(tx), handles = new Set(), groups = new Set();
     tx.objectStore('docs').delete(id);
     const collect = row => {
-      const provider = row.target?.provider || row.provider, path = row.target?.path || row.path;
-      if (path !== 'seatline' || !provider) return;
-      const handle = row.session?.handle || row.sessionToken;
-      if (handle) {
-        handles.add(JSON.stringify({provider, handle}));
-        tx.objectStore('maintenance').put({id: `forget:${provider}:${handle}`, method:'forget', provider, handle});
-      }
-      if (row.cleanupGroup) {
-        const group = row.cleanupGroup;
-        groups.add(JSON.stringify({provider, group}));
-        tx.objectStore('maintenance').put({id: `cleanup:${provider}:${group}`, method:'cleanup', provider, group});
-      }
+      const queued=queueBindings(tx,row);
+      for(const value of queued.handles)handles.add(JSON.stringify(value));
+      for(const value of queued.groups)groups.add(JSON.stringify(value));
     };
     for (const name of ['extractions','blocks','sections','sources','runs','chats','jobs','glossary']) {
       const cursor = tx.objectStore(name).index(name === 'glossary' ? 'bookId' : 'docId').openCursor(id);
@@ -149,6 +156,14 @@ export function validateArchive(archive) {
   for (const name of ['runs','chats','jobs']) for (const row of data[name]) if (!docs.has(row.docId)) throw Error('ORPHAN_DOCUMENT_DATA');
   const runs = new Set(data.runs.map(r => r.id));
   for (const row of data.records) if (!runs.has(row.runId)) throw Error('ORPHAN_RECORD');
+  for(const run of data.runs)if(run.schemaVersion===1) {
+    const extraction=versions.get(`${run.docId}:${run.extractionVersion}`);
+    if(!extraction || !Array.isArray(run.scope?.blocks))throw Error('INVALID_RUN');
+    const records=data.records.filter(r=>r.runId===run.id),scope=new Set(run.scope.blocks.map(b=>b.n));
+    assertCanonicalRecords(records,run.lens,{scope,sections:extraction.sections});
+    const quotes=new QuotationIndex(extraction.blocks.filter(b=>scope.has(b.n)));
+    if(records.some(({record:r})=>r.quote && !quotes.verify(r.quote,r.refs??(r.ref?[r.ref]:[]))))throw Error('INVALID_ARCHIVE_QUOTATION');
+  }
   for (const row of data.glossary) if (!docs.has(row.bookId)) throw Error('ORPHAN_GLOSSARY');
   for (const collection of data.collections) if (!Array.isArray(collection.items) || collection.items.some(item => !docs.has(typeof item === 'string' ? item : item?.docId))) throw Error('ORPHAN_COLLECTION_ITEM');
   for (const row of data.sources) if (row.bytes !== undefined) {

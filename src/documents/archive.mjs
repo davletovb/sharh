@@ -1,6 +1,6 @@
 // Runtime-owned sessions/groups never travel between profiles or machines.
 export function portableRow(row) {
-  const {session,sessionToken,cleanupGroup,...portable}=row;
+  const {session,sessionToken,sessionHandles,cleanupGroup,...portable}=row;
   return portable;
 }
 export function equalData(a,b) {
