@@ -17,6 +17,9 @@ function articleRuns(document) {
   const clone = document.cloneNode(true), prefix = `sharh-source-${Math.random().toString(36).slice(2)}-`, originals = new Map();
   const sourceElements = [...document.body.querySelectorAll('*')], copied = [...clone.body.querySelectorAll('*')];
   copied.forEach((el, i) => { const marker = prefix + i; el.classList.add(marker); originals.set(marker, sourceElements[i]); });
+  // An explicit solitary long article is the main source; outside teasers are not its paragraphs.
+  const articles = [...clone.body.querySelectorAll('article')].filter(el => !el.closest('nav,aside,footer,[hidden]') && normalizeText(el.textContent).length >= 250);
+  if (articles.length === 1) clone.body.replaceChildren(articles[0]);
   const article = new Readability(clone, {keepClasses: true, serializer: el => el}).parse();
   if (!article) throw new Error('READABILITY_NO_ARTICLE');
   const runs = collectRuns(article.content).map(run => {

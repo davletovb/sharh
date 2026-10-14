@@ -79,7 +79,7 @@ test('actual PDF.js pages preserve mid-page headings, nested outlines, crop boxe
   const world=await fixtureBrowser(),report={kind:'review-regressions',cases:[]};
   try {
     await world.page.goto(world.server.url+'/dist/index.html');
-    const expected=['A paragraph continues the preceding chapter.','New chapter',lede.slice(0,60),'Subsection','A long- term plan uses Wi- Fi and state- of-the-art methods. Public participation matters.','1. A note about evidence.','Next chapter',closing.slice(0,65)];
+    const expected=['A paragraph continues the preceding chapter.','New chapter',lede.slice(0,60),'Subsection','A long- term plan uses Wi- Fi and state- of-the-art methods. Public participation matters.','1. A note about evidence.','Next chapter',closing.slice(0,65).trim()];
     for(const options of [{outline:true},{crop:true},{rotation:90},{rotation:180,crop:true},{rotation:270}]) {
       const bytes=await regressionPDF(options);
       const r=await world.page.evaluate(async bytes=>{

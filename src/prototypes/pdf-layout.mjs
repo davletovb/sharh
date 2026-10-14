@@ -27,7 +27,7 @@ export function extractPDFBlocks(pages) {
   const repeated = new Map(), removed = [], blocks = [];
   for (const page of pages) for (const text of new Set(page.items.filter(i => i.y < 35 || i.y > page.height - 35).map(i => normalizeText(i.str)))) repeated.set(text, (repeated.get(text) ?? 0) + 1);
   const weights = new Map();
-  for (const page of pages) for (const item of page.items.filter(i => i.y >= 35 && i.y <= page.height - 35)) weights.set(Math.round(item.size), (weights.get(Math.round(item.size)) ?? 0) + item.str.length);
+  for (const page of pages) for (const item of page.items.filter(i => i.y > page.height * .15 && i.y < page.height * .75)) weights.set(Math.round(item.size), (weights.get(Math.round(item.size)) ?? 0) + item.str.length);
   const bodySize = [...weights].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 12;
   const threshold = Math.max(14, bodySize * 1.2), headingSizes = [...new Set(pages.flatMap(p => p.items.filter(i => i.size >= threshold).map(i => Math.round(i.size))))].sort((a, b) => b - a);
   for (const page of pages) {

@@ -19,16 +19,22 @@ export function verifyQuote(quote, refs, blocks) {
     groups.at(-1).push(b);
   }
   return groups.some(group => {
-    let offset = 0, anchored = false;
     const intervals = []; let length = 0;
     for (const block of group) { const text = normalizeQuote(block.text); intervals.push({n: block.n, start: length, end: length + text.length}); length += text.length + 1; }
     const text = normalizeQuote(group.map(b => b.text).join(' '));
-    const matched = parts.every(part => {
-      const index = text.indexOf(part, offset); if (index < 0) return false;
-      anchored ||= intervals.some(b => cited.has(b.n) && index < b.end && index + part.length > b.start);
-      offset = index + part.length; return true;
-    });
-    return matched && anchored;
+    // Earliest possible end for each citation state. Later duplicate matches can still anchor a quote.
+    let uncitedEnd = 0, citedEnd = Infinity;
+    for (const part of parts) {
+      let nextUncited = Infinity, nextCited = Infinity;
+      for (let index = text.indexOf(part); index >= 0; index = text.indexOf(part, index + 1)) {
+        const end = index + part.length;
+        const anchored = intervals.some(b => cited.has(b.n) && index < b.end && end > b.start);
+        if (index >= citedEnd || index >= uncitedEnd && anchored) nextCited = Math.min(nextCited, end);
+        if (index >= uncitedEnd && !anchored) nextUncited = Math.min(nextUncited, end);
+      }
+      uncitedEnd = nextUncited; citedEnd = nextCited;
+    }
+    return citedEnd !== Infinity;
   });
 }
 function schema(r, lens) {

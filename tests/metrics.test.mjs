@@ -42,3 +42,6 @@ test('meta must be first and headingless scopes have no heading coverage require
   m.push('{"t":"note","text":"a note"}\n{"t":"meta","lens":"structure","lang":"en"}\n{"t":"end"}\n');
   const r=m.finish();assert.equal(r.failures.meta_order,1);assert.equal(r.headingCoverage,null);
 });
+test('an identical uncited neighbour does not hide the legitimate cited occurrence of a quote',()=>{
+  assert.equal(verifyQuote('Repeated finding.',[2],[{n:1,text:'Repeated finding.'},{n:2,text:'Repeated finding.'}]),true);
+});
