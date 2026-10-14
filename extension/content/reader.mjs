@@ -1,12 +1,22 @@
-import {extractHTML, highlightHTML, selectedHTMLBlocks} from '../../src/readers/html.mjs';
+import {extractHTML, extractSelectedHTML, highlightHTML, selectedHTMLBlocks} from '../../src/readers/html.mjs';
+import {installSelectionToolbar} from '../ui/passage-toolbar.mjs';
 // One listener per frame, including after an extension UI reconnect. Executed in Chrome's isolated world.
 if (!globalThis.__sharhReader) {
   globalThis.__sharhReader = true;
   let current;
+  const toolbar=installSelectionToolbar({document,shadow:true,
+    onPrepare:()=>chrome.runtime.sendMessage({type:'sharh:passage:prepare'}).catch(()=>{}),
+    enabled:async()=>{const response=await chrome.runtime.sendMessage({type:'sharh:passage:enabled'});return response?.result===true;},
+    // Capturing a DOM range is cheap. Extraction happens only after an action,
+    // and never replaces the explicit reader's extraction/scope cache.
+    selection:range=>({range,options:{mode:current?.mode??'article',region:current?.region??null}}),
+    resolveSelection:async({range,options})=>{const result=await extractSelectedHTML(document,{...options,range});if(!result.selection?.spans?.length)throw Error('Select readable source text again.');return result;},
+    onAction:(action,{selection,extraction})=>chrome.runtime.sendMessage({type:'sharh:passage:invoke',action,selection,extraction}).then(response=>{if(response?.error)throw Error(response.error);})});
   chrome.runtime.onMessage.addListener((message, sender, reply) => {
     if (sender.id !== chrome.runtime.id || !message?.type?.startsWith('sharh:reader:')) return;
     (async () => {
       switch (message.type) {
+        case 'sharh:reader:passages-off': toolbar.hide();return true;
         case 'sharh:reader:extract':
           current = await extractHTML(document, {mode:message.mode || 'article',region:message.region || null});
           return {extraction:current, identity:document.URL, address:document.URL};

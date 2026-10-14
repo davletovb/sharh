@@ -19,3 +19,11 @@ Build the fixed-ID extension with `npm run package`, then load `dist/sharh` unpa
 [B-slice implementation and verification](docs/evidence/2026-10-14-b-seatline.md) records the production interfaces and the remaining owner-Chrome diagnostic gate.
 
 Use **Read current page** from the side panel, or **Open PDF or local file** to pick/drop a file. PDF auto-open applies to allowed sites; file URLs additionally need Chrome’s file-access toggle. Reading and choosing a scope send no text to a model. [Reader setup, acceptance evidence and current limits](docs/evidence/2026-10-14-c-readers.md).
+
+## Analyze a text
+
+After building, reload Sharh in `chrome://extensions`. Use **Read current page** in the side panel, or open a PDF/local file in Sharh's reader. Choose a scope, output language and model, then **Analyze** with Summary, Structure, Logic or Thinking. Click ¶ references to inspect the source. Partial results offer Continue; saved runs and version comparison are local.
+
+Use **Enable passage actions on this site** in the panel to allow Explain, Translate, Logic and Define on web selections. PDF/local-text selections have the same toolbar. Settings holds theme and per-tier model defaults. Ask/collections and final live prompt-quality acceptance remain later tracker work.
+
+[Workspace architecture](docs/architecture/reading-workspace.md) · [E evidence and screen-reader gate](docs/evidence/2026-10-14-e-workspace.md)

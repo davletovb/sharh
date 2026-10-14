@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="../pdf_viewer.css"><link rel="stylesheet" href="reader.css">
 </head>
 <body>
+<a class="skip-link" href="#analysis-workspace">Skip to analysis</a>
 <main>
   <header><p class="eyebrow">Sharh · Reader</p><h1 id="document-title">Open a text</h1><p id="document-detail">Read a web page, a local HTML file or a PDF with selectable text.</p></header>
   <section aria-labelledby="open-heading">
@@ -31,6 +32,8 @@
     <p id="scope-size" role="status"></p><p id="scope-help" class="note"></p>
     <p class="note">Reading and choosing a scope sends no document text to a model.</p>
   </section>
+  <div id="analysis-workspace"></div>
+  <section id="reference-extraction" aria-label="Saved extraction reference" hidden></section>
   <nav id="outline" aria-label="Document sections"></nav>
   <div id="pdf-pages" aria-label="PDF pages"></div>
   <button id="show-text" hidden>Show numbered text</button>

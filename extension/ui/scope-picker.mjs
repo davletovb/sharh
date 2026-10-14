@@ -1,6 +1,6 @@
 import {buildScope, scopeSize} from '../../src/documents/scopes.mjs';
 import {chapterSections} from '../../src/documents/model.mjs';
-export function bindScopePicker(root, {selection = async () => null, onChange = () => {}, onChapterLevel = () => {}, sizing = {}} = {}) {
+export function bindScopePicker(root, {selection = async () => null, onChange = () => {}, onChapterLevel = () => {}, sizing = {}, measure = () => null} = {}) {
   const $ = id => root.querySelector(`#${id}`);
   let doc, current, revision=0;
   const option = (value,text) => { const el = document.createElement('option'); el.value=value; el.textContent=text; return el; };
@@ -17,7 +17,7 @@ export function bindScopePicker(root, {selection = async () => null, onChange = 
       if (kind==='selection') { const selected=await selection(); choice.spans=selected?.spans; }
       if(ticket!==revision || snapshot!==doc)return;
       current=buildScope(snapshot,choice);
-      const size=scopeSize(snapshot,current,sizing);
+      const size=measure(snapshot,current)??scopeSize(snapshot,current,sizing);
       $('scope-size').textContent=`≈${size.estimatedTokens.toLocaleString()} tokens · ${size.requestBytes.toLocaleString()} / ${size.maxRequestBytes.toLocaleString()} UTF-8 bytes`;
       $('scope-help').textContent=size.hint || 'Estimated for a Seatline analysis turn. Final rules, task and model options are checked again before sending.';
       $('scope-help').dataset.oversize=String(!size.fits);

@@ -1,3 +1,4 @@
+export const SOURCE_ACCESS_HINT='Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.';
 export function sourceURL(value) {
   let url;
   try { url = new URL(value); } catch { throw Error('Enter an HTTP, HTTPS or file address.'); }
@@ -10,6 +11,14 @@ export function isPDFAddress(value) {
 export function sourceOrigin(value) {
   const url = sourceURL(value);
   return url.protocol === 'file:' ? 'file:///*' : `${url.origin}/*`;
+}
+export const SOURCE_STILL_BLOCKED='Sharh still cannot read this tab. If it is on a different site, click the Sharh toolbar button on that page.';
+// Chrome hides a tab's address once Sharh loses access to it, so a recovery can
+// only offer the tab's own address or else the site of the document being read.
+export function recoverableAddress(tabAddress, documentAddress) {
+  const address = tabAddress ?? documentAddress;
+  try { if (address) { sourceOrigin(address); return address; } } catch { /* Not an HTTP, HTTPS or file address. */ }
+  return null;
 }
 export function readerURL(runtime, {source, tabId, docId} = {}) {
   const url = new URL(runtime.getURL('ui/reader.html'));

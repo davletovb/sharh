@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Seatline path implemented in B ([evidence](../evidence/2026-10-14-b-seatline.md)); higher-level picker/failover features remain scheduled. Seatline is the first path ([Seatline integration](seatline-integration.md)). The API-key path comes in Phase 4.
+Status: Seatline path implemented in B ([evidence](../evidence/2026-10-14-b-seatline.md)); tier defaults/model picker implemented in E; failover remains H-03. Seatline is the first path ([Seatline integration](seatline-integration.md)). The API-key path comes in Phase 4.
 
 ## Terms
 

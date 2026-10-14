@@ -24,3 +24,6 @@ Status: the A foundation slice now provides corpus fixtures, extraction/anchorin
 - Statements about Seatline name the revision they were read from. Live behaviour (latency, output quality, limits) is claimed only with recorded evidence.
 - Targets are things to measure, not promises.
 - Sharh follows the conventions of [Lineleaf](https://github.com/davletovb/Lineleaf), the existing Seatline extension: one shared companion, reading-specific logic kept out of Seatline, and support established by testing.
+
+- [Reading workspace](architecture/reading-workspace.md): E panel, model tiers, streaming maps, passage actions and saved versions.
+- [E validation and screen-reader gate](evidence/2026-10-14-e-workspace.md).

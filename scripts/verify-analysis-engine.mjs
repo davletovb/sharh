@@ -62,7 +62,28 @@ try {
     }finally{store.close();}
   },orphan);
   assert.equal(journal.owned,1);assert.equal(journal.status,'interrupted');assert.equal(journal.queued,2);assert.ok(journal.forget && journal.drained);assert.equal(journal.remaining,0);
-  report.checks.workerJournalsSessionAfterPageCloses=true;report.orphanJournal=journal;report.passed=true;
+  report.checks.workerJournalsSessionAfterPageCloses=true;report.orphanJournal=journal;
+  // E uses the same engine through its actual packaged controls and worker RPC.
+  await page.locator('#open-file').setInputFiles('corpus/fixtures/html/article-en.html');
+  await page.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
+  await page.locator('.analysis-controls select').selectOption('logic');
+  await page.locator('.analysis-controls textarea').fill('fixture:truncate');
+  await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Partial result saved'));
+  await page.getByRole('button',{name:'Continue',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Completed'));
+  await page.waitForFunction(()=>document.querySelectorAll('.analysis-results .finding').length===6 && !document.querySelector('.run-history').inert);
+  await page.locator('.analysis-results .reference').first().click();
+  await page.waitForFunction(()=>document.querySelector('.block.selected'));
+  const savedIds=await page.locator('.run-history select').first().locator('option').evaluateAll(rows=>rows.map(r=>r.value).filter(Boolean));
+  assert.equal(savedIds.length,2);await page.screenshot({path:'test-results/e-real-workspace.png',fullPage:true});
+  await page.reload();await page.locator('#saved-documents article').filter({hasText:'article-en.html'}).getByRole('button',{name:'Open',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.analysis-results .finding').length===6);
+  const restoredIds=await page.locator('.run-history select').first().locator('option').evaluateAll(rows=>rows.map(r=>r.value).filter(Boolean));
+  assert.deepEqual(restoredIds,savedIds);
+  await page.locator('.run-history select').nth(1).selectOption(savedIds[1]);await page.getByRole('button',{name:'Compare versions',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.compare-columns>section').length===2);
+  report.checks.packagedWorkspaceAnalyzeContinueReloadCompare=true;report.passed=true;
 }catch(error){report.passed=false;report.failure={message:error.message,stack:error.stack};process.exitCode=1;}
 finally {await context?.close();await world.close();await rm(profile,{recursive:true,force:true});await mkdir('test-results',{recursive:true});await writeFile('test-results/d-companion.json',JSON.stringify(report,null,2)+'\n');}
 console.log(JSON.stringify({passed:report.passed,checks:report.checks,report:'test-results/d-companion.json',failure:report.failure?.message}));

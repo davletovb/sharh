@@ -5,6 +5,7 @@ import {openDocumentStore,validateArchive,STORE_KEYS} from '../src/documents/sto
 import {versionOf} from '../src/documents/model.mjs';
 import {exampleDocument} from './helpers/document.mjs';
 const open=()=>openDocumentStore({indexedDB:new IDBFactory()});
+const withoutDate=({updatedAt,...doc})=>{assert.ok(Number.isFinite(updatedAt));return doc;};
 test('IndexedDB stores extraction versions, anchors and source bytes across close/reopen',async()=> {
   const indexedDB=new IDBFactory(), db=await openDocumentStore({indexedDB}), doc=await exampleDocument();
   await db.saveDocument(doc,{bytes:new Uint8Array([1,2,255]),mime:'application/pdf'});
@@ -13,12 +14,12 @@ test('IndexedDB stores extraction versions, anchors and source bytes across clos
   changed.blocks[2].text='Changed paragraph'; changed.blocks[2].anchor.quote.exact='Changed paragraph';
   await db.saveDocument(changed);
   assert.equal((await db.all('runs'))[0].stale,true);
-  assert.deepEqual(await db.getDocument(doc.id,doc.version),doc);
-  assert.deepEqual(await db.getDocument(doc.id),changed);
+  assert.deepEqual(withoutDate(await db.getDocument(doc.id,doc.version)),doc);
+  assert.deepEqual(withoutDate(await db.getDocument(doc.id)),changed);
   db.close();
   const again=await openDocumentStore({indexedDB});
   assert.deepEqual((await again.getSource(doc.id,doc.version)).bytes,new Uint8Array([1,2,255]));
-  assert.deepEqual(await again.getDocument(doc.id),changed); again.close();
+  assert.deepEqual(withoutDate(await again.getDocument(doc.id)),changed); again.close();
 });
 test('export/import round trips all stores, including historical extractions and binary sources',async()=> {
   const db=await open(), doc=await exampleDocument();
@@ -32,7 +33,7 @@ test('export/import round trips all stores, including historical extractions and
   const archive=JSON.parse(JSON.stringify(await db.exportData())), target=await open();
   assert.equal(await target.importData(archive),1);
   assert.deepEqual(await target.exportData(),archive);
-  assert.deepEqual(await target.getDocument(doc.id),doc);
+  assert.deepEqual(withoutDate(await target.getDocument(doc.id)),doc);
   assert.equal(await target.importData(archive),1); // Identical import is idempotent.
   db.close(); target.close();
 });

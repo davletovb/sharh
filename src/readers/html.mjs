@@ -33,7 +33,7 @@ function articleRuns(document) {
   if (title && !runs.some(r => r.source === title)) runs.unshift({element: title, source: title, raw: textMap(title).text});
   return runs;
 }
-export async function extractHTML(document, {mode = 'article', region = null, identity = document.URL} = {}) {
+export async function extractHTML(document, {mode = 'article', region = null, identity = document.URL,includeNavigation=false} = {}) {
   let runs;const warnings=[];
   if (mode === 'article') {
     try { runs=articleRuns(document); }
@@ -42,13 +42,13 @@ export async function extractHTML(document, {mode = 'article', region = null, id
   else {
     const root = mode === 'whole' ? document.body : mode === 'region' ? document.querySelector(region) : null;
     if (!root) throw new Error(mode === 'region' ? 'REGION_NOT_FOUND' : 'UNKNOWN_EXTRACTION_MODE');
-    runs = collectRuns(root).map(r => ({...r, source: r.element}));
+    runs = collectRuns(root,{includeNavigation}).map(r => ({...r, source: r.element}));
   }
-  const body = textMap(document.body), paths = pathsFor(document), localMaps = new Map([[document.body,body]]), cursors = new Map(), blocks = [];
+  const body = textMap(document.body,{includeNavigation}), paths = pathsFor(document), localMaps = new Map([[document.body,body]]), cursors = new Map(), blocks = [];
   for (const run of runs) {
     let text = normalizeText(run.raw);const el = run.source;
     if(!text)continue;
-    let local = localMaps.get(el); if (!local) { local = textMap(el); localMaps.set(el, local); }
+    let local = localMaps.get(el); if (!local) { local = textMap(el,{includeNavigation}); localMaps.set(el, local); }
     let start = local.text.indexOf(text, cursors.get(el) ?? 0);
     if (start < 0) {
       const candidates=collectRuns(el).map(r=>normalizeText(r.raw)).filter(Boolean);
@@ -61,18 +61,18 @@ export async function extractHTML(document, {mode = 'article', region = null, id
     cursors.set(el, start + text.length);
     const tag=run.element.tagName,heading = /^H[1-6]$/.test(tag);
     blocks.push({n: blocks.length + 1, kind: heading ? 'heading' : tag === 'BLOCKQUOTE' ? 'quote' : tag === 'LI' ? 'list' : tag === 'TABLE' ? 'table' : tag === 'FIGCAPTION' ? 'caption' : 'para',
-      ...(heading ? {level: Number(tag[1])} : {}), text, anchor: {type: 'html', path: paths.get(el), textVersion:body.signature, quote: {exact: text, prefix: body.text.slice(Math.max(0, position.start - 64), position.start), suffix: body.text.slice(position.end, position.end + 64)}, position}});
+      ...(heading ? {level: Number(tag[1])} : {}), text, anchor: {type: 'html', path: paths.get(el),...(includeNavigation?{includeNavigation:true}:{}), textVersion:body.signature, quote: {exact: text, prefix: body.text.slice(Math.max(0, position.start - 64), position.start), suffix: body.text.slice(position.end, position.end + 64)}, position}});
   }
   if (!blocks.length) {
     if(mode==='article') {const fallback=await extractHTML(document,{mode:'whole',identity});fallback.warnings.unshift({cause:'article-mapping-fallback'});return fallback;}
     throw new Error('NO_TEXT_BLOCKS');
   }
   const sections = makeSections(blocks);
-  return {title: document.title, language: document.documentElement.lang || null, mode, region, extractorVersion: EXTRACTOR_VERSION,
-    version: await versionOf(identity, JSON.stringify({mode, region, title:document.title, language:document.documentElement.lang,
+  return {title: document.title, language: document.documentElement.lang || null, mode, region,...(includeNavigation?{includeNavigation:true}:{}), extractorVersion: EXTRACTOR_VERSION,
+    version: await versionOf(identity, JSON.stringify({mode, region,...(includeNavigation?{includeNavigation:true}:{}), title:document.title, language:document.documentElement.lang,
       blocks:blocks.map(({kind,level,text}) => ({kind,level,text}))})), blocks, sections, warnings};
 }
-export function resolveHTMLAnchor(document, anchor, {body=textMap(document.body),window}={}) {
+export function resolveHTMLAnchor(document, anchor, {body=textMap(document.body,{includeNavigation:anchor.includeNavigation===true}),window}={}) {
   if (anchor.type !== 'html' || !anchor.quote?.exact) return null;
   const exact = anchor.quote.exact, matches = [];
   let match;
@@ -107,10 +107,11 @@ export function highlightHTML(document, anchor) {
   view.CSS.highlights.set('sharh-reference', new view.Highlight(resolved.range)); resolved.element.scrollIntoView({block: 'center'});
   return {strategy: resolved.strategy, text: resolved.text, rects: [...resolved.range.getClientRects()].map(r => ({x: r.x, y: r.y, width: r.width, height: r.height}))};
 }
-export function selectedHTMLBlocks(document, blocks) {
+export function selectedHTMLBlocks(document, blocks, capturedRange=null) {
   const selection = document.defaultView.getSelection();
-  if (!selection?.rangeCount || selection.isCollapsed) return null;
-  const range = selection.getRangeAt(0), spans = [], body = textMap(document.body);
+  if (!capturedRange && (!selection?.rangeCount || selection.isCollapsed)) return null;
+  const range = capturedRange??selection.getRangeAt(0);if(range.collapsed)return null;
+  const spans = [], body = textMap(document.body,{includeNavigation:blocks[0]?.anchor.includeNavigation===true});
   const selected=body.position(range), unchanged=blocks[0]?.anchor.textVersion===body.signature;
   for (const block of blocks) {
     const pos=block.anchor.position;
@@ -120,5 +121,14 @@ export function selectedHTMLBlocks(document, blocks) {
     const start = Math.max(selected.start,hit.start)-hit.start, end = Math.min(selected.end,hit.end)-hit.start;
     if (end > start && start >= 0 && end <= block.text.length) spans.push({n:block.n, start, end});
   }
-  return spans.length ? {spans, text:normalizeText(selection.toString())} : null;
+  return spans.length ? {spans, text:normalizeText(range.toString())} : null;
+}
+export async function extractSelectedHTML(document,{range=null,...options}={}) {
+  let extraction=await extractHTML(document,options),selection=selectedHTMLBlocks(document,extraction.blocks,range);
+  const mapped=selection?.spans.map(({n,start,end})=>extraction.blocks[n-1].text.slice(start,end)).join(' ');
+  if(!selection || normalizeText(mapped)!==selection.text) {
+    extraction=await extractHTML(document,{mode:'whole',includeNavigation:true});
+    selection=selectedHTMLBlocks(document,extraction.blocks,range);
+  }
+  return {extraction,selection};
 }

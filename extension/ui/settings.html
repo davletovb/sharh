@@ -7,17 +7,24 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <a class="skip-link" href="#reading-preferences">Skip to reading preferences</a>
     <main>
       <header>
         <p class="eyebrow">Sharh settings</p>
         <h1>Seatline</h1>
         <p>Connect the model CLIs you use on this computer.</p>
       </header>
+      <section id="reading-preferences" aria-labelledby="reading-preferences-heading">
+        <h2 id="reading-preferences-heading">Reading preferences</h2>
+        <div id="appearance-controls" class="appearance-controls"></div>
+        <h3>Models by task tier</h3><p class="note">Choose a tier, set its target and save its default. Each reading run can override these choices.</p>
+        <div id="tier-models" class="control-grid"></div>
+      </section>
       <section aria-labelledby="reader-settings">
         <h2 id="reader-settings">Reader</h2>
         <label><input type="checkbox" id="pdf-auto-open"> Open .pdf addresses in Sharh on allowed sites</label>
         <p class="note">Site access stays optional. Allow an individual source in the reader, or enable automatic opening across websites below. With this setting off, .pdf addresses use Chrome’s viewer. The toolbar and context menu still open a PDF in Sharh.</p>
-        <button id="allow-pdf-sites">Allow PDF opening on all websites</button><button id="file-access">Open Chrome file-access settings</button>
+        <button id="allow-pdf-sites">Allow reader and passage actions on all websites</button><button id="file-access">Open Chrome file-access settings</button>
         <p id="reader-settings-state" role="status"></p>
       </section>
       <section aria-labelledby="setup">

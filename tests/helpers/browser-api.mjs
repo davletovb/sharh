@@ -8,3 +8,7 @@ export {createRecordSink} from '../../src/analysis/view.mjs';
 export {createAnalysisEngine} from '../../extension/ui/analysis.mjs';
 export {buildScope} from '../../src/documents/scopes.mjs';
 export {exampleDocument} from './document.mjs';
+export {createWorkspace} from '../../extension/ui/workspace.mjs';
+export {createAnalysisView} from '../../extension/ui/views.mjs';
+export {createModelPicker} from '../../extension/ui/model-picker.mjs';
+export {installSelectionToolbar} from '../../extension/ui/passage-toolbar.mjs';

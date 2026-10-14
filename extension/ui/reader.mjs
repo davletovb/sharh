@@ -4,28 +4,34 @@ import {createDocument,contentHash} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
 import {PDFView} from './pdf-view.mjs';
-import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
+import {sourceURL,sourceOrigin,hasSourceAccess,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
 import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
+import {createWorkspace} from './workspace.mjs';
+import {installSelectionToolbar} from './passage-toolbar.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 // E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
 export const {engine:analysisEngine}=createAnalysisEngine(store);
 const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
-let busy=false;
+let busy=false,workspace,workspaceReady;
 let pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
   if (sourceTab !== null) return readerMessage('selection',{version:doc.version});
   return blockSelection() || lastSelection;
-},onChapterLevel:()=>store.saveDocument(doc).catch(fail)});
+},onChapterLevel:()=>store.saveDocument(doc).catch(fail),onChange:scope=>workspace?.setScope(scope),measure:(value,scope)=>workspace?.measureScope(value,scope)});
 const state=text=>{ $('reader-state').textContent=text; };
 const fail=error=> {
   const hints={READABILITY_NO_ARTICLE:'No main article was found. Try Whole page or choose a region.',REGION_NOT_FOUND:'No page element matches that region selector.',NO_TEXT_BLOCKS:'No readable text was found in this source.',INVALID_ARCHIVE:'Choose a Sharh documents export file.',INVALID_DOCUMENT:'The document archive has an invalid document.',NO_SELECTION:'Select source text first.'};
   state(error.name==='PasswordException'?'This PDF needs a password. Open it in Chrome’s viewer.':hints[error.message] || error.message || String(error));
 };
+installSelectionToolbar({document,selection:async()=>pdf?pdfView.selection():blockSelection(),
+  onAction:async(action,selection)=>{if(workspace.active)throw Error('Stop the current run before starting another.');lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
+  onPrepare:()=>maintenanceClient.call('prepare',{trigger:'passage-toolbar',target:workspace.target}).catch(()=>{})});
 async function operate(action) {
+  await workspaceReady;
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
   busy=true;
   const controls=['read-current','open-file','source-address','allow-source','reextract','import-data','export-data'];
@@ -79,6 +85,7 @@ async function commitDocument(value,{pdf:nextPDF=null,sourceTab:nextTab=null,loc
   }
 }
 async function showDocument(value) {
+  $('reference-extraction').hidden=true;$('reference-extraction').replaceChildren();
   doc=value; lastSelection=null; $('document-title').textContent=doc.title; document.title=`${doc.title} · Sharh`;
   $('document-detail').textContent=`${doc.kind==='pdf' ? `${doc.pageCount} pages · ` : ''}${doc.blocks.length} numbered blocks${doc.language ? ` · ${doc.language}` : ''}`;
   $('reextract').disabled=doc.kind!=='html' || (sourceTab===null && !localHTML);
@@ -98,13 +105,13 @@ async function showDocument(value) {
   }
   $('text-blocks').hidden=doc.kind==='pdf';
   $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
-  await picker.setDocument(doc); await savedList();
+  await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
-async function readTab(tabId) {
+async function readTab(tabId,{recovering=false}={}) {
   state('Reading page…');
   const tab=await chrome.tabs.get(tabId);
-  try { await attachReader(tabId); } catch { pendingSource=tab.url?{kind:'tab',address:tab.url,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error('Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.'); }
+  try { await attachReader(tabId); } catch { const address=recovering?null:recoverableAddress(tab.url,doc?.address); pendingSource=address?{kind:'tab',address,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error(recovering?SOURCE_STILL_BLOCKED:SOURCE_ACCESS_HINT); }
   const result=await readerMessage('extract',{mode:$('html-mode').value,region:$('html-region').value.trim() || null},tabId);
   const value=createDocument(result.extraction,{kind:'html',identity:result.identity,address:result.address});
   await store.saveDocument(value); await commitDocument(value,{sourceTab:tabId});
@@ -162,8 +169,17 @@ async function jump(block) {
     catch { show('The source tab is unavailable. Reopen the source page and read it again to jump to this paragraph.'); return; }
   }
   for (const el of $('text-blocks').querySelectorAll('.selected')) el.classList.remove('selected');
-  const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`); row.classList.add('selected'); row.scrollIntoView({block:'center'});
+  const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`); row.classList.add('selected'); row.scrollIntoView({block:'center'});show(`Highlighted ¶${block.n} in the saved text.`);
   }catch(error){if(doc===expected)throw error;}
+}
+async function reference(block,source) {
+  if(source.id===doc?.id && source.version===doc?.version){$('reference-extraction').hidden=true;await jump(block);return;}
+  // A historical reference belongs to its saved extraction, not the live reader.
+  // Keep its run, comparison, PDF view and source-tab connection in place.
+  const excerpt=$('reference-extraction'),heading=document.createElement('h2'),detail=document.createElement('p'),text=document.createElement('blockquote');
+  heading.textContent=`Saved paragraph ¶${block.n}${block.pageLabel?' · p. '+block.pageLabel:''}`;
+  detail.textContent=`${source.title} · saved extraction`;text.textContent=block.text;text.dir='auto';text.className='block selected';
+  excerpt.replaceChildren(heading,detail,text);excerpt.hidden=false;excerpt.scrollIntoView({block:'center'});state(`Showing ¶${block.n} from its saved extraction.`);
 }
 function blockSelection() {
   const selected=getSelection(); if (!selected?.rangeCount || selected.isCollapsed) return null;
@@ -184,8 +200,8 @@ function rememberSelection() {
 document.addEventListener('pointerup',rememberSelection);
 document.addEventListener('keyup',rememberSelection);
 document.addEventListener('pointerdown',event=>{if(event.target.closest('button,input,select'))rememberSelection();},true);
-async function reopen(id) {
-  const value=await store.getDocument(id);
+async function reopen(id,version) {
+  const value=await store.getDocument(id,version);
   if(!value)throw Error('This saved document could not be found. Open its source again.');
   const source=await store.getSource(id,value.version);
   if (value.kind==='pdf') {
@@ -200,7 +216,7 @@ async function savedList() {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
     open.addEventListener('click',()=>operate(()=>reopen(item.id)));
-    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
+    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; await workspace.setDocument(null);picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
     row.append(title,open,remove); $('saved-documents').append(row);
   }
 }
@@ -221,7 +237,7 @@ $('allow-source').addEventListener('click',()=> {
   operate(async()=> {
     const granted=await permission;
     if (!granted) throw Error('Source access was not granted.');
-    if (pending.kind==='tab') await readTab(pending.tabId); else await openPDFAddress(pending.address);
+    if (pending.kind==='tab') await readTab(pending.tabId,{recovering:true}); else await openPDFAddress(pending.address);
   });
 });
 $('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type:'sharh:chrome-viewer',source:viewerSource}).then(response=>{if(response?.error)throw Error(response.error);}).catch(fail));
@@ -230,9 +246,17 @@ document.addEventListener('dragleave',()=>document.body.classList.remove('dragov
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
 $('export-data').addEventListener('click',()=>operate(async()=> { const archive=await store.exportData(), url=URL.createObjectURL(new Blob([JSON.stringify(archive)],{type:'application/json'})), a=document.createElement('a'); a.href=url; a.download='sharh-documents.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); state('Documents exported.'); }));
 $('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
+// Register source controls before asynchronous workspace/preferences initialization.
+// A file chosen during startup waits for the workspace rather than losing its change event.
+workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
+  onReference:reference,
+  onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
+await workspaceReady;
 await savedList();
 await operate(async()=> {
   if (params.has('source')) await openPDFAddress(params.get('source'));
-  else if (params.has('doc')) await reopen(params.get('doc'));
+  else if (params.has('doc')) await reopen(params.get('doc'),params.get('version')||undefined);
   else if (initialTab!==null) await readTab(initialTab);
 });
+// The initial open releases operate()'s busy guard before following a deep link.
+if(params.has('doc') && params.has('paragraph') && doc){const block=doc.blocks[Number(params.get('paragraph'))-1];if(block)await jump(block).catch(fail);else state('This paragraph is not in the saved extraction.');}
