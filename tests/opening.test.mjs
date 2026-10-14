@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {sourceURL,sourceOrigin,isPDFAddress,readerURL,installOpening,hasSourceAccess} from '../extension/lib/opening.mjs';
+import {sourceURL,sourceOrigin,isPDFAddress,readerURL,installOpening,hasSourceAccess,recoverableAddress} from '../extension/lib/opening.mjs';
 const event=()=>({listeners:[],addListener(fn){this.listeners.push(fn);}});
 test('PDF addressing is URL-aware and only permits web/file sources',()=> {
   for(const url of ['https://example.org/paper.PDF?q=one#page=2','file:///tmp/my%20book.pdf','https://example.org/a%2Epdf']) assert.equal(isPDFAddress(url),true);
@@ -10,6 +10,13 @@ test('PDF addressing is URL-aware and only permits web/file sources',()=> {
   assert.equal(sourceOrigin('http://localhost:1234/a.pdf'),'http://localhost:1234/*');
   const url=new URL(readerURL({getURL:p=>`chrome-extension://test/${p}`},{source:'https://example.org/a.pdf?a=1&b=2',tabId:2}));
   assert.equal(url.searchParams.get('source'),'https://example.org/a.pdf?a=1&b=2');
+});
+test('source recovery uses the tab address, else the document being read, and never an unusable address',()=> {
+  // Chrome omits tab.url once access is gone, which is exactly when recovery is needed.
+  assert.equal(recoverableAddress('https://a.example/x','https://b.example/y'),'https://a.example/x');
+  assert.equal(recoverableAddress(undefined,'https://b.example/y'),'https://b.example/y');
+  assert.equal(recoverableAddress(null,'file:///tmp/a.html'),'file:///tmp/a.html');
+  for(const [tab,saved] of [[undefined,undefined],[undefined,null],[undefined,'chrome://extensions'],['chrome://extensions','https://b.example/y'],[undefined,'https://user:pass@b.example/y'],[undefined,'not an address']])assert.equal(recoverableAddress(tab,saved),null);
 });
 test('auto-open remembers handoffs across worker restarts and does not trap Back or reader exits',async()=> {
   const session={},updates=[];let current='https://example.org/a.pdf';

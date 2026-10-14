@@ -1,7 +1,7 @@
 import {watchPanelContext} from './panel-context.mjs';
 import {PathClient} from './client.mjs';
 import {diagnostic} from '../../src/paths/diagnostics.mjs';
-import {readerURL,isPDFAddress,hasSourceAccess,sourceOrigin,SOURCE_ACCESS_HINT} from '../lib/opening.mjs';
+import {readerURL,isPDFAddress,hasSourceAccess,sourceOrigin,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
 import {enablePassages,passageKey} from '../lib/passages.mjs';
 import {createDocument} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
@@ -38,10 +38,10 @@ workspace=await createWorkspace($('analysis-workspace'),{store,engine,client,onC
   }});
 $('open-reader').addEventListener('click',()=>chrome.tabs.create({url:readerURL(chrome.runtime)}));
 $('open-current-pdf').addEventListener('click',async()=>{try{const[tab]=await chrome.tabs.query({active:true,currentWindow:true});if(!tab?.url)throw Error('Open a PDF tab first.');await chrome.tabs.create({url:readerURL(chrome.runtime,{source:tab.url})});}catch(error){fail(error);}});
-async function readTab(tab) {
+async function readTab(tab,{recovering=false}={}) {
   if(isPDFAddress(tab.url)){await chrome.tabs.create({url:readerURL(chrome.runtime,{source:tab.url})});return;}
   try{await chrome.scripting.executeScript({target:{tabId:tab.id},files:['content/reader.mjs']});}
-  catch{pendingSource=tab.url?{tabId:tab.id,address:tab.url}:null;$('allow-source').hidden=!pendingSource;throw Error(SOURCE_ACCESS_HINT);}
+  catch{const address=recovering?null:recoverableAddress(tab.url,current?.address);pendingSource=address?{tabId:tab.id,address}:null;$('allow-source').hidden=!pendingSource;throw Error(recovering?SOURCE_STILL_BLOCKED:SOURCE_ACCESS_HINT);}
   const response=await chrome.tabs.sendMessage(tab.id,{type:'sharh:reader:extract',mode:'article'},{frameId:0});if(response?.error)throw Error(response.error);
   const value=createDocument(response.result.extraction,{kind:'html',identity:response.result.identity,address:response.result.address});await store.saveDocument(value);await showDocument(value,{tabId:tab.id});
   pendingSource=null;$('allow-source').hidden=true;$('read-state').textContent='Ready. Choose a lens and Analyze.';
@@ -58,7 +58,7 @@ $('allow-source').addEventListener('click',()=>{
   // Begin permission recovery in this click's user gesture.
   const permission=chrome.permissions.request({origins:[sourceOrigin(pending.address)]});
   $('allow-source').disabled=true;
-  permission.then(async granted=>{if(!granted)throw Error('Source access was not granted. '+SOURCE_ACCESS_HINT);await readTab(await chrome.tabs.get(pending.tabId));}).catch(fail).finally(()=>{$('allow-source').disabled=false;});
+  permission.then(async granted=>{if(!granted)throw Error('Source access was not granted. '+SOURCE_ACCESS_HINT);await readTab(await chrome.tabs.get(pending.tabId),{recovering:true});}).catch(fail).finally(()=>{$('allow-source').disabled=false;});
 });
 $('enable-passages').addEventListener('click',()=>{if(current?.address && sourceTab!==null)enablePassages(chrome,current.address,sourceTab).then(()=>{$('enable-passages').hidden=true;$('read-state').textContent='Passage actions enabled for this site. Select text on the page.';}).catch(fail);});
 $('settings').addEventListener('click',()=>chrome.runtime.openOptionsPage());

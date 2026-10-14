@@ -4,7 +4,7 @@ import {createDocument,contentHash} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
 import {PDFView} from './pdf-view.mjs';
-import {sourceURL,sourceOrigin,hasSourceAccess,SOURCE_ACCESS_HINT} from '../lib/opening.mjs';
+import {sourceURL,sourceOrigin,hasSourceAccess,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
 import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
 import {createWorkspace} from './workspace.mjs';
@@ -108,10 +108,10 @@ async function showDocument(value) {
   await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
-async function readTab(tabId) {
+async function readTab(tabId,{recovering=false}={}) {
   state('Reading page…');
   const tab=await chrome.tabs.get(tabId);
-  try { await attachReader(tabId); } catch { pendingSource=tab.url?{kind:'tab',address:tab.url,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error(SOURCE_ACCESS_HINT); }
+  try { await attachReader(tabId); } catch { const address=recovering?null:recoverableAddress(tab.url,doc?.address); pendingSource=address?{kind:'tab',address,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error(recovering?SOURCE_STILL_BLOCKED:SOURCE_ACCESS_HINT); }
   const result=await readerMessage('extract',{mode:$('html-mode').value,region:$('html-region').value.trim() || null},tabId);
   const value=createDocument(result.extraction,{kind:'html',identity:result.identity,address:result.address});
   await store.saveDocument(value); await commitDocument(value,{sourceTab:tabId});
@@ -237,7 +237,7 @@ $('allow-source').addEventListener('click',()=> {
   operate(async()=> {
     const granted=await permission;
     if (!granted) throw Error('Source access was not granted.');
-    if (pending.kind==='tab') await readTab(pending.tabId); else await openPDFAddress(pending.address);
+    if (pending.kind==='tab') await readTab(pending.tabId,{recovering:true}); else await openPDFAddress(pending.address);
   });
 });
 $('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type:'sharh:chrome-viewer',source:viewerSource}).then(response=>{if(response?.error)throw Error(response.error);}).catch(fail));
