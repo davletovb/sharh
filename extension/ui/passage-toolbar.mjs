@@ -27,6 +27,8 @@ export function installSelectionToolbar({document,selection,onAction,enabled=asy
   }
   const listen=event=>{update(event).catch(hide);};
   document.addEventListener('pointerup',listen);document.addEventListener('keyup',listen);
+  // A site grant/navigation may finish injecting after the user has selected text.
+  queueMicrotask(()=>update().catch(hide));
   const dismiss=event=>{if(event.key==='Escape'){revision++;hide();}};document.addEventListener('keydown',dismiss);
   return {hide(){revision++;hide();},dispose(){closed=true;revision++;host?.remove();document.removeEventListener('pointerup',listen);document.removeEventListener('keyup',listen);document.removeEventListener('keydown',dismiss);}};
 }
