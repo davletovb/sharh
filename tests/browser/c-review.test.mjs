@@ -10,12 +10,10 @@ import {browserOptions,serveRepository,fixtureBrowser} from '../../scripts/lib/b
 import {installBrowserTestAPI} from '../helpers/browser-api-loader.mjs';
 const id='npmhefooiolfpmhicinblelaideeejcm',base=`chrome-extension://${id}`;
 async function waitForChromeEscape(page) {
-  try {await page.waitForURL(url=>!url.href.startsWith(base),{waitUntil:'commit'});}
-  catch(error) {
-    // The fixture is deliberately HTTP 404. Chrome can commit its error page while
-    // Playwright rejects the navigation waiter; that is still a successful escape.
-    if(!error.message.includes('net::ERR_HTTP_RESPONSE_CODE_FAILURE'))throw error;
-  }
+  // The deliberately missing PDF commits Chrome's error document. Navigation
+  // waiters can reject before its frame URL updates; observe the committed DOM
+  // context instead, without accepting a failed navigation that stayed in Sharh.
+  await page.waitForFunction(prefix=>!location.href.startsWith(prefix),base);
   assert.ok(!page.url().startsWith(base),'navigation must actually leave Sharh');
 }
 test('failed opens preserve the current reader, pending PDF grants resume the requested source, and auto-open has an escape',async()=> {
