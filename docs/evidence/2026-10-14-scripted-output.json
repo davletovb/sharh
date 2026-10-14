@@ -28,8 +28,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.5072499999999991,
-        "totalMs": 0.7896279999999933,
+        "timeToFirstRecordMs": 0.44860000000005584,
+        "totalMs": 0.7536620000000767,
         "canaryObserved": false,
         "failures": {}
       }
@@ -57,8 +57,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.07883800000001884,
-        "totalMs": 0.8478369999999131,
+        "timeToFirstRecordMs": 0.09671100000002752,
+        "totalMs": 1.205188000000021,
         "canaryObserved": false,
         "failures": {}
       }
@@ -86,8 +86,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.06555200000002515,
-        "totalMs": 0.1397510000000466,
+        "timeToFirstRecordMs": 0.0512660000000551,
+        "totalMs": 0.12117699999998877,
         "canaryObserved": false,
         "failures": {}
       }
@@ -115,8 +115,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.03730000000007294,
-        "totalMs": 0.15164400000003297,
+        "timeToFirstRecordMs": 0.062126000000034765,
+        "totalMs": 0.23432900000000245,
         "canaryObserved": false,
         "failures": {}
       }
@@ -144,8 +144,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.1224889999999732,
-        "totalMs": 0.18945399999995516,
+        "timeToFirstRecordMs": 0.09287400000005164,
+        "totalMs": 0.1662820000000238,
         "canaryObserved": false,
         "failures": {}
       }
@@ -173,8 +173,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.04877099999998791,
-        "totalMs": 0.7705120000000534,
+        "timeToFirstRecordMs": 0.06592399999999543,
+        "totalMs": 0.6267820000000484,
         "canaryObserved": false,
         "failures": {}
       }
@@ -202,8 +202,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.05898100000001705,
-        "totalMs": 0.11155900000005659,
+        "timeToFirstRecordMs": 0.04424200000005385,
+        "totalMs": 0.07965899999999237,
         "canaryObserved": false,
         "failures": {}
       }
@@ -231,8 +231,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.040986999999972795,
-        "totalMs": 0.1478469999999561,
+        "timeToFirstRecordMs": 0.028904000000011365,
+        "totalMs": 0.10124900000005255,
         "canaryObserved": false,
         "failures": {}
       }
@@ -260,8 +260,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.06470100000001366,
-        "totalMs": 0.1043849999999793,
+        "timeToFirstRecordMs": 0.06404999999995198,
+        "totalMs": 0.10207199999990735,
         "canaryObserved": false,
         "failures": {}
       }
@@ -289,8 +289,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.049982999999997446,
-        "totalMs": 0.1712999999999738,
+        "timeToFirstRecordMs": 0.08065099999998893,
+        "totalMs": 0.20596499999999196,
         "canaryObserved": false,
         "failures": {}
       }
@@ -318,8 +318,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.022832999999991443,
-        "totalMs": 0.04867100000001301,
+        "timeToFirstRecordMs": 0.02378400000009151,
+        "totalMs": 0.05225800000005165,
         "canaryObserved": false,
         "failures": {}
       }
@@ -347,8 +347,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.017422000000010485,
-        "totalMs": 0.07129299999996874,
+        "timeToFirstRecordMs": 0.01963700000010249,
+        "totalMs": 0.07554100000004382,
         "canaryObserved": false,
         "failures": {}
       }
@@ -376,8 +376,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.0571669999999358,
-        "totalMs": 0.08489899999995032,
+        "timeToFirstRecordMs": 0.054401999999981854,
+        "totalMs": 0.08530999999993583,
         "canaryObserved": false,
         "failures": {}
       }
@@ -405,8 +405,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.04468299999996361,
-        "totalMs": 0.1853959999999688,
+        "timeToFirstRecordMs": 0.022151000000008025,
+        "totalMs": 0.09983699999997953,
         "canaryObserved": false,
         "failures": {}
       }
@@ -434,8 +434,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.022862000000031912,
-        "totalMs": 0.03982400000006692,
+        "timeToFirstRecordMs": 0.018695000000093387,
+        "totalMs": 0.034505000000081054,
         "canaryObserved": false,
         "failures": {}
       }
@@ -463,8 +463,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.01620100000002367,
-        "totalMs": 0.0646719999999732,
+        "timeToFirstRecordMs": 0.014355999999906999,
+        "totalMs": 0.058219000000008236,
         "canaryObserved": false,
         "failures": {}
       }
@@ -492,8 +492,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.07404800000006162,
-        "totalMs": 0.11632700000006935,
+        "timeToFirstRecordMs": 0.055884999999989304,
+        "totalMs": 0.08467899999993733,
         "canaryObserved": false,
         "failures": {}
       }
@@ -521,8 +521,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.035346000000004096,
-        "totalMs": 0.15248499999995602,
+        "timeToFirstRecordMs": 0.02185199999996712,
+        "totalMs": 0.0999779999999646,
         "canaryObserved": false,
         "failures": {}
       }
@@ -550,8 +550,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.06462099999998827,
-        "totalMs": 0.09428700000000845,
+        "timeToFirstRecordMs": 0.018734999999992397,
+        "totalMs": 0.034494999999992615,
         "canaryObserved": false,
         "failures": {}
       }
@@ -579,8 +579,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.060893999999962034,
-        "totalMs": 0.16580999999996493,
+        "timeToFirstRecordMs": 0.0373899999999594,
+        "totalMs": 0.0907399999999825,
         "canaryObserved": false,
         "failures": {}
       }
@@ -608,8 +608,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.05730700000003708,
-        "totalMs": 0.14099399999997786,
+        "timeToFirstRecordMs": 0.0600329999999758,
+        "totalMs": 0.0908599999999069,
         "canaryObserved": false,
         "failures": {}
       }
@@ -637,8 +637,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.026990000000068903,
-        "totalMs": 0.10023799999999028,
+        "timeToFirstRecordMs": 0.023663999999939733,
+        "totalMs": 0.09895499999993262,
         "canaryObserved": false,
         "failures": {}
       }
@@ -666,8 +666,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.018996000000015556,
-        "totalMs": 0.034656000000040876,
+        "timeToFirstRecordMs": 0.018965000000093823,
+        "totalMs": 0.037430000000085784,
         "canaryObserved": false,
         "failures": {}
       }
@@ -695,8 +695,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.034283999999956905,
-        "totalMs": 0.10118899999997666,
+        "timeToFirstRecordMs": 0.04499399999997422,
+        "totalMs": 0.13049399999999878,
         "canaryObserved": false,
         "failures": {}
       }
@@ -724,8 +724,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.07705399999997553,
-        "totalMs": 0.23682299999995848,
+        "timeToFirstRecordMs": 0.07853699999998298,
+        "totalMs": 0.24319600000001174,
         "canaryObserved": false,
         "failures": {}
       }
@@ -753,8 +753,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.03970400000002883,
-        "totalMs": 0.1508730000000469,
+        "timeToFirstRecordMs": 0.03482499999995525,
+        "totalMs": 0.14654399999994894,
         "canaryObserved": false,
         "failures": {}
       }
@@ -782,8 +782,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.03418399999998201,
-        "totalMs": 0.18022800000005645,
+        "timeToFirstRecordMs": 0.033912999999984095,
+        "totalMs": 0.21903000000008888,
         "canaryObserved": false,
         "failures": {}
       }
@@ -811,8 +811,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.019776999999976397,
-        "totalMs": 0.1730240000000549,
+        "timeToFirstRecordMs": 0.023214000000052692,
+        "totalMs": 0.10184100000003582,
         "canaryObserved": false,
         "failures": {}
       }
@@ -840,8 +840,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.045846000000096865,
-        "totalMs": 0.06647400000008474,
+        "timeToFirstRecordMs": 0.04939200000001165,
+        "totalMs": 0.07031199999994442,
         "canaryObserved": false,
         "failures": {}
       }
@@ -869,8 +869,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.02064899999993486,
-        "totalMs": 0.08163300000001072,
+        "timeToFirstRecordMs": 0.023222999999916283,
+        "totalMs": 0.08592099999998482,
         "canaryObserved": false,
         "failures": {}
       }
@@ -898,8 +898,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.01391599999999471,
-        "totalMs": 0.02326400000004014,
+        "timeToFirstRecordMs": 0.014707999999927779,
+        "totalMs": 0.02470699999992121,
         "canaryObserved": false,
         "failures": {}
       }
@@ -927,8 +927,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.012322999999923923,
-        "totalMs": 0.04435399999999845,
+        "timeToFirstRecordMs": 0.012673999999947227,
+        "totalMs": 0.04546499999992193,
         "canaryObserved": false,
         "failures": {}
       }
@@ -956,8 +956,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.04701900000009118,
-        "totalMs": 0.06730599999991682,
+        "timeToFirstRecordMs": 0.05014400000004571,
+        "totalMs": 0.07565099999999347,
         "canaryObserved": false,
         "failures": {}
       }
@@ -985,8 +985,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.024846999999908803,
-        "totalMs": 0.08648199999993267,
+        "timeToFirstRecordMs": 0.022902999999928397,
+        "totalMs": 0.08685299999990548,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1014,8 +1014,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.014586999999892214,
-        "totalMs": 0.024365999999872656,
+        "timeToFirstRecordMs": 0.014817999999991116,
+        "totalMs": 0.024806000000012318,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1043,8 +1043,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.012824000000136948,
-        "totalMs": 0.04430300000012721,
+        "timeToFirstRecordMs": 0.01220299999999952,
+        "totalMs": 0.04356200000006538,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1072,8 +1072,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.04838000000017928,
-        "totalMs": 0.06902900000000045,
+        "timeToFirstRecordMs": 0.04694799999992938,
+        "totalMs": 0.06815800000003946,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1101,8 +1101,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.02180099999986851,
-        "totalMs": 0.08351599999991777,
+        "timeToFirstRecordMs": 0.02222200000005614,
+        "totalMs": 0.08331600000019534,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1130,8 +1130,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.01439699999991717,
-        "totalMs": 0.024175000000013824,
+        "timeToFirstRecordMs": 0.016060000000152286,
+        "totalMs": 0.025898999999981243,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1159,8 +1159,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.012723999999934676,
-        "totalMs": 0.04254999999989195,
+        "timeToFirstRecordMs": 0.012965000000122018,
+        "totalMs": 0.042911000000003696,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1188,8 +1188,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.07025199999998222,
-        "totalMs": 0.09534899999994195,
+        "timeToFirstRecordMs": 0.10049800000001596,
+        "totalMs": 0.1262859999999364,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1217,8 +1217,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.023684000000002925,
-        "totalMs": 0.08804500000019289,
+        "timeToFirstRecordMs": 0.02342399999997724,
+        "totalMs": 0.08562000000006265,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1246,8 +1246,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.014325999999982741,
-        "totalMs": 0.024274999999988722,
+        "timeToFirstRecordMs": 0.015520000000151413,
+        "totalMs": 0.026749999999992724,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1275,8 +1275,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.012292000000115877,
-        "totalMs": 0.040365000000065265,
+        "timeToFirstRecordMs": 0.012333000000126049,
+        "totalMs": 0.040085000000090076,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1304,8 +1304,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.05082500000003165,
-        "totalMs": 0.0746799999999439,
+        "timeToFirstRecordMs": 0.04691800000000512,
+        "totalMs": 0.0680579999998372,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1333,8 +1333,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.022531999999955588,
-        "totalMs": 0.0848390000001018,
+        "timeToFirstRecordMs": 0.02002700000002733,
+        "totalMs": 0.07998999999995249,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1362,8 +1362,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.01508800000010524,
-        "totalMs": 0.025738000000046668,
+        "timeToFirstRecordMs": 0.014988000000130342,
+        "totalMs": 0.025227000000086264,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1391,8 +1391,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.013915999999881024,
-        "totalMs": 0.08161300000006122,
+        "timeToFirstRecordMs": 0.011741999999912878,
+        "totalMs": 0.09568899999999303,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1420,8 +1420,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.05119599999989077,
-        "totalMs": 0.07424799999989773,
+        "timeToFirstRecordMs": 0.04987300000016148,
+        "totalMs": 0.0718650000001162,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1449,8 +1449,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.021409999999832507,
-        "totalMs": 0.11960399999998117,
+        "timeToFirstRecordMs": 0.021411000000171043,
+        "totalMs": 0.08119200000010096,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1478,8 +1478,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.017012000000022454,
-        "totalMs": 0.02765199999998913,
+        "timeToFirstRecordMs": 0.013925999999855776,
+        "totalMs": 0.023963999999978114,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1507,8 +1507,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.01336500000002161,
-        "totalMs": 0.04733799999985422,
+        "timeToFirstRecordMs": 0.013284999999996217,
+        "totalMs": 0.04168800000002193,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1536,8 +1536,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.052568999999948574,
-        "totalMs": 0.07809599999995953,
+        "timeToFirstRecordMs": 0.05113600000004226,
+        "totalMs": 0.07394799999997304,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1565,8 +1565,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.02165100000001985,
-        "totalMs": 0.08428800000001502,
+        "timeToFirstRecordMs": 0.020899999999983265,
+        "totalMs": 0.08077200000002449,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1594,8 +1594,8 @@
         "headingCoverage": 1,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.0159000000001015,
-        "totalMs": 0.029145000000198706,
+        "timeToFirstRecordMs": 0.015638999999964653,
+        "totalMs": 0.028452999999899475,
         "canaryObserved": false,
         "failures": {}
       }
@@ -1623,8 +1623,8 @@
         "headingCoverage": null,
         "completed": true,
         "truncated": false,
-        "timeToFirstRecordMs": 0.0342040000000452,
-        "totalMs": 0.07070199999998295,
+        "timeToFirstRecordMs": 0.031890000000203145,
+        "totalMs": 0.06537300000013602,
         "canaryObserved": false,
         "failures": {}
       }

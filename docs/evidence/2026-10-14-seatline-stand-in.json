@@ -167,8 +167,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 60.32131400000003,
-          "totalMs": 60.60020099999997,
+          "timeToFirstRecordMs": 75.92639600000007,
+          "totalMs": 76.5507990000001,
           "canaryObserved": false,
           "failures": {}
         }
@@ -200,8 +200,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.868202999999994,
-          "totalMs": 60.979081000000065,
+          "timeToFirstRecordMs": 70.31978200000003,
+          "totalMs": 72.01867799999991,
           "canaryObserved": false,
           "failures": {}
         }
@@ -233,8 +233,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.74557500000003,
-          "totalMs": 59.88355100000001,
+          "timeToFirstRecordMs": 66.48721999999998,
+          "totalMs": 66.62960499999986,
           "canaryObserved": false,
           "failures": {}
         }
@@ -266,8 +266,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.506861999999956,
-          "totalMs": 55.74829299999999,
+          "timeToFirstRecordMs": 70.70127899999989,
+          "totalMs": 70.98926600000004,
           "canaryObserved": false,
           "failures": {}
         }
@@ -299,8 +299,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.71502399999997,
-          "totalMs": 59.88140199999998,
+          "timeToFirstRecordMs": 80.58779099999992,
+          "totalMs": 80.8069489999998,
           "canaryObserved": false,
           "failures": {}
         }
@@ -332,8 +332,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.726020999999946,
-          "totalMs": 60.27696399999991,
+          "timeToFirstRecordMs": 65.04455999999982,
+          "totalMs": 65.7627779999998,
           "canaryObserved": false,
           "failures": {}
         }
@@ -365,8 +365,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 65.401478,
-          "totalMs": 65.51804199999992,
+          "timeToFirstRecordMs": 74.81168200000002,
+          "totalMs": 74.91992400000026,
           "canaryObserved": false,
           "failures": {}
         }
@@ -398,8 +398,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.19564300000002,
-          "totalMs": 55.36156099999994,
+          "timeToFirstRecordMs": 67.75925800000005,
+          "totalMs": 67.94191799999999,
           "canaryObserved": false,
           "failures": {}
         }
@@ -431,8 +431,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.31224099999986,
-          "totalMs": 54.53560399999992,
+          "timeToFirstRecordMs": 70.16347700000006,
+          "totalMs": 70.45769500000006,
           "canaryObserved": false,
           "failures": {}
         }
@@ -464,8 +464,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.942302000000154,
-          "totalMs": 54.164944000000105,
+          "timeToFirstRecordMs": 70.00507500000003,
+          "totalMs": 70.30416300000024,
           "canaryObserved": false,
           "failures": {}
         }
@@ -497,8 +497,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.16658400000006,
-          "totalMs": 55.25034900000014,
+          "timeToFirstRecordMs": 69.62694899999997,
+          "totalMs": 69.77211000000034,
           "canaryObserved": false,
           "failures": {}
         }
@@ -530,8 +530,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 48.96876400000019,
-          "totalMs": 49.11944900000003,
+          "timeToFirstRecordMs": 69.64620299999979,
+          "totalMs": 69.8241750000002,
           "canaryObserved": false,
           "failures": {}
         }
@@ -563,8 +563,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.471600999999964,
-          "totalMs": 59.59509500000013,
+          "timeToFirstRecordMs": 69.8187069999999,
+          "totalMs": 70.0088109999997,
           "canaryObserved": false,
           "failures": {}
         }
@@ -596,8 +596,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.41437700000006,
-          "totalMs": 59.621736000000055,
+          "timeToFirstRecordMs": 74.65545099999963,
+          "totalMs": 74.84728899999982,
           "canaryObserved": false,
           "failures": {}
         }
@@ -629,8 +629,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.42690900000002,
-          "totalMs": 59.531105000000025,
+          "timeToFirstRecordMs": 70.1086049999999,
+          "totalMs": 70.1958880000002,
           "canaryObserved": false,
           "failures": {}
         }
@@ -662,8 +662,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.32284299999992,
-          "totalMs": 55.46745899999996,
+          "timeToFirstRecordMs": 69.62747200000013,
+          "totalMs": 69.79272000000037,
           "canaryObserved": false,
           "failures": {}
         }
@@ -695,8 +695,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.253652999999986,
-          "totalMs": 54.39435300000014,
+          "timeToFirstRecordMs": 69.97223299999996,
+          "totalMs": 70.21200999999974,
           "canaryObserved": false,
           "failures": {}
         }
@@ -728,8 +728,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.96959300000003,
-          "totalMs": 54.16017799999986,
+          "timeToFirstRecordMs": 74.74448299999995,
+          "totalMs": 74.96200799999997,
           "canaryObserved": false,
           "failures": {}
         }
@@ -761,8 +761,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.51066800000012,
-          "totalMs": 55.59996100000012,
+          "timeToFirstRecordMs": 69.61691999999994,
+          "totalMs": 69.70293099999981,
           "canaryObserved": false,
           "failures": {}
         }
@@ -794,8 +794,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.802985000000035,
-          "totalMs": 54.052967999999964,
+          "timeToFirstRecordMs": 71.19255799999974,
+          "totalMs": 71.38739099999975,
           "canaryObserved": false,
           "failures": {}
         }
@@ -827,8 +827,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.3051989999999,
-          "totalMs": 54.461040999999796,
+          "timeToFirstRecordMs": 69.7300839999998,
+          "totalMs": 69.98448800000006,
           "canaryObserved": false,
           "failures": {}
         }
@@ -860,8 +860,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.05077399999982,
-          "totalMs": 54.30408200000011,
+          "timeToFirstRecordMs": 69.84132599999975,
+          "totalMs": 70.04640900000004,
           "canaryObserved": false,
           "failures": {}
         }
@@ -893,8 +893,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.06027600000016,
-          "totalMs": 55.14957000000004,
+          "timeToFirstRecordMs": 69.71689700000024,
+          "totalMs": 69.81782500000008,
           "canaryObserved": false,
           "failures": {}
         }
@@ -926,8 +926,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.142439000000195,
-          "totalMs": 55.27120100000002,
+          "timeToFirstRecordMs": 69.47255399999995,
+          "totalMs": 69.60474000000022,
           "canaryObserved": false,
           "failures": {}
         }
@@ -959,8 +959,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.946396999999706,
-          "totalMs": 55.192823999999746,
+          "timeToFirstRecordMs": 72.25558000000001,
+          "totalMs": 72.90383699999984,
           "canaryObserved": false,
           "failures": {}
         }
@@ -992,8 +992,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.039108999999826,
-          "totalMs": 55.260629999999765,
+          "timeToFirstRecordMs": 71.27557400000023,
+          "totalMs": 71.51160400000026,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1025,8 +1025,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 51.65330500000027,
-          "totalMs": 51.8182810000003,
+          "timeToFirstRecordMs": 70.81875199999968,
+          "totalMs": 71.00241400000004,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1058,8 +1058,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.867031000000225,
-          "totalMs": 56.02392499999996,
+          "timeToFirstRecordMs": 75.41039699999965,
+          "totalMs": 75.63331199999993,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1091,8 +1091,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.26641399999971,
-          "totalMs": 55.341735999999855,
+          "timeToFirstRecordMs": 69.8541750000004,
+          "totalMs": 69.92030799999975,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1124,8 +1124,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.90236300000015,
-          "totalMs": 54.02610800000002,
+          "timeToFirstRecordMs": 69.4722440000005,
+          "totalMs": 69.59643500000038,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1157,8 +1157,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.45183599999973,
-          "totalMs": 55.52756899999986,
+          "timeToFirstRecordMs": 69.4850460000007,
+          "totalMs": 69.55736100000013,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1190,8 +1190,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.61263599999984,
-          "totalMs": 55.736921000000166,
+          "timeToFirstRecordMs": 65.54094800000075,
+          "totalMs": 65.66499900000053,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1223,8 +1223,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.40601000000015,
-          "totalMs": 54.46913399999994,
+          "timeToFirstRecordMs": 69.9132669999999,
+          "totalMs": 69.97935000000052,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1256,8 +1256,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.89571299999989,
-          "totalMs": 54.060067999999774,
+          "timeToFirstRecordMs": 69.84329500000058,
+          "totalMs": 70.01553599999988,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1289,8 +1289,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 48.728619999999864,
-          "totalMs": 48.792705999999725,
+          "timeToFirstRecordMs": 69.3628490000001,
+          "totalMs": 69.44090400000005,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1322,8 +1322,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 56.21363199999996,
-          "totalMs": 56.34290499999997,
+          "timeToFirstRecordMs": 70.71333499999946,
+          "totalMs": 70.83870899999965,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1355,8 +1355,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.22444399999995,
-          "totalMs": 54.29489899999999,
+          "timeToFirstRecordMs": 74.72879699999976,
+          "totalMs": 74.83337200000005,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1388,8 +1388,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.16747399999986,
-          "totalMs": 54.34475799999973,
+          "timeToFirstRecordMs": 69.59083199999986,
+          "totalMs": 69.88233500000024,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1421,8 +1421,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.42314699999997,
-          "totalMs": 55.52613100000008,
+          "timeToFirstRecordMs": 69.52778699999999,
+          "totalMs": 69.61040099999991,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1454,8 +1454,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.980833000000075,
-          "totalMs": 55.09893899999997,
+          "timeToFirstRecordMs": 69.54266499999994,
+          "totalMs": 69.6718150000006,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1487,8 +1487,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 59.31412100000034,
-          "totalMs": 59.40360400000009,
+          "timeToFirstRecordMs": 64.74366100000043,
+          "totalMs": 64.87158,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1520,8 +1520,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 53.95677399999977,
-          "totalMs": 54.07583100000011,
+          "timeToFirstRecordMs": 71.85690799999975,
+          "totalMs": 72.08751800000027,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1553,8 +1553,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.18086099999982,
-          "totalMs": 55.26258300000018,
+          "timeToFirstRecordMs": 69.42458199999965,
+          "totalMs": 69.5150909999993,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1586,8 +1586,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.43159299999979,
-          "totalMs": 54.542447999999695,
+          "timeToFirstRecordMs": 69.25212300000021,
+          "totalMs": 69.36343000000033,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1619,8 +1619,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.41656499999999,
-          "totalMs": 54.490945999999894,
+          "timeToFirstRecordMs": 74.99741799999993,
+          "totalMs": 75.1578870000003,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1652,8 +1652,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.10995200000025,
-          "totalMs": 54.24587500000007,
+          "timeToFirstRecordMs": 69.52144600000065,
+          "totalMs": 69.68223500000022,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1685,8 +1685,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.12056600000005,
-          "totalMs": 55.1778519999998,
+          "timeToFirstRecordMs": 69.79427300000043,
+          "totalMs": 69.85794200000055,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1718,8 +1718,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.195432999999866,
-          "totalMs": 55.334530000000086,
+          "timeToFirstRecordMs": 66.15896100000009,
+          "totalMs": 66.3617690000001,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1751,8 +1751,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.33719099999962,
-          "totalMs": 54.43154199999981,
+          "timeToFirstRecordMs": 84.77986500000043,
+          "totalMs": 84.9199349999999,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1784,8 +1784,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.255850000000464,
-          "totalMs": 54.39226400000007,
+          "timeToFirstRecordMs": 74.87045099999978,
+          "totalMs": 75.07387000000017,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1817,8 +1817,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.544889999999214,
-          "totalMs": 55.60765300000003,
+          "timeToFirstRecordMs": 71.12696599999981,
+          "totalMs": 71.19837899999948,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1850,8 +1850,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.486228000000665,
-          "totalMs": 55.606307000000015,
+          "timeToFirstRecordMs": 68.94939700000032,
+          "totalMs": 69.11643800000002,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1883,8 +1883,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.58736500000032,
-          "totalMs": 54.67401400000017,
+          "timeToFirstRecordMs": 69.7515140000005,
+          "totalMs": 69.83423800000037,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1916,8 +1916,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 54.417036999999254,
-          "totalMs": 54.73612299999968,
+          "timeToFirstRecordMs": 69.599561,
+          "totalMs": 69.79164899999978,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1949,8 +1949,8 @@
           "headingCoverage": 1,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 60.293861000000106,
-          "totalMs": 60.360610000000634,
+          "timeToFirstRecordMs": 69.57993299999998,
+          "totalMs": 69.64406299999973,
           "canaryObserved": false,
           "failures": {}
         }
@@ -1982,8 +1982,8 @@
           "headingCoverage": null,
           "completed": true,
           "truncated": false,
-          "timeToFirstRecordMs": 55.427560000000085,
-          "totalMs": 55.54737899999964,
+          "timeToFirstRecordMs": 69.50386400000025,
+          "totalMs": 69.62940799999978,
           "canaryObserved": false,
           "failures": {}
         }
