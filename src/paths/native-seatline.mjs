@@ -115,7 +115,10 @@ export class NativeSeatline {
       kind = 'analysis',
       maxOutputBytes = OUTPUT_CAPS[kind],
       scheduling,
-      timeout = REPORTS.has(method) ? 30000 : 905000
+      // Include the broker's queue allowance before its provider execution deadline.
+      timeout = contract.limits.queue_timeout_ms +
+        (REPORTS.has(method) ? 30000 : contract.limits.max_turn_seconds * 1000) +
+        5000
     } = {}
   ) {
     if (signal?.aborted) throw cancelled();
