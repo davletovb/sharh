@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Sharh settings · Seatline</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Sharh settings</p>
+        <h1>Seatline</h1>
+        <p>Connect the model CLIs you use on this computer.</p>
+      </header>
+      <section aria-labelledby="setup">
+        <h2 id="setup">Set up Seatline</h2>
+        <ol>
+          <li>Install Seatline with <code>seatline-companion install</code>.</li>
+          <li>Install and sign in to Claude Code, Codex, Antigravity or Grok.</li>
+          <li>Authorize this extension with the command below.</li>
+        </ol>
+        <pre id="authorize"></pre>
+        <button id="copy">Copy command</button><span id="copied" role="status"></span>
+        <p class="note">
+          The command replaces your Sharh grant. Keep every provider and extension origin you use in it.
+        </p>
+      </section>
+      <section aria-labelledby="providers">
+        <div class="row">
+          <h2 id="providers">Providers</h2>
+          <button id="check">Check</button>
+        </div>
+        <p id="check-state" role="status">Check for a fresh sign-in and capability report.</p>
+        <div id="diagnostics" aria-live="polite"></div>
+      </section>
+      <section aria-labelledby="policy">
+        <h2 id="policy">Sign-in policy</h2>
+        <p>
+          Claude Code, Codex and Grok use subscription sign-ins. API-key and unknown sign-ins are refused on
+          this path.
+        </p>
+        <label><input type="checkbox" id="gemini-cloud" /> Allow the Antigravity cloud route</label>
+        <p class="note">
+          Seatline reports Gemini through Antigravity as a cloud route. It cannot certify it as a subscription
+          route. Enable this only if you want to use that sign-in.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="settings.mjs"></script>
+  </body>
+</html>

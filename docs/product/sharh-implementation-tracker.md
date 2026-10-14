@@ -1,18 +1,18 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A slice implemented. A-01, A-04, A-05 and A-06 are DONE; A-02 and A-03 are IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
+Status: A and B slices implemented. B-01–B-04, B-06 and B-07 are DONE. A-02, A-03 and B-05 remain IMPLEMENTED — VERIFY for their owner-machine live gates. No live-provider behaviour is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **4**
-- IMPLEMENTED — VERIFY: **2**
+- DONE: **10**
+- IMPLEMENTED — VERIFY: **3**
 - IN PROGRESS: **0**
 - BLOCKED: **0**
-- TODO: **66**
+- TODO: **59**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -92,13 +92,13 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| B-01 | Scaffold the MV3 extension | A-05 | The packaged extension loads in Chromium with the fixed ID and only the framework's required permissions; site and file access stay optional. The service worker, side panel and settings page open. The package builds reproducibly, and CI loads it under Playwright | TODO | — | — |
-| B-02 | Build the native client | A-02, B-01 | Starting from Lineleaf's client, it:<br>• streams `delta` text to callbacks;<br>• applies output caps per request kind;<br>• accepts `session` events only on persistent requests;<br>• forwards `source`, `usage`, `queued` and `admitted` events;<br>• sends `scheduling` hints and cancels by target;<br>• resends only frames that provably never left, and never replays a sent request.<br>Unit tests on a scripted port cover each behaviour | TODO | — | — |
-| B-03 | Implement the path interface and the Seatline path | B-02 | `discover`, `prepare`, `run`, `forget` and `cleanup` behave as in [model paths](../architecture/model-paths.md). Capabilities and failures map as in the integration document's capability matrix and failure table. The path conformance tests pass on a scripted transport | TODO | — | — |
-| B-04 | Enforce readiness and sign-in policy | B-03 | Every generation uses `send_ready_with_policy` with the per-provider policy, and Gemini needs the cloud opt-in. `prepare` follows the triggers and the 10-second throttle. Readiness refusals retry once. An older companion reports *update required*, with no fallback to plain `send`. Real-companion tests show no launch on a policy denial | TODO | — | — |
-| B-05 | Build setup and diagnostics | A-02, B-04 | Settings → Seatline shows the authorize command with the real ID and a copy button. Tests show it names every diagnostics state in the integration document correctly. **Live:** each state is reproduced on the owner's Chrome | TODO | — | — |
-| B-06 | Pace requests | B-03 | Background work holds at most one generation and never queues ahead. Interactive requests carry their hints. Queued and busy states are shown, and backoff follows the schedule. `forget` and `cleanup` wait for idle. A real-companion test shows a passage action completing while a background job runs | TODO | — | — |
-| B-07 | Test against the real companion in CI | A-02, B-03 | CI builds the pinned companion with stand-in providers and drives the client through the broker. The tests cover streaming, cancellation, disconnect, oversize refusal, policy denial, queue timeout and session continuation | TODO | — | — |
+| B-01 | Scaffold the MV3 extension | A-05 | The packaged extension loads in Chromium with the fixed ID and only the framework's required permissions; site and file access stay optional. The service worker, side panel and settings page open. The package builds reproducibly, and CI loads it under Playwright | DONE | Codex | Fixed-ID MV3 worker, side panel/settings, optional hosts, deterministic ZIP and Playwright install; [B evidence](../evidence/2026-10-14-b-seatline.md) |
+| B-02 | Build the native client | A-02, B-01 | Starting from Lineleaf's client, it:<br>• streams `delta` text to callbacks;<br>• applies output caps per request kind;<br>• accepts `session` events only on persistent requests;<br>• forwards `source`, `usage`, `queued` and `admitted` events;<br>• sends `scheduling` hints and cancels by target;<br>• resends only frames that provably never left, and never replays a sent request.<br>Unit tests on a scripted port cover each behaviour | DONE | Codex | Lineleaf-derived streaming transport; scripted cap, session, callback, scheduling, cancellation, retry/disconnect and Unicode regressions; [B evidence](../evidence/2026-10-14-b-seatline.md) |
+| B-03 | Implement the path interface and the Seatline path | B-02 | `discover`, `prepare`, `run`, `forget` and `cleanup` behave as in [model paths](../architecture/model-paths.md). Capabilities and failures map as in the integration document's capability matrix and failure table. The path conformance tests pass on a scripted transport | DONE | Codex | Path interface, capability/failure mapping, turn/session mapping and conformance tests; [B evidence](../evidence/2026-10-14-b-seatline.md) |
+| B-04 | Enforce readiness and sign-in policy | B-03 | Every generation uses `send_ready_with_policy` with the per-provider policy, and Gemini needs the cloud opt-in. `prepare` follows the triggers and the 10-second throttle. Readiness refusals retry once. An older companion reports *update required*, with no fallback to plain `send`. Real-companion tests show no launch on a policy denial | DONE | Codex | Protected sends only, explicit provider policy/Gemini opt-in, throttled preparation, one fresh readiness retry, no old-companion fallback; real broker zero-launch denial; [B evidence](../evidence/2026-10-14-b-seatline.md) |
+| B-05 | Build setup and diagnostics | A-02, B-04 | Settings → Seatline shows the authorize command with the real ID and a copy button. Tests show it names every diagnostics state in the integration document correctly. **Live:** each state is reproduced on the owner's Chrome | IMPLEMENTED — VERIFY | Codex | Settings authorize/copy and every diagnostic state tested; real Chromium missing-host, ready, signed-out and cloud-policy states verified. Owner’s Chrome reproduction of each state remains outstanding; [B evidence](../evidence/2026-10-14-b-seatline.md#owner-chrome-gate-b-05) |
+| B-06 | Pace requests | B-03 | Background work holds at most one generation and never queues ahead. Interactive requests carry their hints. Queued and busy states are shown, and backoff follows the schedule. `forget` and `cleanup` wait for idle. A real-companion test shows a passage action completing while a background job runs | DONE | Codex | One background turn, immediate interactive hints, queued/busy retry UI, 10/30/60-second backoff, idle maintenance barriers; real interactive action completes during background work; [B evidence](../evidence/2026-10-14-b-seatline.md) |
+| B-07 | Test against the real companion in CI | A-02, B-03 | CI builds the pinned companion with stand-in providers and drives the client through the broker. The tests cover streaming, cancellation, disconnect, oversize refusal, policy denial, queue timeout and session continuation | DONE | Codex | Pinned real broker with upstream fake CLIs passes streaming, cancellation, disconnect, oversize refusal, zero-launch policy denial, queue timeout and persistent continuation; [CI snapshot](../evidence/2026-10-14-b-validation.json) |
 
 ### C — Readers and document model
 

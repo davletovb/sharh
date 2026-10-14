@@ -1,11 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Sharh foundation probe",
+  "name": "Sharh",
   "version": "0.1.0",
   "minimum_chrome_version": "124",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1EPou/ybNWd4jgZs25Pbytxc6kv4GlLh3sFoZeKT0bDklaVViWlk8j/wYbO18aXBsvFSGnOedt6HjQvHfb0WWyVgJ3c4qXiB/BM2ra/op65Qnj7BB7736HqZ1EIZxON+4GTBH8HDFild4DM8ObdR7UzqVFFi1qFbX7EPVwX0ht+b6i7hfz4lCZ12w/KwwTpap6CUjsdc3qmHwu2bprDfm51PTLEI2ZAr24iwTfC0F37p1XPM/iE9WMP7OsK/FJG/SCvbr2FKmeNNCrKq916DhuebesM6PKTU8BjNmyGIVdNlO2cQFh6rUKvGCiPbCBdkHuaoprjEYAKt9o+Tm7yZRwIDAQAB",
   "permissions": [
-    "nativeMessaging"
+    "sidePanel",
+    "storage",
+    "unlimitedStorage",
+    "nativeMessaging",
+    "contextMenus",
+    "scripting",
+    "activeTab"
   ],
   "incognito": "not_allowed",
   "background": {
@@ -13,9 +19,18 @@
     "type": "module"
   },
   "action": {
-    "default_popup": "probe.html"
+    "default_title": "Open Sharh"
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
+  },
+  "description": "Read closely with your own models through Seatline.",
+  "optional_host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "side_panel": {
+    "default_path": "ui/panel.html"
+  },
+  "options_ui": {
+    "page": "ui/settings.html",
+    "open_in_tab": true
   }
 }

@@ -1,0 +1,40 @@
+{
+  "ci": {
+    "url": "https://github.com/davletovb/sharh/actions/runs/38513944497",
+    "commit": "5f1b3260c344b99e51b2bb34e38bc41e460e0e74",
+    "unitTests": 48,
+    "browserTests": 6,
+    "jobs": {
+      "corpus-and-prototypes": "success",
+      "pinned-companion": "success"
+    }
+  },
+  "package": {
+    "reproducible": true,
+    "sha256": "320b9492ce130e1e0bb3a9bac51f68873fdadc0aa34d989d0ef6f76782fc194a"
+  },
+  "path": {
+    "kind": "production-seatline-path-stand-ins",
+    "liveProviderClaim": false,
+    "revision": "ba712f70eb4acd43b45b326bb4907feb9ded9c2f",
+    "checks": {
+      "discovery": true,
+      "streaming": {
+        "chunks": 2,
+        "text": "First. Second."
+      },
+      "sessionContinuation": true,
+      "maintenance": true,
+      "outputCap": true,
+      "oversizeRefusedBeforePost": true,
+      "cancellation": true,
+      "disconnectWithoutReplay": true,
+      "policyDenialNoLaunch": true,
+      "queueTimeout": true,
+      "interactiveDuringBackground": true,
+      "geminiOptInPersisted": true,
+      "productionExtensionRPC": true
+    },
+    "passed": true
+  }
+}

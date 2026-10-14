@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Contract pinned; A-02 authorization and A-03 output probes implemented. Source facts below use the audited revision. Deterministic CI evidence and owner-machine live gates are tracked in the [foundation decision](../decisions/a-foundations.md).
+Status: Contract pinned; A probes and B production client/path implemented ([B evidence](../evidence/2026-10-14-b-seatline.md)). Source facts below use the audited revision. Deterministic CI evidence and owner-machine live gates are tracked in the [foundation decision](../decisions/a-foundations.md).
 
 | | |
 | --- | --- |
@@ -98,6 +98,7 @@ Settings → Seatline → **Check** always asks for fresh readiness and reports 
 | --- | --- | --- |
 | Companion missing | Chrome cannot find the native host | Install Seatline, and register it for this browser if it is not Chrome |
 | Sharh not authorized | Chrome refuses the host for this origin, or the host exits before `ready` | Run the authorize command shown |
+| Sharh too old | A newer `ready.version` than Sharh supports | Update Sharh; do not tell the reader to update an already newer companion |
 | Companion too old | `readiness` or `send_ready_with_policy` answered with `INVALID_REQUEST` or `READINESS_UNSUPPORTED` | Update Seatline (`install` from a new build). There is no fallback to plain `send`. |
 | Provider not authorized | `APP_NOT_AUTHORIZED` | Add the provider to the grant |
 | CLI missing | Status `availability: "not_found"`, or `EXECUTABLE_NOT_FOUND` | Install that CLI |
@@ -109,10 +110,10 @@ Settings → Seatline → **Check** always asks for fresh readiness and reports 
 
 - **Preparation:**
   - `prepare` with `{"mode":"cached","max_age_ms":30000}` runs when the side panel opens on a document, when the passage toolbar appears, when the model picker opens, and before a job starts.
-  - It runs at most once every 10 seconds per provider and never reports a failure, because nobody asked.
+  - It runs at most once every 10 seconds per provider and never reports a failure, because nobody asked. The panel prepares even when Chrome hides the active tab URL, follows tab/target changes, and uses the chosen target (`seatlineTarget`); the provisional Claude default applies until one is chosen. Job owners prepare once when starting a job; `run` reuses fresh readiness and does not add a prepare round trip per chapter.
   - It sends no prompt and keeps no process warm. It moves the sign-in probe out of the send.
 - **Before a turn:**
-  1. `readiness` (cached, at most 30 seconds old) confirms the provider is available and authenticated, its sign-in class is accepted, `tool_isolation` is `true`, and any requested effort or speed is supported.
+  1. `readiness` (a cached snapshot or check, at most 30 seconds old) confirms the provider is available and authenticated, its sign-in class is accepted, `tool_isolation` is `true`, and any requested effort or speed is supported.
   2. Sharh then sends with `send_ready_with_policy`, using `freshness` set to cached, `check_sign_in: false` in the turn, and the policy below. Seatline re-validates readiness and enforces the policy at launch, so a sign-in that changes between the check and the send cannot start a turn.
 - **Policy** (`allowed_sign_in`):
 
@@ -209,7 +210,7 @@ Interactive requests get a bounded preference in the queue, but no priority pree
    - On `QUEUE_FULL` or `QUEUE_TIMEOUT`, background work retries after 10, 30 and then 60 seconds.
    - An interactive request shows *busy* with a retry button.
 5. **Shared slots.** The per-provider limit is shared with the owner's other Seatline apps (Lineleaf, Conclave, TabBeam), so Sharh never assumes its slots are free.
-6. **Forget and cleanup wait for idle.** A queued `forget` or `cleanup` holds back new generations for that app and provider until running ones finish, so Sharh sends them only when it has nothing running on that provider.
+6. **Forget and cleanup wait for idle.** Sharh keeps maintenance local while the provider has active turns. Waiting maintenance holds back the next background turn; interactive requests may still use the reserved slot. At the first idle point, maintenance takes precedence and holds back all new turns until it completes. Local waiting is reported as a `queued` event. Seatline itself creates a barrier as soon as maintenance is submitted, so Sharh submits it only when its provider is idle.
 
 ## Sessions, forget and cleanup
 
@@ -236,12 +237,14 @@ Interactive requests get a bounded preference in the queue, but no priority pree
   - Quick: 32 KiB;
   - Analysis: 256 KiB;
   - Synthesis: 512 KiB.
-  - Exceeding a cap cancels the turn, keeps what arrived and marks the run truncated.
+  - Exceeding a cap cancels the turn, keeps what arrived and marks the run truncated. Final usage and sources are collected while cancellation drains; siblings on a connection closed by a failed drain receive only a neutral disconnect.
 - **Usage:**
   - `usage` events report input and output token totals.
   - Sharh shows them per run as plan usage, not money.
 
 ## Failure handling
+
+The table describes consumer behavior across B/D/G/H. B maps and surfaces all failures; it retries only readiness refusals and background queue-full/timeouts. Job replay/failover and session reconstruction/housekeeping remain with their later tracker items.
 
 `failed` events carry a `retryable` flag. Sharh uses that flag as the primary signal and the `reason` for wording.
 
