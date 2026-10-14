@@ -77,6 +77,7 @@ export const path = {
   history: [{role, text}],  // chat on paths without sessions
   session: {mode: 'none' | 'start' | 'continue', handle},
   priority: 'interactive' | 'background',
+  tier: 'quick' | 'analysis' | 'synthesis', // optional output-cap class; absent uses kind's default
   cleanupGroup: 'doc-…' | 'chat-…',
   limits: {maxOutputBytes},
 }
@@ -85,9 +86,9 @@ export const path = {
 ### Events and result
 
 - **Events passed to `onEvent`:**
-  - `queued` (with `ahead`), `started`, `delta` (text), `source` (a web source), `usage` (input and output tokens);
+  - `queued` (with `ahead`), `admitted`, `started`, `delta` (text), `source` (a web source), `usage` (input and output tokens);
   - `session` (a handle to keep) and `session_lost`.
-- **Result:** the full text, sources, usage, the session handle if any, and the target actually used.
+- **Result:** `text`, `sources`, `usage`, the `session` handle if any, and the `target` actually used. `truncated: true` means an output cap stopped the turn; the retained text is a whole-character UTF-8 prefix. The optional tier sets the maximum cap: Quick/repair 32 KiB, Analysis/chat/search 256 KiB, Synthesis 512 KiB; `limits.maxOutputBytes` may lower it.
 - **Failure:**
   - One error type, with a path-neutral `code`:
     - `NOT_INSTALLED`, `NOT_AUTHORIZED`, `SIGNED_OUT`, `POLICY_DENIED`;

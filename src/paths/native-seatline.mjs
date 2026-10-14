@@ -304,16 +304,16 @@ export class NativeSeatline {
           )
             throw Error();
           this.emit(item, event);
-          this.finish(item, failure(event, item.method));
+          this.finish(item, item.cancellation || failure(event, item.method));
           return;
         case 'stopped':
           this.emit(item, event);
-          this.finish(item, cancelled());
+          this.finish(item, item.cancellation || cancelled());
           return;
         case 'completed':
           if ((REPORTS.has(item.method) || generating) && !item.status) throw Error();
           this.emit(item, event);
-          this.finish(item);
+          this.finish(item, item.cancellation);
           return;
       }
       this.emit(item, event);
@@ -325,7 +325,10 @@ export class NativeSeatline {
     try {
       item.onEvent(event);
     } catch {
-      this.cancel(item.id, new PathError('PROVIDER_FAILED', 'CALLBACK_FAILED'));
+      const error = new PathError('PROVIDER_FAILED', 'CALLBACK_FAILED');
+      // A terminal event already ended the provider turn; finish locally without a redundant cancel.
+      if (TERMINAL.has(event.type)) item.cancellation = error;
+      else this.cancel(item.id, error);
     }
   }
   result(item) {
@@ -350,6 +353,7 @@ export class NativeSeatline {
     }
   }
   finish(item, error) {
+    if (this.pending.get(item.id) !== item) return;
     clearTimeout(item.timer);
     item.signal?.removeEventListener('abort', item.abort);
     this.pending.delete(item.id);

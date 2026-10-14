@@ -395,3 +395,17 @@ test('failed connections do not defeat preparation throttling, and invalid conti
   assert.equal(h.sent.length, 0);
   h.client.close();
 });
+
+test('supplied sessions must be objects with a valid mode before any quota-consuming turn', async () => {
+  const h = harness(normal),
+    path = new SeatlinePath({client: h.client});
+  for (const session of ['continue', [], null, 42, true, {mode: null}, {mode: []}]) {
+    await assert.rejects(path.run(target, {...request, session}), {
+      code: 'OPTION_UNSUPPORTED',
+      reason: 'INVALID_SESSION'
+    });
+  }
+  assert.equal(h.sent.length, 0);
+  assert.equal(h.ports.length, 0);
+  h.client.close();
+});

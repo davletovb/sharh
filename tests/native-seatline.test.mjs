@@ -240,3 +240,31 @@ test('native setup failures distinguish missing and forbidden hosts without post
     client.close();
   }
 });
+
+test('terminal callback exceptions reject consistently on an asynchronous port without cancelling completed work', async () => {
+  for (const type of ['completed', 'failed', 'stopped']) {
+    const h = harness((frame, reply) => {
+      if (frame.method !== 'send_ready_with_policy') return normal(frame, reply);
+      setImmediate(() => {
+        reply({type: 'status', provider: 'codex', status: status()});
+        reply({type: 'delta', text: 'answer'});
+        reply(
+          type === 'failed'
+            ? {type, code: 'ProviderFailed', reason: 'PROVIDER_FAILED', retryable: false}
+            : {type}
+        );
+      });
+    });
+    const run = h.client.request('codex', 'send_ready_with_policy', params, {
+      onEvent: (event) => {
+        if (event.type === type) throw Error('view failed');
+      }
+    });
+    await assert.rejects(run, {code: 'PROVIDER_FAILED', reason: 'CALLBACK_FAILED'});
+    assert.ok(h.sent.every((frame) => frame.method !== 'cancel'));
+    await h.client.request('claude', 'readiness', {});
+    assert.equal(h.ports.length, 1);
+    assert.equal(h.ports[0].closed, false);
+    h.client.close();
+  }
+});

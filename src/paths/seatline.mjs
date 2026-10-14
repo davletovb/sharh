@@ -97,6 +97,14 @@ function validate(target, request) {
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
   if (request.history?.some((m) => !['user', 'assistant'].includes(m.role) || typeof m.text !== 'string'))
     throw new PathError('OPTION_UNSUPPORTED', 'INVALID_HISTORY');
+  if (
+    request.session !== undefined &&
+    (request.session === null ||
+      typeof request.session !== 'object' ||
+      Array.isArray(request.session) ||
+      (request.session.mode !== undefined && !['none', 'start', 'continue'].includes(request.session.mode)))
+  )
+    throw new PathError('OPTION_UNSUPPORTED', 'INVALID_SESSION');
   const mode = request.session?.mode ?? 'none';
   if (
     !['none', 'start', 'continue'].includes(mode) ||
