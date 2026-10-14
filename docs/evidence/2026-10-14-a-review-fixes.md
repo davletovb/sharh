@@ -1,6 +1,6 @@
 # A-slice review fixes
 
-Established: 2026-10-14. Review target: [Sharh PR #2](https://github.com/davletovb/sharh/pull/2). Verification is in progress; the earlier foundation reports remain tied to their recorded source commit until new CI reports are saved.
+Established: 2026-10-14. Review target: [Sharh PR #2](https://github.com/davletovb/sharh/pull/2). Verified at `37ef88084505bee0fa7956be30db82c8a01eb0df` in [passing CI run 38509256786](https://github.com/davletovb/sharh/actions/runs/38509256786). All 24 unit checks, the 14-item corpus, four additional browser regression groups, 56 scripted cases and 56 real-companion stand-in runs pass. Overflow recovery and Chrome authorization checks pass too. The raw reports in this folder were refreshed from that run’s artifacts; no live-provider result is claimed.
 
 | Review finding | Change | Regression evidence |
 | --- | --- | --- |

@@ -1,0 +1,41 @@
+{
+  "kind": "review-regressions",
+  "cases": [
+    {
+      "options": {
+        "outline": true
+      },
+      "passed": true,
+      "blocks": 8
+    },
+    {
+      "options": {
+        "crop": true
+      },
+      "passed": true,
+      "blocks": 8
+    },
+    {
+      "options": {
+        "rotation": 90
+      },
+      "passed": true,
+      "blocks": 8
+    },
+    {
+      "options": {
+        "rotation": 180,
+        "crop": true
+      },
+      "passed": true,
+      "blocks": 8
+    },
+    {
+      "options": {
+        "rotation": 270
+      },
+      "passed": true,
+      "blocks": 8
+    }
+  ]
+}
