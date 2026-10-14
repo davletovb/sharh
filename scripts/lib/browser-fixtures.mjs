@@ -21,7 +21,7 @@ export async function serveRepository() {
 export function browserOptions() {
   return {headless: true, args: ['--no-sandbox'], ...(process.env.SHARH_CHROME_EXECUTABLE ? {executablePath: process.env.SHARH_CHROME_EXECUTABLE} : {})};
 }
-export async function fixtureBrowser() {
+export async function fixtureBrowser({module = '/dist/prototype.mjs'} = {}) {
   const server = await serveRepository(); let browser;
   try { browser = await chromium.launch(browserOptions()); }
   catch (error) { await server.close(); throw error; }
@@ -29,13 +29,13 @@ export async function fixtureBrowser() {
   async function extract(item) {
     if (item.format === 'html') {
       await page.goto(`${server.url}/${item.path}`);
-      return page.evaluate(async identity => (await import('/dist/prototype.mjs')).extractHTML(document, {identity}), item.path);
+      return page.evaluate(async ({identity,module}) => (await import(module)).extractHTML(document, {identity}), {identity:item.path,module});
     }
     await page.goto(`${server.url}/dist/index.html`);
-    return page.evaluate(async path => {
-      const p = await import('/dist/prototype.mjs'), pdf = await p.openPDF(await (await fetch('/' + path)).arrayBuffer());
+    return page.evaluate(async ({path,module}) => {
+      const p = await import(module), pdf = await p.openPDF(await (await fetch('/' + path)).arrayBuffer());
       try { return await p.extractPDF(pdf, path); } finally { await pdf.loadingTask.destroy(); }
-    }, item.path);
+    }, {path:item.path,module});
   }
   return {browser, page, server, extract, close: async () => { await browser.close(); await server.close(); }};
 }

@@ -2,7 +2,16 @@ import {watchPanelContext} from './panel-context.mjs';
 import {bindRuns} from './runs.mjs';
 import {PathClient} from './client.mjs';
 import {diagnostic} from '../../src/paths/diagnostics.mjs';
+import {readerURL,isPDFAddress} from '../lib/opening.mjs';
 const client = new PathClient();
+document.querySelector('#open-reader').addEventListener('click',()=>chrome.tabs.create({url:readerURL(chrome.runtime)}));
+document.querySelector('#read-page').addEventListener('click',async()=> {
+  try {
+    const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});
+    if (!tab) throw Error('Open the page you want to read.');
+    await chrome.tabs.create({url:readerURL(chrome.runtime,isPDFAddress(tab.url) ? {source:tab.url} : {tabId:tab.id})});
+  } catch(error) { document.querySelector('#read-state').textContent=error.message; }
+});
 document.querySelector('#settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
 document.querySelector('#check').addEventListener('click', async () => {
   const status = document.querySelector('#state');

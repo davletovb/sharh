@@ -1,0 +1,154 @@
+import {validateDocument} from './model.mjs';
+export const STORE_KEYS = Object.freeze({
+  docs: 'id', extractions: ['docId','version'], blocks: ['docId','version','n'], sections: ['docId','version','id'],
+  sources: ['docId','version'], runs: 'id', records: ['runId','sequence'], chats: 'id',
+  collections: 'id', glossary: ['bookId','term'], jobs: 'id', maintenance: 'id'
+});
+const stores = Object.keys(STORE_KEYS);
+const result = request => new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+const done = tx => new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = () => reject(tx.error || Error('TRANSACTION_ABORTED')); tx.onerror = () => {}; });
+const metadata = ({blocks, sections, ...doc}) => doc;
+const strip = ({docId, ...row}) => row;
+const identical = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+export async function openDocumentStore({indexedDB = globalThis.indexedDB, name = 'sharh'} = {}) {
+  const request = indexedDB.open(name, 1);
+  request.onupgradeneeded = () => {
+    const db = request.result;
+    for (const [name, keyPath] of Object.entries(STORE_KEYS)) {
+      const s = db.createObjectStore(name, {keyPath});
+      if (['extractions','blocks','sections','sources','runs','chats','jobs'].includes(name)) s.createIndex('docId', 'docId');
+      if (name === 'records') s.createIndex('runId', 'runId');
+      if (name === 'glossary') s.createIndex('bookId', 'bookId');
+    }
+  };
+  const db = await result(request);
+  db.onversionchange = () => db.close();
+  return new DocumentStore(db);
+}
+export class DocumentStore {
+  constructor(db) { this.db = db; }
+  close() { this.db.close(); }
+  async getDocument(id, version) {
+    const tx = this.db.transaction(['docs','extractions','blocks','sections'], 'readonly'), complete = done(tx);
+    const meta = await result(version ? tx.objectStore('extractions').get([id, version]) : tx.objectStore('docs').get(id));
+    if (!meta) { await complete; return null; }
+    // Issue all dependent reads in the request microtask while the transaction is active.
+    const [blocks, sections] = await Promise.all(['blocks','sections'].map(name => result(tx.objectStore(name).index('docId').getAll(id))));
+    await complete;
+    return {...strip(meta), id, blocks: blocks.filter(b => b.version === meta.version).map(({docId, version, ...b}) => b),
+      sections: sections.filter(s => s.version === meta.version).map(({docId, version, ...s}) => s)};
+  }
+  async listDocuments() { return this.all('docs'); }
+  async all(name) { const tx = this.db.transaction(name), complete = done(tx); const rows = await result(tx.objectStore(name).getAll()); await complete; return rows; }
+  async put(name, row) {
+    if (!stores.includes(name) || ['docs','extractions','blocks','sections','sources'].includes(name)) throw Error('USE_SAVE_DOCUMENT');
+    const tx = this.db.transaction(name, 'readwrite'), complete = done(tx); tx.objectStore(name).put(row); await complete;
+  }
+  async saveDocument(doc, source) {
+    validateDocument(doc);
+    const tx = this.db.transaction(['docs','extractions','blocks','sections','sources','runs'], 'readwrite'), complete = done(tx);
+    const meta = metadata(doc);
+    tx.objectStore('docs').put(meta);
+    tx.objectStore('extractions').put({...meta, docId: doc.id});
+    for (const b of doc.blocks) tx.objectStore('blocks').put({...b, docId: doc.id, version: doc.version});
+    for (const s of doc.sections) tx.objectStore('sections').put({...s, docId: doc.id, version: doc.version});
+    if (source) tx.objectStore('sources').put({...source, docId: doc.id, version: doc.version});
+    const cursor = tx.objectStore('runs').index('docId').openCursor(doc.id);
+    cursor.onsuccess = () => { const c = cursor.result; if (!c) return; if (c.value.extractionVersion !== doc.version) c.update({...c.value, stale: true}); c.continue(); };
+    await complete;
+    return doc.id;
+  }
+  async getSource(id, version) { const tx = this.db.transaction('sources'), complete = done(tx); const value = await result(tx.objectStore('sources').get([id, version])); await complete; return value; }
+  async deleteDocument(id) {
+    // A single transaction covers descendants, collection memberships and durable cleanup intentions.
+    const tx = this.db.transaction(stores, 'readwrite'), complete = done(tx), handles = new Set(), groups = new Set();
+    tx.objectStore('docs').delete(id);
+    const collect = row => {
+      const provider = row.target?.provider || row.provider, path = row.target?.path || row.path;
+      if (path !== 'seatline' || !provider) return;
+      const handle = row.session?.handle || row.sessionToken;
+      if (handle) {
+        handles.add(JSON.stringify({provider, handle}));
+        tx.objectStore('maintenance').put({id: `forget:${provider}:${handle}`, method:'forget', provider, handle});
+      }
+      if (row.cleanupGroup) {
+        const group = row.cleanupGroup;
+        groups.add(JSON.stringify({provider, group}));
+        tx.objectStore('maintenance').put({id: `cleanup:${provider}:${group}`, method:'cleanup', provider, group});
+      }
+    };
+    for (const name of ['extractions','blocks','sections','sources','runs','chats','jobs','glossary']) {
+      const cursor = tx.objectStore(name).index(name === 'glossary' ? 'bookId' : 'docId').openCursor(id);
+      cursor.onsuccess = () => {
+        const c = cursor.result; if (!c) return;
+        if (['runs','chats','jobs'].includes(name)) collect(c.value);
+        if (name === 'runs') {
+          const records = tx.objectStore('records').index('runId').openCursor(c.value.id);
+          records.onsuccess = () => { const r = records.result; if (r) { r.delete(); r.continue(); } };
+        }
+        c.delete(); c.continue();
+      };
+    }
+    const collections = tx.objectStore('collections').openCursor();
+    collections.onsuccess = () => { const c = collections.result; if (!c) return; c.update({...c.value, items: (c.value.items || []).filter(item => (typeof item === 'string' ? item : item.docId) !== id)}); c.continue(); };
+    await complete;
+    return {handles: [...handles].map(JSON.parse), groups: [...groups].map(JSON.parse)};
+  }
+  async exportData() {
+    const tx = this.db.transaction(stores), complete = done(tx), data = {};
+    await Promise.all(stores.map(async name => { data[name] = await result(tx.objectStore(name).getAll()); }));
+    await complete;
+    data.sources = data.sources.map(row => ({...row, ...(row.bytes ? {bytes: Array.from(new Uint8Array(row.bytes))} : {})}));
+    return {format: 'sharh-documents', version: 1, stores: data};
+  }
+  async importData(archive) {
+    const data = validateArchive(archive);
+    const tx = this.db.transaction(stores, 'readwrite'), complete = done(tx); let conflict;
+    // Existing rows may be identical; differing rows abort the entire import, preserving local data.
+    for (const name of stores) for (const row of data[name]) {
+      const key = Array.isArray(STORE_KEYS[name]) ? STORE_KEYS[name].map(k => row[k]) : row[STORE_KEYS[name]];
+      const request = tx.objectStore(name).get(key);
+      request.onsuccess = () => {
+        if (request.result && !identical(request.result, row)) { conflict = Error('IMPORT_CONFLICT: Export or delete the existing document before importing a different version.'); tx.abort(); return; }
+        if (!request.result) tx.objectStore(name).put(row);
+      };
+    }
+    try { await complete; } catch (e) { throw conflict || e; }
+    return data.docs.length;
+  }
+}
+export function validateArchive(archive) {
+  if (archive?.format !== 'sharh-documents' || archive.version !== 1 || !archive.stores ||
+      Object.keys(archive.stores).some(name => !stores.includes(name)) || stores.some(name => !Array.isArray(archive.stores[name]))) throw Error('INVALID_ARCHIVE');
+  const data = structuredClone(archive.stores), docs = new Map(data.docs.map(doc => [doc.id, doc])), versions = new Map();
+  for (const name of stores) {
+    const keys = new Set();
+    for (const row of data[name]) {
+      const fields = Array.isArray(STORE_KEYS[name]) ? STORE_KEYS[name] : [STORE_KEYS[name]], key = fields.map(k => row?.[k]);
+      if (key.some(v => !['string','number'].includes(typeof v)) || keys.has(JSON.stringify(key))) throw Error('INVALID_ARCHIVE_KEY');
+      keys.add(JSON.stringify(key));
+    }
+  }
+  for (const extraction of data.extractions) {
+    if (!docs.has(extraction.docId) || extraction.id !== extraction.docId) throw Error('ORPHAN_EXTRACTION');
+    const doc = {...strip(extraction), blocks: data.blocks.filter(b => b.docId === extraction.docId && b.version === extraction.version).map(({docId,version,...b}) => b),
+      sections: data.sections.filter(s => s.docId === extraction.docId && s.version === extraction.version).map(({docId,version,...s}) => s)};
+    validateDocument(doc); versions.set(`${doc.id}:${doc.version}`, doc);
+  }
+  for (const doc of docs.values()) {
+    const extraction=versions.get(`${doc.id}:${doc.version}`);
+    if (!extraction) throw Error('MISSING_EXTRACTION');
+    validateDocument({...doc,blocks:extraction.blocks,sections:extraction.sections});
+  }
+  for (const name of ['blocks','sections','sources']) for (const row of data[name]) if (!versions.has(`${row.docId}:${row.version}`)) throw Error('ORPHAN_EXTRACTION_DATA');
+  for (const name of ['runs','chats','jobs']) for (const row of data[name]) if (!docs.has(row.docId)) throw Error('ORPHAN_DOCUMENT_DATA');
+  const runs = new Set(data.runs.map(r => r.id));
+  for (const row of data.records) if (!runs.has(row.runId)) throw Error('ORPHAN_RECORD');
+  for (const row of data.glossary) if (!docs.has(row.bookId)) throw Error('ORPHAN_GLOSSARY');
+  for (const collection of data.collections) if (!Array.isArray(collection.items) || collection.items.some(item => !docs.has(typeof item === 'string' ? item : item?.docId))) throw Error('ORPHAN_COLLECTION_ITEM');
+  for (const row of data.sources) if (row.bytes !== undefined) {
+    if (!Array.isArray(row.bytes) || row.bytes.some(b => !Number.isInteger(b) || b < 0 || b > 255)) throw Error('INVALID_SOURCE_BYTES');
+    row.bytes = new Uint8Array(row.bytes);
+  }
+  return data;
+}

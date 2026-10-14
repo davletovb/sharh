@@ -2,6 +2,15 @@ import {PathClient} from './client.mjs';
 import {authorizeCommand, diagnostic} from '../../src/paths/diagnostics.mjs';
 const client = new PathClient(),
   $ = (selector) => document.querySelector(selector);
+const readerSettings=await chrome.storage.local.get('pdfAutoOpen');
+$('#pdf-auto-open').checked=readerSettings.pdfAutoOpen !== false;
+$('#pdf-auto-open').addEventListener('change',()=>chrome.storage.local.set({pdfAutoOpen:$('#pdf-auto-open').checked}));
+$('#allow-pdf-sites').addEventListener('click',()=> {
+  chrome.permissions.request({origins:['http://*/*','https://*/*']}).then(granted=> {
+    $('#reader-settings-state').textContent=granted ? 'Website access enabled. The auto-open setting applies to .pdf addresses.' : 'Website access was not granted.';
+  }).catch(error=>{$('#reader-settings-state').textContent=error.message;});
+});
+$('#file-access').addEventListener('click',()=>chrome.tabs.create({url:`chrome://extensions/?id=${chrome.runtime.id}`}));
 $('#authorize').textContent = authorizeCommand(chrome.runtime.id);
 $('#copy').addEventListener('click', async () => {
   try {

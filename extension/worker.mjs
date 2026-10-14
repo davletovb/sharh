@@ -1,13 +1,15 @@
 import {NativeSeatline} from '../src/paths/native-seatline.mjs';
 import {SeatlinePath} from '../src/paths/seatline.mjs';
 import {SeatlinePreferences} from './lib/preferences.mjs';
+import {installOpening,createReaderMenus} from './lib/opening.mjs';
+installOpening(chrome);
 const preferences = new SeatlinePreferences(chrome.storage);
 const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), {
   disconnectMessage: () => chrome.runtime.lastError?.message || ''
 });
 const path = new SeatlinePath({client, policy: () => preferences.value});
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({openPanelOnActionClick: true});
+  createReaderMenus(chrome).catch(() => {});
 });
 chrome.runtime.onConnect.addListener((port) => {
   if (

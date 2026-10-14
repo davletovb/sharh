@@ -10,9 +10,9 @@ This is the authoritative progress record. Requirements are defined in the [prod
 - Planned implementation items: **72**
 - DONE: **10**
 - IMPLEMENTED — VERIFY: **3**
-- IN PROGRESS: **0**
+- IN PROGRESS: **5**
 - BLOCKED: **0**
-- TODO: **59**
+- TODO: **54**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -104,11 +104,11 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| C-01 | Build the document model and storage | A-05 | Blocks, sections, anchors and extraction versions follow the analysis pipeline. IndexedDB stores delete in cascade. Documents survive an export and import round trip | TODO | — | — |
-| C-02 | Build the web page reader | A-04, C-01 | On the HTML fixtures, every annotated heading is found and ¶ counts are within 2%. Anchors resolve after a reload and after an unrelated DOM change. Highlights leave the page DOM untouched. Whole-page and region modes work, and local HTML opens | TODO | — | — |
-| C-03 | Build the PDF reader | A-04, C-01 | The reader renders pages and selectable text. Outline chapters carry page ranges; headings are detected when there is no outline; page labels are shown. On the fixtures:<br>• hyphenation is joined;<br>• running headers and footers are removed;<br>• two-column reading order is kept;<br>• footnotes are marked as notes.<br>Highlights are drawn from text items | TODO | — | — |
-| C-04 | Open PDFs in Sharh | C-03 | `.pdf` addresses open in the reader when the setting is on, and in Chrome's viewer when it is off. The toolbar button and the context menu open the current PDF. Drag and drop works, and so do file URLs when access is granted | TODO | — | — |
-| C-05 | Build scopes and the scope picker | B-03, C-01 | Selection (with context blocks), section, chapter, page range and document scopes are available. The picker shows the estimated tokens and the request's UTF-8 size. A request over 1,000,000 bytes is never sent; the reader is offered a narrower scope, and a book job once H-02 exists | TODO | — | — |
+| C-01 | Build the document model and storage | A-05 | Blocks, sections, anchors and extraction versions follow the analysis pipeline. IndexedDB stores delete in cascade. Documents survive an export and import round trip | IN PROGRESS | Codex | Production readers, storage and scopes; owner recorded before implementation |
+| C-02 | Build the web page reader | A-04, C-01 | On the HTML fixtures, every annotated heading is found and ¶ counts are within 2%. Anchors resolve after a reload and after an unrelated DOM change. Highlights leave the page DOM untouched. Whole-page and region modes work, and local HTML opens | IN PROGRESS | Codex | Production readers, storage and scopes; owner recorded before implementation |
+| C-03 | Build the PDF reader | A-04, C-01 | The reader renders pages and selectable text. Outline chapters carry page ranges; headings are detected when there is no outline; page labels are shown. On the fixtures:<br>• hyphenation is joined;<br>• running headers and footers are removed;<br>• two-column reading order is kept;<br>• footnotes are marked as notes.<br>Highlights are drawn from text items | IN PROGRESS | Codex | Production readers, storage and scopes; owner recorded before implementation |
+| C-04 | Open PDFs in Sharh | C-03 | `.pdf` addresses open in the reader when the setting is on, and in Chrome's viewer when it is off. The toolbar button and the context menu open the current PDF. Drag and drop works, and so do file URLs when access is granted | IN PROGRESS | Codex | Production readers, storage and scopes; owner recorded before implementation |
+| C-05 | Build scopes and the scope picker | B-03, C-01 | Selection (with context blocks), section, chapter, page range and document scopes are available. The picker shows the estimated tokens and the request's UTF-8 size. A request over 1,000,000 bytes is never sent; the reader is offered a narrower scope, and a book job once H-02 exists | IN PROGRESS | Codex | Production readers, storage and scopes; owner recorded before implementation |
 
 ### D — Analysis engine
 
