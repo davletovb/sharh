@@ -7,8 +7,11 @@ if (!globalThis.__sharhReader) {
   const toolbar=installSelectionToolbar({document,shadow:true,
     onPrepare:()=>chrome.runtime.sendMessage({type:'sharh:passage:prepare'}).catch(()=>{}),
     enabled:async()=>{const response=await chrome.runtime.sendMessage({type:'sharh:passage:enabled'});return response?.result===true;},
-    selection:async()=>{const result=await extractSelectedHTML(document,{mode:current?.mode??'article',region:current?.region??null,includeNavigation:current?.includeNavigation===true});current=result.extraction;return result.selection;},
-    onAction:(action,selection)=>chrome.runtime.sendMessage({type:'sharh:passage:invoke',action,selection,extraction:current}).then(response=>{if(response?.error)throw Error(response.error);})});
+    // Capturing a DOM range is cheap. Extraction happens only after an action,
+    // and never replaces the explicit reader's extraction/scope cache.
+    selection:range=>({range,options:{mode:current?.mode??'article',region:current?.region??null}}),
+    resolveSelection:async({range,options})=>{const result=await extractSelectedHTML(document,{...options,range});if(!result.selection?.spans?.length)throw Error('Select readable source text again.');return result;},
+    onAction:(action,{selection,extraction})=>chrome.runtime.sendMessage({type:'sharh:passage:invoke',action,selection,extraction}).then(response=>{if(response?.error)throw Error(response.error);})});
   chrome.runtime.onMessage.addListener((message, sender, reply) => {
     if (sender.id !== chrome.runtime.id || !message?.type?.startsWith('sharh:reader:')) return;
     (async () => {

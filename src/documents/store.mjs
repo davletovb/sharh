@@ -61,17 +61,18 @@ export class DocumentStore {
       return !!run;
     });
   }
-  async saveDocument(doc, source) {
+  async saveDocument(doc, source, {makeCurrent=true}={}) {
     validateDocument(doc);
     const tx = this.db.transaction(['docs','extractions','blocks','sections','sources','runs'], 'readwrite'), complete = done(tx);
-    const meta = metadata(doc);
-    tx.objectStore('docs').put(meta);
+    const meta = {...metadata(doc),updatedAt:Date.now()};
+    const current=await result(tx.objectStore('docs').get(doc.id)),promote=makeCurrent || !current;
+    if(promote)tx.objectStore('docs').put(meta);
     tx.objectStore('extractions').put({...meta, docId: doc.id});
     for (const b of doc.blocks) tx.objectStore('blocks').put({...b, docId: doc.id, version: doc.version});
     for (const s of doc.sections) tx.objectStore('sections').put({...s, docId: doc.id, version: doc.version});
     if (source) tx.objectStore('sources').put({...source, docId: doc.id, version: doc.version});
-    const cursor = tx.objectStore('runs').index('docId').openCursor(doc.id);
-    cursor.onsuccess = () => { const c = cursor.result; if (!c) return; if (c.value.extractionVersion !== doc.version) c.update({...c.value, stale: true}); c.continue(); };
+    if(promote){const cursor = tx.objectStore('runs').index('docId').openCursor(doc.id);
+    cursor.onsuccess = () => { const c = cursor.result; if (!c) return; if (c.value.extractionVersion !== doc.version) c.update({...c.value, stale: true}); c.continue(); };}
     await complete;
     return doc.id;
   }

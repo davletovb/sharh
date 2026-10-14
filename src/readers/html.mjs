@@ -107,10 +107,11 @@ export function highlightHTML(document, anchor) {
   view.CSS.highlights.set('sharh-reference', new view.Highlight(resolved.range)); resolved.element.scrollIntoView({block: 'center'});
   return {strategy: resolved.strategy, text: resolved.text, rects: [...resolved.range.getClientRects()].map(r => ({x: r.x, y: r.y, width: r.width, height: r.height}))};
 }
-export function selectedHTMLBlocks(document, blocks) {
+export function selectedHTMLBlocks(document, blocks, capturedRange=null) {
   const selection = document.defaultView.getSelection();
-  if (!selection?.rangeCount || selection.isCollapsed) return null;
-  const range = selection.getRangeAt(0), spans = [], body = textMap(document.body,{includeNavigation:blocks[0]?.anchor.includeNavigation===true});
+  if (!capturedRange && (!selection?.rangeCount || selection.isCollapsed)) return null;
+  const range = capturedRange??selection.getRangeAt(0);if(range.collapsed)return null;
+  const spans = [], body = textMap(document.body,{includeNavigation:blocks[0]?.anchor.includeNavigation===true});
   const selected=body.position(range), unchanged=blocks[0]?.anchor.textVersion===body.signature;
   for (const block of blocks) {
     const pos=block.anchor.position;
@@ -120,14 +121,14 @@ export function selectedHTMLBlocks(document, blocks) {
     const start = Math.max(selected.start,hit.start)-hit.start, end = Math.min(selected.end,hit.end)-hit.start;
     if (end > start && start >= 0 && end <= block.text.length) spans.push({n:block.n, start, end});
   }
-  return spans.length ? {spans, text:normalizeText(selection.toString())} : null;
+  return spans.length ? {spans, text:normalizeText(range.toString())} : null;
 }
-export async function extractSelectedHTML(document,options={}) {
-  let extraction=await extractHTML(document,options),selection=selectedHTMLBlocks(document,extraction.blocks);
+export async function extractSelectedHTML(document,{range=null,...options}={}) {
+  let extraction=await extractHTML(document,options),selection=selectedHTMLBlocks(document,extraction.blocks,range);
   const mapped=selection?.spans.map(({n,start,end})=>extraction.blocks[n-1].text.slice(start,end)).join(' ');
   if(!selection || normalizeText(mapped)!==selection.text) {
     extraction=await extractHTML(document,{mode:'whole',includeNavigation:true});
-    selection=selectedHTMLBlocks(document,extraction.blocks);
+    selection=selectedHTMLBlocks(document,extraction.blocks,range);
   }
   return {extraction,selection};
 }

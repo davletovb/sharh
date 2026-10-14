@@ -11,7 +11,7 @@ export async function createModelPicker(container,{client,storage=chrome.storage
   let providers=[],choices=[],selected=null,revision=0;
   function info(){return selected;}
   function getTarget() {return validateTarget({path:selected?.path,provider:selected?.provider,model:modelField.hidden?choices[Number(target.value)]?.model:model.value.trim(),
-    ...(effortField.hidden || !effort.value?{}:{effort:effort.value}),...(speedField.hidden || !speed.value?{}:{serviceTier:speed.value})},selected);}
+    effort:effortField.hidden || !effort.value?null:effort.value,serviceTier:speedField.hidden || !speed.value?null:speed.value},selected);}
   function changed(){try{onChange(getTarget(),info(),tier.value);}catch(error){status.textContent=error.message;onChange(null,info(),tier.value);}}
   function fill(desired={}) {
     selected=choices[Number(target.value)]?.info??null;
@@ -47,6 +47,15 @@ export async function createModelPicker(container,{client,storage=chrome.storage
   target.addEventListener('change',()=>{fill();const t=getTarget();client.call('prepare',{trigger:'model-picker',target:t}).catch(()=>{});});
   for(const control of [model,effort,speed])control.addEventListener('change',changed);
   const ready=discover();
-  return {ready,get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
+  async function forTier(value) {
+    await ready;await preferences.load();const desired=preferences.value.tiers[value];if(!desired)throw Error('Unknown task tier.');
+    const choice=choices.find(c=>c.info.path===desired.path && c.info.provider===desired.provider && (c.model??null)===(desired.model??null))
+      ??choices.find(c=>c.info.path===desired.path && c.info.provider===desired.provider)??choices[0];
+    if(!choice)throw Error('Choose an available model provider.');
+    const sameProvider=choice.info.path===desired.path && choice.info.provider===desired.provider;
+    const saved=sameProvider?{...desired,model:choice.info.models?.length?choice.model:desired.model}:{};
+    return {target:validateTarget(targetFor(choice.info,saved),choice.info),info:choice.info};
+  }
+  return {ready,forTier,get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
     setDisabled(value){for(const control of container.querySelectorAll('input,select,button'))control.disabled=value;},dispose(){revision++;}};
 }

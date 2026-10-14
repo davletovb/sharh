@@ -4,7 +4,7 @@ import {createDocument,contentHash} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
 import {PDFView} from './pdf-view.mjs';
-import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
+import {sourceURL,sourceOrigin,hasSourceAccess,SOURCE_ACCESS_HINT} from '../lib/opening.mjs';
 import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
 import {createWorkspace} from './workspace.mjs';
@@ -28,7 +28,7 @@ const fail=error=> {
   state(error.name==='PasswordException'?'This PDF needs a password. Open it in Chrome’s viewer.':hints[error.message] || error.message || String(error));
 };
 installSelectionToolbar({document,selection:async()=>pdf?pdfView.selection():blockSelection(),
-  onAction:async(action,selection)=>{lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
+  onAction:async(action,selection)=>{if(workspace.active)throw Error('Stop the current run before starting another.');lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
   onPrepare:()=>maintenanceClient.call('prepare',{trigger:'passage-toolbar',target:workspace.target}).catch(()=>{})});
 async function operate(action) {
   await workspaceReady;
@@ -85,6 +85,7 @@ async function commitDocument(value,{pdf:nextPDF=null,sourceTab:nextTab=null,loc
   }
 }
 async function showDocument(value) {
+  $('reference-extraction').hidden=true;$('reference-extraction').replaceChildren();
   doc=value; lastSelection=null; $('document-title').textContent=doc.title; document.title=`${doc.title} · Sharh`;
   $('document-detail').textContent=`${doc.kind==='pdf' ? `${doc.pageCount} pages · ` : ''}${doc.blocks.length} numbered blocks${doc.language ? ` · ${doc.language}` : ''}`;
   $('reextract').disabled=doc.kind!=='html' || (sourceTab===null && !localHTML);
@@ -110,7 +111,7 @@ async function showDocument(value) {
 async function readTab(tabId) {
   state('Reading page…');
   const tab=await chrome.tabs.get(tabId);
-  try { await attachReader(tabId); } catch { pendingSource=tab.url?{kind:'tab',address:tab.url,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error('Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.'); }
+  try { await attachReader(tabId); } catch { pendingSource=tab.url?{kind:'tab',address:tab.url,tabId}:null; $('allow-source').hidden=!pendingSource; throw Error(SOURCE_ACCESS_HINT); }
   const result=await readerMessage('extract',{mode:$('html-mode').value,region:$('html-region').value.trim() || null},tabId);
   const value=createDocument(result.extraction,{kind:'html',identity:result.identity,address:result.address});
   await store.saveDocument(value); await commitDocument(value,{sourceTab:tabId});
@@ -168,8 +169,17 @@ async function jump(block) {
     catch { show('The source tab is unavailable. Reopen the source page and read it again to jump to this paragraph.'); return; }
   }
   for (const el of $('text-blocks').querySelectorAll('.selected')) el.classList.remove('selected');
-  const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`); row.classList.add('selected'); row.scrollIntoView({block:'center'});
+  const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`); row.classList.add('selected'); row.scrollIntoView({block:'center'});show(`Highlighted ¶${block.n} in the saved text.`);
   }catch(error){if(doc===expected)throw error;}
+}
+async function reference(block,source) {
+  if(source.id===doc?.id && source.version===doc?.version){$('reference-extraction').hidden=true;await jump(block);return;}
+  // A historical reference belongs to its saved extraction, not the live reader.
+  // Keep its run, comparison, PDF view and source-tab connection in place.
+  const excerpt=$('reference-extraction'),heading=document.createElement('h2'),detail=document.createElement('p'),text=document.createElement('blockquote');
+  heading.textContent=`Saved paragraph ¶${block.n}${block.pageLabel?' · p. '+block.pageLabel:''}`;
+  detail.textContent=`${source.title} · saved extraction`;text.textContent=block.text;text.dir='auto';text.className='block selected';
+  excerpt.replaceChildren(heading,detail,text);excerpt.hidden=false;excerpt.scrollIntoView({block:'center'});state(`Showing ¶${block.n} from its saved extraction.`);
 }
 function blockSelection() {
   const selected=getSelection(); if (!selected?.rangeCount || selected.isCollapsed) return null;
@@ -239,12 +249,14 @@ $('import-data').addEventListener('change',event=> { const file=event.target.fil
 // Register source controls before asynchronous workspace/preferences initialization.
 // A file chosen during startup waits for the workspace rather than losing its change event.
 workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
-  onReference:async(block,source)=>{if(source.id!==doc?.id || source.version!==doc?.version){await reopen(source.id,source.version);}await jump(block);},
+  onReference:reference,
   onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
 await workspaceReady;
 await savedList();
 await operate(async()=> {
   if (params.has('source')) await openPDFAddress(params.get('source'));
-  else if (params.has('doc')) {await reopen(params.get('doc'),params.get('version')||undefined);if(params.has('paragraph'))await jump(doc.blocks[Number(params.get('paragraph'))-1]);}
+  else if (params.has('doc')) await reopen(params.get('doc'),params.get('version')||undefined);
   else if (initialTab!==null) await readTab(initialTab);
 });
+// The initial open releases operate()'s busy guard before following a deep link.
+if(params.has('doc') && params.has('paragraph') && doc){const block=doc.blocks[Number(params.get('paragraph'))-1];if(block)await jump(block).catch(fail);else state('This paragraph is not in the saved extraction.');}

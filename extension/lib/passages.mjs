@@ -29,7 +29,7 @@ export function installPassages(chrome,{prepare=()=>{}}={}) {
       if(current.url?.split('#')[0]!==sender.url.split('#')[0])throw Error('The source page changed. Select the passage again.');
       const key=passageKey(sender.tab.windowId);return navigator.locks.request(key+':queue',async()=>{if((await chrome.storage.session.get(key))[key])throw Error('A passage is waiting in Sharh. Finish it before choosing another.');
       const doc=createDocument(message.extraction,{kind:'html',identity:sender.url,address:sender.url});
-      buildScope(doc,{kind:'selection',spans:message.selection?.spans});await (await store).saveDocument(doc);
+      buildScope(doc,{kind:'selection',spans:message.selection?.spans});await (await store).saveDocument(doc,undefined,{makeCurrent:false});
       await chrome.storage.session.set({[key]:{id:crypto.randomUUID(),docId:doc.id,version:doc.version,sourceTab:sender.tab.id,windowId:sender.tab.windowId,selection:message.selection,action:message.action}});
       return true;});
     })().then(result=>reply({result}),error=>reply({error:error.message}));return true;

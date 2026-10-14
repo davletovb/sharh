@@ -29,7 +29,7 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
     if(!groups.has(type)){const section=element('section','','record-group'),heading=element('h4',type==='edge' && lens==='thinking'?'Causal chain and relations':labels[type]??readable(type)),list=element(type==='arc' || type==='step' || type==='sec'?'ol':'div','','record-list');section.append(heading,list);outline.append(section);groups.set(type,list);}
     return groups.get(type);
   }
-  function inspect(entry){onInspect(entry);const refs=entry.record.refs??[];if(refs.length)onReference(refs[0]);}
+  function inspect(entry){onInspect(entry);}
   function append(entry) {
     records.push(entry);const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;

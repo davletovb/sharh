@@ -12,6 +12,7 @@ import {openDocumentStore} from '../src/documents/store.mjs';
 import {AnalysisEngine} from '../src/analysis/engine.mjs';
 import {FakePath} from '../src/paths/fake.mjs';
 import {exampleDocument} from './helpers/document.mjs';
+import {versionOf} from '../src/documents/model.mjs';
 const memory=()=>{let data={};return {async get(k){return {[k]:structuredClone(data[k])};},async set(v){data={...data,...structuredClone(v)};}};};
 const changes={addListener(){},removeListener(){}};
 const info={path:'seatline',provider:'codex',label:'Codex',available:true,signedIn:true,accepted:true,signIn:'subscription',models:[],capabilities:{toolIsolation:true,streaming:true,sessions:true,effort:['none','low','high'],serviceTier:['standard','fast']}};
@@ -47,7 +48,7 @@ test('picker renders path/provider groups, capability-only options, manual IDs a
 test('streaming views keep model markup inert, expose references and inspection, and cancel pending rendering on disposal',async()=> {
  const d=dom(),doc=await exampleDocument(),refs=[],inspected=[];
  try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'logic',onReference:n=>refs.push(n),onInspect:e=>inspected.push(e),workerFactory:()=>{throw Error('worker unavailable');}});
- view.record({sequence:1,record:node('a','<img src=x onerror=alert(1)>'),flags:[]});await view.settled();assert.equal(document.querySelector('img'),null);assert.match(document.body.textContent,/<img/);document.querySelector('.reference').click();document.querySelector('.inspect-finding').click();await Promise.resolve();assert.ok(refs.includes(3));assert.equal(inspected.length,1);assert.match(document.body.textContent,/inferred/);
+ view.record({sequence:1,record:node('a','<img src=x onerror=alert(1)>'),flags:[]});await view.settled();assert.equal(document.querySelector('img'),null);assert.match(document.body.textContent,/<img/);document.querySelector('.inspect-finding').click();await Promise.resolve();assert.deepEqual(refs,[]);document.querySelector('.reference').click();await Promise.resolve();assert.deepEqual(refs,[3]);assert.equal(inspected.length,1);assert.match(document.body.textContent,/inferred/);
  view.record({sequence:2,record:node('b'),flags:[]});view.dispose();await new Promise(r=>setTimeout(r,25));assert.equal(document.querySelector('.analysis-view'),null);
  }finally{d.window.close();}
 });
@@ -74,7 +75,7 @@ test('selection toolbar preserves the selected passage, supports keyboard arrows
  const d=dom(),p=document.createElement('p');p.textContent='Selected words';document.getElementById('host').append(p);const range=document.createRange();range.selectNodeContents(p);range.getBoundingClientRect=()=>({left:20,bottom:60});getSelection().addRange(range);let allowed=false;const calls=[];
  const spans={spans:[{n:3,start:0,end:8}]},toolbar=installSelectionToolbar({document,enabled:async()=>allowed,selection:async()=>spans,onPrepare:()=>{throw Error('WARMUP_UNAVAILABLE');},onAction:(action,selection)=>calls.push({action,selection})});
  try{document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));assert.equal(document.querySelector('[role=toolbar]'),null);allowed=true;document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));
- const bar=document.querySelector('[role=toolbar]'),buttons=bar.querySelectorAll('button');assert.equal(bar.hidden,false);buttons[0].focus();buttons[0].dispatchEvent(new d.window.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));assert.equal(document.activeElement,buttons[1]);buttons[1].click();assert.equal(calls[0].action,'Translate');assert.deepEqual(calls[0].selection,spans);assert.equal(bar.hidden,true);
+ const bar=document.querySelector('[role=toolbar]'),buttons=bar.querySelectorAll('button');assert.equal(bar.hidden,false);buttons[0].focus();buttons[0].dispatchEvent(new d.window.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));assert.equal(document.activeElement,buttons[1]);buttons[1].click();await new Promise(r=>setTimeout(r,0));assert.equal(calls[0].action,'Translate');assert.deepEqual(calls[0].selection,spans);assert.equal(bar.hidden,true);
  }finally{toolbar.dispose();d.window.close();}
 });
 
@@ -83,7 +84,9 @@ test('passage worker serializes pending intentions, validates sender/navigation/
  const chrome={runtime:{id:'extension-id',onMessage:event()},tabs:{onUpdated:event(),async get(){return {id:7,url:currentURL};},async query(){return [];},async sendMessage(){}},permissions:{onAdded:event(),onRemoved:event(),async contains(){return allowed;}},scripting:{async executeScript(){}},sidePanel:{async open(){opens++;}},storage:{session:{...storage}},extension:{}};
  installPassages(chrome);const listener=chrome.runtime.onMessage.listeners[0],doc=await exampleDocument(currentURL),sender={id:'extension-id',url:currentURL,tab:{id:7,windowId:2},frameId:0};
  const message={type:'sharh:passage:invoke',action:'Explain',extraction:doc,selection:{spans:[{n:3,start:0,end:8}]}},send=(m=message,s=sender)=>new Promise(resolve=>listener(m,s,resolve));
+ const documentStore=await openDocumentStore();await documentStore.saveDocument(doc);await documentStore.put('runs',{id:'article-run',docId:doc.id,extractionVersion:doc.version,stale:false});message.extraction={...doc,version:await versionOf(currentURL,'sidebar')};
  const replies=await Promise.all([send(),send({...message,action:'Translate'})]);assert.equal(replies.filter(r=>r.result===true).length,1);assert.equal(replies.filter(r=>r.error?.includes('waiting')).length,1);assert.equal(opens,2);const saved=(await storage.get(passageKey(2)))[passageKey(2)];assert.equal(saved.action,'Explain');assert.equal(saved.sourceTab,7);
+ assert.equal((await documentStore.getDocument(doc.id)).version,doc.version);assert.equal((await documentStore.all('runs'))[0].stale,false);assert.equal(saved.version,message.extraction.version);documentStore.close();
  allowed=false;assert.match((await send()).error,/Enable passage actions/);assert.equal((await storage.get(passageKey(2)))[passageKey(2)].id,saved.id);
  allowed=true;currentURL='https://example.org/another';assert.match((await send()).error,/source page changed/);let replied=false;assert.equal(listener(message,{...sender,id:'another-extension'},()=>{replied=true;}),undefined);assert.equal(replied,false);
 });

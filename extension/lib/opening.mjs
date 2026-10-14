@@ -1,3 +1,4 @@
+export const SOURCE_ACCESS_HINT='Allow access to the source site, or click the Sharh toolbar button on that page. For local files, enable “Allow access to file URLs” in Chrome extension details.';
 export function sourceURL(value) {
   let url;
   try { url = new URL(value); } catch { throw Error('Enter an HTTP, HTTPS or file address.'); }
