@@ -58,7 +58,9 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
     for(const link of layout.links){const a=byId.get(link.from),b=byId.get(link.to);const g=node('g',{'class':'map-edge'});g.append(node('line',{x1:a.x,y1:a.y+32,x2:b.x,y2:b.y-32,'marker-end':`url(#${marker.id})`}),node('text',{x:(a.x+b.x)/2+8,y:(a.y+b.y)/2},readable(link.label)));svg.append(g);}
     for(const n of layout.nodes) {
       const label=readable(n.label),labelId=uid('map-label'),kindId=uid('map-kind'),descriptionId=uid('map-description'),g=node('g',{transform:`translate(${n.x-100},${n.y-32})`,tabindex:0,role:'button','aria-labelledby':`${labelId} ${kindId}`,'aria-describedby':descriptionId,'class':'map-node'});
-      g.append(node('title',{},label),node('desc',{id:descriptionId},`${label}. Inspect finding.`),node('rect',{width:200,height:65,rx:9}),node('text',{id:labelId,x:12,y:24},[...label].slice(0,26).join('')),node('text',{id:kindId,x:12,y:47,'class':'map-kind'},readable(n.kind)));
+      // SVG descriptions are not visible labels. Explicit hiding also keeps their
+      // full text out of visual-name comparisons; labelledby uses the two visible lines.
+      g.append(node('desc',{id:descriptionId,style:'display:none'},`${label}. Inspect finding.`),node('rect',{width:200,height:65,rx:9}),node('text',{id:labelId,x:12,y:24},[...label].slice(0,26).join('')),document.createTextNode(' '),node('text',{id:kindId,x:12,y:47,'class':'map-kind'},readable(n.kind)));
       const activate=()=>{const entry=records.find(e=>e.record.id===n.id);if(entry)inspect(entry);};g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter' || e.key===' '){e.preventDefault();activate();}});svg.append(g);
     }
     mapStatus.textContent=`${layout.nodes.length} nodes · ${layout.links.length} connections. All findings are also in the text outline.`;move();

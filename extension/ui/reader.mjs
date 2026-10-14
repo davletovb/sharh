@@ -15,7 +15,7 @@ export const {engine:analysisEngine}=createAnalysisEngine(store);
 const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
-let busy=false,workspace;
+let busy=false,workspace,workspaceReady;
 let pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
@@ -27,13 +27,11 @@ const fail=error=> {
   const hints={READABILITY_NO_ARTICLE:'No main article was found. Try Whole page or choose a region.',REGION_NOT_FOUND:'No page element matches that region selector.',NO_TEXT_BLOCKS:'No readable text was found in this source.',INVALID_ARCHIVE:'Choose a Sharh documents export file.',INVALID_DOCUMENT:'The document archive has an invalid document.',NO_SELECTION:'Select source text first.'};
   state(error.name==='PasswordException'?'This PDF needs a password. Open it in Chrome’s viewer.':hints[error.message] || error.message || String(error));
 };
-workspace=await createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
-  onReference:async(block,source)=>{if(source.id!==doc?.id || source.version!==doc?.version){await reopen(source.id,source.version);}await jump(block);},
-  onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}});
 installSelectionToolbar({document,selection:async()=>pdf?pdfView.selection():blockSelection(),
   onAction:async(action,selection)=>{lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
   onPrepare:()=>maintenanceClient.call('prepare',{trigger:'passage-toolbar',target:workspace.target}).catch(()=>{})});
 async function operate(action) {
+  await workspaceReady;
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
   busy=true;
   const controls=['read-current','open-file','source-address','allow-source','reextract','import-data','export-data'];
@@ -238,6 +236,12 @@ document.addEventListener('dragleave',()=>document.body.classList.remove('dragov
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
 $('export-data').addEventListener('click',()=>operate(async()=> { const archive=await store.exportData(), url=URL.createObjectURL(new Blob([JSON.stringify(archive)],{type:'application/json'})), a=document.createElement('a'); a.href=url; a.download='sharh-documents.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); state('Documents exported.'); }));
 $('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
+// Register source controls before asynchronous workspace/preferences initialization.
+// A file chosen during startup waits for the workspace rather than losing its change event.
+workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
+  onReference:async(block,source)=>{if(source.id!==doc?.id || source.version!==doc?.version){await reopen(source.id,source.version);}await jump(block);},
+  onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
+await workspaceReady;
 await savedList();
 await operate(async()=> {
   if (params.has('source')) await openPDFAddress(params.get('source'));
