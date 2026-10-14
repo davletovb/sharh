@@ -1,4 +1,4 @@
-name: A foundations
+name: Sharh validation
 on:
   pull_request:
   push:
@@ -26,6 +26,8 @@ jobs:
       - name: Corpus regeneration is deterministic
         run: git diff --exit-code -- corpus
       - run: npm run verify
+      - name: Reproducible extension package
+        run: node scripts/verify-package.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -33,6 +35,7 @@ jobs:
           path: |
             test-results/
             dist/probe/
+            dist/sharh.zip
   pinned-companion:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -62,6 +65,8 @@ jobs:
       - run: npm run build
       - name: Native ready, all statuses, protected JSONL output and actual Chromium errors
         run: node scripts/verify-companion.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
+      - name: Production Seatline path through the real broker and Chromium
+        run: npm run test:companion -- --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

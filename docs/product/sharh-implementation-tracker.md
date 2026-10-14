@@ -10,9 +10,9 @@ This is the authoritative progress record. Requirements are defined in the [prod
 - Planned implementation items: **72**
 - DONE: **4**
 - IMPLEMENTED — VERIFY: **2**
-- IN PROGRESS: **0**
+- IN PROGRESS: **7**
 - BLOCKED: **0**
-- TODO: **66**
+- TODO: **59**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -92,13 +92,13 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| B-01 | Scaffold the MV3 extension | A-05 | The packaged extension loads in Chromium with the fixed ID and only the framework's required permissions; site and file access stay optional. The service worker, side panel and settings page open. The package builds reproducibly, and CI loads it under Playwright | TODO | — | — |
-| B-02 | Build the native client | A-02, B-01 | Starting from Lineleaf's client, it:<br>• streams `delta` text to callbacks;<br>• applies output caps per request kind;<br>• accepts `session` events only on persistent requests;<br>• forwards `source`, `usage`, `queued` and `admitted` events;<br>• sends `scheduling` hints and cancels by target;<br>• resends only frames that provably never left, and never replays a sent request.<br>Unit tests on a scripted port cover each behaviour | TODO | — | — |
-| B-03 | Implement the path interface and the Seatline path | B-02 | `discover`, `prepare`, `run`, `forget` and `cleanup` behave as in [model paths](../architecture/model-paths.md). Capabilities and failures map as in the integration document's capability matrix and failure table. The path conformance tests pass on a scripted transport | TODO | — | — |
-| B-04 | Enforce readiness and sign-in policy | B-03 | Every generation uses `send_ready_with_policy` with the per-provider policy, and Gemini needs the cloud opt-in. `prepare` follows the triggers and the 10-second throttle. Readiness refusals retry once. An older companion reports *update required*, with no fallback to plain `send`. Real-companion tests show no launch on a policy denial | TODO | — | — |
-| B-05 | Build setup and diagnostics | A-02, B-04 | Settings → Seatline shows the authorize command with the real ID and a copy button. Tests show it names every diagnostics state in the integration document correctly. **Live:** each state is reproduced on the owner's Chrome | TODO | — | — |
-| B-06 | Pace requests | B-03 | Background work holds at most one generation and never queues ahead. Interactive requests carry their hints. Queued and busy states are shown, and backoff follows the schedule. `forget` and `cleanup` wait for idle. A real-companion test shows a passage action completing while a background job runs | TODO | — | — |
-| B-07 | Test against the real companion in CI | A-02, B-03 | CI builds the pinned companion with stand-in providers and drives the client through the broker. The tests cover streaming, cancellation, disconnect, oversize refusal, policy denial, queue timeout and session continuation | TODO | — | — |
+| B-01 | Scaffold the MV3 extension | A-05 | The packaged extension loads in Chromium with the fixed ID and only the framework's required permissions; site and file access stay optional. The service worker, side panel and settings page open. The package builds reproducibly, and CI loads it under Playwright | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-02 | Build the native client | A-02, B-01 | Starting from Lineleaf's client, it:<br>• streams `delta` text to callbacks;<br>• applies output caps per request kind;<br>• accepts `session` events only on persistent requests;<br>• forwards `source`, `usage`, `queued` and `admitted` events;<br>• sends `scheduling` hints and cancels by target;<br>• resends only frames that provably never left, and never replays a sent request.<br>Unit tests on a scripted port cover each behaviour | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-03 | Implement the path interface and the Seatline path | B-02 | `discover`, `prepare`, `run`, `forget` and `cleanup` behave as in [model paths](../architecture/model-paths.md). Capabilities and failures map as in the integration document's capability matrix and failure table. The path conformance tests pass on a scripted transport | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-04 | Enforce readiness and sign-in policy | B-03 | Every generation uses `send_ready_with_policy` with the per-provider policy, and Gemini needs the cloud opt-in. `prepare` follows the triggers and the 10-second throttle. Readiness refusals retry once. An older companion reports *update required*, with no fallback to plain `send`. Real-companion tests show no launch on a policy denial | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-05 | Build setup and diagnostics | A-02, B-04 | Settings → Seatline shows the authorize command with the real ID and a copy button. Tests show it names every diagnostics state in the integration document correctly. **Live:** each state is reproduced on the owner's Chrome | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-06 | Pace requests | B-03 | Background work holds at most one generation and never queues ahead. Interactive requests carry their hints. Queued and busy states are shown, and backoff follows the schedule. `forget` and `cleanup` wait for idle. A real-companion test shows a passage action completing while a background job runs | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
+| B-07 | Test against the real companion in CI | A-02, B-03 | CI builds the pinned companion with stand-in providers and drives the client through the broker. The tests cover streaming, cancellation, disconnect, oversize refusal, policy denial, queue timeout and session continuation | IN PROGRESS | Codex | B slice: production extension, transport/path, policy, diagnostics and pinned-companion validation |
 
 ### C — Readers and document model
 

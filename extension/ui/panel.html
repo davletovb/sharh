@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Sharh</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Read closely</p>
+        <h1>Sharh</h1>
+        <p>Your reading workspace.</p>
+      </header>
+      <section>
+        <h2>Model connection</h2>
+        <p>Set up Seatline to reach models through your signed-in CLIs.</p>
+        <button id="settings">Open Seatline settings</button><button id="check">Check connection</button>
+        <p id="state" role="status"></p>
+        <div id="providers" aria-live="polite"></div>
+      </section>
+      <section aria-labelledby="run-status">
+        <h2 id="run-status">Activity</h2>
+        <p id="run-state" role="status">No turn running.</p>
+        <button id="retry" hidden>Retry action</button><button id="stop" hidden>Stop</button>
+      </section>
+    </main>
+    <script type="module" src="panel.mjs"></script>
+  </body>
+</html>

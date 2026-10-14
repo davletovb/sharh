@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Contract pinned; A-02 authorization and A-03 output probes implemented. Source facts below use the audited revision. Deterministic CI evidence and owner-machine live gates are tracked in the [foundation decision](../decisions/a-foundations.md).
+Status: Contract pinned; A probes and B production client/path implemented ([B evidence](../evidence/2026-10-14-b-seatline.md)). Source facts below use the audited revision. Deterministic CI evidence and owner-machine live gates are tracked in the [foundation decision](../decisions/a-foundations.md).
 
 | | |
 | --- | --- |
@@ -242,6 +242,8 @@ Interactive requests get a bounded preference in the queue, but no priority pree
   - Sharh shows them per run as plan usage, not money.
 
 ## Failure handling
+
+The table describes consumer behavior across B/D/G/H. B maps and surfaces all failures; it retries only readiness refusals and background queue-full/timeouts. Job replay/failover and session reconstruction/housekeeping remain with their later tracker items.
 
 `failed` events carry a `retryable` flag. Sharh uses that flag as the primary signal and the `reason` for wording.
 

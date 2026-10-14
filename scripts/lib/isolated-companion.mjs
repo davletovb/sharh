@@ -4,7 +4,7 @@ import {homedir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const quote = text => "'" + text.replaceAll("'", "'\\''") + "'";
-export async function isolatedCompanion(companion, fakeProvider) {
+export async function isolatedCompanion(companion, fakeProvider, {officialProviders=false}={}) {
   if (process.platform !== 'linux') throw new Error('ISOLATED_COMPANION_REQUIRES_LINUX');
   const contract = JSON.parse(await readFile('config/seatline-contract.json'));
   const origin = `chrome-extension://${contract.development_extension_id}/`;
@@ -24,10 +24,11 @@ export async function isolatedCompanion(companion, fakeProvider) {
     await rm(root,{recursive:true,force:true});
   }
   try {
-    for (const provider of ['claude','codex']) {
+    for (const provider of (officialProviders?[]:['claude','codex'])) {
       await writeFile(join(providers,provider), `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(fileURLToPath(new URL('./stand-in-cli.mjs',import.meta.url)))} ${provider} "$@"\n`, {mode:0o700});
     }
-    for (const provider of ['agy','grok']) { await copyFile(fakeProvider,join(providers,provider)); await chmod(join(providers,provider),0o700); }
+    for (const provider of (officialProviders?['claude','codex','agy','grok']:['agy','grok'])) { await copyFile(fakeProvider,join(providers,provider)); await chmod(join(providers,provider),0o700); }
+    if(officialProviders){await writeFile(join(providers,'codex-scenario'),'login=subscription\nexec=by-prompt\n');await writeFile(join(providers,'claude-scenario'),'auth=subscription\nprint=two-deltas\n');}
     run('install'); run('authorize','sharh',contract.providers.join(','),origin,'--cache-title=Sharh');
     const installed = (await readFile(join(data,'companion-executable'),'utf8')).trim();
     server = spawn(installed,['serve'],{env,stdio:'ignore'});
