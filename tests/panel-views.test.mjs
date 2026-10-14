@@ -69,3 +69,21 @@ test('passage actions send selected spans with neighbouring context in the reque
  for(const call of path.calls){const data=JSON.parse(call.request.document);assert.deepEqual(data.blocks.map(b=>b.n),[2,3,4,5,6]);assert.equal(call.request.tier,'quick');assert.match(call.request.task,/"outputLanguage":"uz"/);assert.match(call.request.task,/Passage action:/);assert.ok(data.blocks.find(b=>b.n===5).selected);}
  }finally{workspace?.dispose();store.close();d.window.close();}
 });
+
+test('selection toolbar preserves the selected passage, supports keyboard arrows/Escape and obeys disabled access',async()=> {
+ const d=dom(),p=document.createElement('p');p.textContent='Selected words';document.getElementById('host').append(p);const range=document.createRange();range.selectNodeContents(p);range.getBoundingClientRect=()=>({left:20,bottom:60});getSelection().addRange(range);let allowed=false;const calls=[];
+ const spans={spans:[{n:3,start:0,end:8}]},toolbar=installSelectionToolbar({document,enabled:async()=>allowed,selection:async()=>spans,onAction:(action,selection)=>calls.push({action,selection})});
+ try{document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));assert.equal(document.querySelector('[role=toolbar]'),null);allowed=true;document.dispatchEvent(new d.window.Event('pointerup',{bubbles:true}));await new Promise(r=>setTimeout(r,5));
+ const bar=document.querySelector('[role=toolbar]'),buttons=bar.querySelectorAll('button');assert.equal(bar.hidden,false);buttons[0].focus();buttons[0].dispatchEvent(new d.window.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));assert.equal(document.activeElement,buttons[1]);buttons[1].click();assert.equal(calls[0].action,'Translate');assert.deepEqual(calls[0].selection,spans);assert.equal(bar.hidden,true);
+ }finally{toolbar.dispose();d.window.close();}
+});
+
+test('passage worker serializes pending intentions, validates sender/navigation/permission and never overwrites an unconsumed action',async()=> {
+ const {installPassages,passageKey}=await import('../extension/lib/passages.mjs');globalThis.indexedDB=new IDBFactory();const event=()=>({listeners:[],addListener(fn){this.listeners.push(fn);}}),storage=memory();let allowed=true,currentURL='https://example.org/article',opens=0;
+ const chrome={runtime:{id:'extension-id',onMessage:event()},tabs:{onUpdated:event(),async get(){return {id:7,url:currentURL};},async query(){return [];},async sendMessage(){}},permissions:{onAdded:event(),onRemoved:event(),async contains(){return allowed;}},scripting:{async executeScript(){}},sidePanel:{async open(){opens++;}},storage:{session:{...storage}},extension:{}};
+ installPassages(chrome);const listener=chrome.runtime.onMessage.listeners[0],doc=await exampleDocument(currentURL),sender={id:'extension-id',url:currentURL,tab:{id:7,windowId:2},frameId:0};
+ const message={type:'sharh:passage:invoke',action:'Explain',extraction:doc,selection:{spans:[{n:3,start:0,end:8}]}},send=(m=message,s=sender)=>new Promise(resolve=>listener(m,s,resolve));
+ const replies=await Promise.all([send(),send({...message,action:'Translate'})]);assert.equal(replies.filter(r=>r.result===true).length,1);assert.equal(replies.filter(r=>r.error?.includes('waiting')).length,1);assert.equal(opens,2);const saved=(await storage.get(passageKey(2)))[passageKey(2)];assert.equal(saved.action,'Explain');assert.equal(saved.sourceTab,7);
+ allowed=false;assert.match((await send()).error,/Enable passage actions/);assert.equal((await storage.get(passageKey(2)))[passageKey(2)].id,saved.id);
+ allowed=true;currentURL='https://example.org/another';assert.match((await send()).error,/source page changed/);let replied=false;assert.equal(listener(message,{...sender,id:'another-extension'},()=>{replied=true;}),undefined);assert.equal(replied,false);
+});
