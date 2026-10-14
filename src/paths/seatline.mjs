@@ -155,6 +155,13 @@ export function turnFor(target, request) {
     check_sign_in: false
   });
 }
+export function generationFrame(target, request, policy = {}) {
+  return {
+    id:'0'.repeat(36), provider:target.provider, method:'send_ready_with_policy',
+    params:{turn:turnFor(target,request), freshness:cached, allowed_sign_in:allowedSignIn(target.provider,policy)},
+    scheduling:request.priority === 'interactive' ? {interactive:true,events:true} : {events:true}
+  };
+}
 export class SeatlinePath {
   id = 'seatline';
   label = 'Seatline';
@@ -223,18 +230,12 @@ export class SeatlinePath {
   async run(target, request, {signal, onEvent = () => {}} = {}) {
     validate(target, request);
     // Measure before connecting even for a policy denial, so oversized scopes never reach Native Messaging.
-    const turn = turnFor(target, request),
+    const frame = generationFrame(target, request, this.policy()), turn = frame.params.turn,
       kind = request.tier || request.kind;
     const limit = outputLimit(kind, request.limits?.maxOutputBytes);
     const scheduling =
       request.priority === 'interactive' ? {interactive: true, events: true} : {events: true};
-    checkRequest({
-      id: '0'.repeat(36),
-      provider: target.provider,
-      method: 'send_ready_with_policy',
-      params: {turn, freshness: cached, allowed_sign_in: allowedSignIn(target.provider, this.policy())},
-      scheduling
-    });
+    checkRequest(frame);
     return this.pacer.run(
       target.provider,
       request.priority,

@@ -2,12 +2,14 @@
 
 Sharh is a browser reading assistant for web pages and PDFs. It shows how a text is built, how its argument moves and the model of thinking behind it, in many languages. Every finding is anchored to the paragraph it rests on. Models are reached first through the owner's [Seatline](https://github.com/davletovb/seatline) companion; an API-key path follows later.
 
-Status: the A foundation slice now provides corpus fixtures, extraction/anchoring prototypes and Seatline contract/output probes. The B slice adds the production extension scaffold and Seatline path; readers and lenses follow in C–F. Progress and remaining live checks are recorded in the [implementation tracker](product/sharh-implementation-tracker.md).
+Status: the A foundation slice now provides corpus fixtures, extraction/anchoring prototypes and Seatline contract/output probes. The B slice adds the production extension scaffold and Seatline path; C adds the production readers, document storage and scopes; analysis and lenses follow in D–F. Progress and remaining live checks are recorded in the [implementation tracker](product/sharh-implementation-tracker.md).
 
 ## Reading order
 
 | Document | Covers |
 | --- | --- |
+| [Reader evidence](evidence/2026-10-14-c-readers.md) | The C-slice readers, storage, opening controls and scopes |
+| [Reader architecture](architecture/readers.md) | Production entry points, model/storage contracts, permission rules and limits |
 | [Seatline path evidence](evidence/2026-10-14-b-seatline.md) | The B-slice extension, native client, path, policy, pacing and validation |
 | [Foundation decision](decisions/a-foundations.md) | The A-slice toolchain, scope defaults, verification commands and remaining owner-machine gates |
 | [Product framework](product/sharh-product-framework.md) | What Sharh is, its principles, the experience, the lens catalog, readers, languages, privacy, quality targets, phases and open decisions |

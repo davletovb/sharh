@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Product implementation proposed; A-slice foundation probes and corpus implemented. See the [foundation decision](../decisions/a-foundations.md) for settled scope and unresolved live gates. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance); progress is recorded in the [implementation tracker](sharh-implementation-tracker.md).
+Status: Product implementation proposed; A/B foundations and C readers/storage/scopes implemented; analysis and lenses follow. See the [foundation decision](../decisions/a-foundations.md) for settled scope and unresolved live gates. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance); progress is recorded in the [implementation tracker](sharh-implementation-tracker.md).
 
 ## What Sharh is
 
@@ -223,7 +223,7 @@ The record types each lens produces are defined in the [output contract](../arch
 
 - **Own reader:** Chrome's built-in PDF viewer does not expose its text or selection to extensions, so Sharh has its own reader built on PDF.js, the engine behind Firefox's PDF viewer.
 - **Opening:**
-  - Links and tabs whose address ends in `.pdf` open in Sharh's reader automatically. This setting is on by default and can be turned off.
+  - On allowed sites, links and tabs whose address ends in `.pdf` open in Sharh's reader automatically. This setting is on by default and can be turned off; source permissions are requested separately.
   - Other PDFs open from the toolbar button or the context menu.
   - Local files open by drag and drop, or automatically when file-URL access is allowed.
 - **Chapters:**
@@ -297,7 +297,7 @@ Summarized here; details are in [model paths](../architecture/model-paths.md) an
   - Documents are delimited in the prompt, and model output is rendered as text, never as HTML.
 - **Permissions (proposed):**
   - `sidePanel`, `storage`, `unlimitedStorage`, `nativeMessaging`, `contextMenus`, `scripting` and `activeTab`.
-  - Site access is optional, requested when the reader enables the selection toolbar on a site or on all sites.
+  - Site access is optional, requested for a PDF source, PDF auto-open, or when the reader enables the selection toolbar on a site or on all sites.
   - File-URL access is optional.
   - Incognito is off by default.
 - **Deletion:** deleting a chat, a deep read or a document also asks Seatline to forget the related sessions and clean up after them.
@@ -419,7 +419,7 @@ Acceptance: every lens runs unchanged on the API path and passes the same valida
 | Sign-in policy on Seatline | Subscription for Claude, Codex and Grok. Gemini's cloud route is an opt-in. API-key sign-ins are refused, because keys get their own path. | Settled in A-05; production enforcement is B-04 |
 | Default models | Quick: Claude `haiku`, low effort. Analysis: Claude `opus`, high. Book pass: Claude `sonnet`, medium. Synthesis: Claude `opus`, high. | Proposed. Revisit after live measurement and real usage-limit experience. |
 | Second reader pair | Claude and Codex | Provisional; live A-03 and G-08 evidence outstanding |
-| PDF auto-open | On for `.pdf` addresses | Settled in A-05; implementation is C-04 |
+| PDF auto-open | On for `.pdf` addresses on allowed sites | C-04; site/file access remains optional |
 | Distribution | Personal use first | Open. See [terms of use](../architecture/seatline-integration.md#terms-of-use-and-distribution) before publishing. |
 
 ## References
