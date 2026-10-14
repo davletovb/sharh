@@ -1,7 +1,11 @@
 import {PathClient} from './client.mjs';
 import {authorizeCommand, diagnostic} from '../../src/paths/diagnostics.mjs';
+import {bindAppearance} from './theme.mjs';
+import {createModelPicker} from './model-picker.mjs';
 const client = new PathClient(),
   $ = (selector) => document.querySelector(selector);
+await bindAppearance($('#appearance-controls'));
+await createModelPicker($('#tier-models'),{client});
 const readerSettings=await chrome.storage.local.get('pdfAutoOpen');
 $('#pdf-auto-open').checked=readerSettings.pdfAutoOpen !== false;
 $('#pdf-auto-open').addEventListener('change',()=>chrome.storage.local.set({pdfAutoOpen:$('#pdf-auto-open').checked}));

@@ -1,6 +1,6 @@
 import {textOffsets,contentHash} from '../documents/model.mjs';
 const boundarySelector='h1,h2,h3,h4,h5,h6,p,blockquote,li,pre,figcaption,table,td,th,div,section,article,main,body';
-const excludedSelector='script,style,nav,footer,aside,[hidden],[aria-hidden="true"],.social-share,.share-buttons';
+const excludedSelector='script,style,nav,footer,aside,[hidden],[aria-hidden="true"],[data-sharh-toolbar],.social-share,.share-buttons';
 export const blockSelector='h1,h2,h3,h4,h5,h6,p,blockquote,li,pre,figcaption,table';
 function entries(root,{exclude=true}={}) {
   const walker=root.ownerDocument.createTreeWalker(root,5,{acceptNode(node){return exclude && node.nodeType===1 && node.matches(excludedSelector)?2:1;}}), out=[];

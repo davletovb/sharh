@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <a class="skip-link" href="#analysis-workspace">Skip to analysis</a>
     <main>
       <header>
         <p class="eyebrow">Read closely</p>
@@ -16,8 +17,11 @@
       <section aria-labelledby="read-heading">
         <h2 id="read-heading">Read a document</h2>
         <button id="read-page">Read current page</button><button id="open-current-pdf">Open current PDF</button><button id="open-reader">Open PDF or local file</button>
+        <button id="enable-passages" hidden>Enable passage actions on this site</button>
         <p id="read-state" role="status"></p>
       </section>
+      <div id="panel-scope"></div>
+      <div id="analysis-workspace"></div>
       <section>
         <h2>Model connection</h2>
         <p>Set up Seatline to reach models through your signed-in CLIs.</p>

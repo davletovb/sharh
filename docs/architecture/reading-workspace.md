@@ -1,0 +1,40 @@
+# Reading workspace
+
+Slice E connects the side panel and full-tab reader to the D engine. Both mount the same `createWorkspace` controller, model picker, theme controls and streaming views. The worker remains responsible for native messaging and provider pacing; it never parses model output.
+
+## Controls and model choices
+
+The workspace identifies the document, current scope, full D request size, estimated tokens, output language and target. Four tier defaults live in `chrome.storage.local.sharhReading`: Quick (Haiku/low), Analysis (Opus/high), Book pass (Sonnet/medium) and Synthesis (Opus/high). These retain A's provisional status until live-provider measurements. Book pass uses the Analysis output-cap class.
+
+Discovery groups options by path and provider, reports sign-in/policy and capability badges, and shows effort/speed only when advertised. Providers without model suggestions get a free model ID and provider-default choice. Changes in a workspace override one run; “Save as tier default” persists that tier. Provider readiness and sign-in policy are still enforced on every send by B. No provider is silently substituted after a failure.
+
+Analyze runs Summary, Structure, Logic or Thinking through `AnalysisEngine`. Stop preserves partial output; Continue offers session reuse or fresh scope context. Full production-frame sizing runs before sending. Ask has its own area but grounded chat remains G-01. Library opens stored documents; collection management remains H-01.
+
+## Views and source inspection
+
+- Summary: cards for line/abstract/section/brief, and an ordered arc timeline.
+- Structure: section outline, parent links, collapsible branches and mind map.
+- Logic: argument graph, stated/inferred claims, connections, ordered steps and gaps.
+- Thinking: concept map, causal relations, and facet cards.
+
+Text enters DOM nodes only through `textContent`. References are real buttons. Every map has the complete text outline, keyboard-operable node inspection, zoom/reset and directional pan controls. SVG labels use shortened display text and full accessible labels. Selecting a finding opens an inspector with its stated/inferred basis and saved source paragraphs. Long section spans use their first/last reference buttons while the source's paragraph navigator retains every block.
+
+Cards are appended in animation frames with a six-millisecond/eight-record budget. Layout is throttled and coalesced in `graph-worker.mjs`, with one outstanding layout; Dagre handles argument maps, D3 hierarchy handles structure and D3 force handles concepts. Layout never runs in the UI thread. Disposed views cancel pending frames/timers and terminate their worker. A failed worker leaves the text outline available.
+
+References use the existing C HTML/PDF anchors, including quotation fallback. A missing match reports that it cannot be found. Historical views and comparisons use their run's original extraction version, rather than applying old paragraph numbers to a newer extraction. The panel opens the appropriate reader when its source tab is unavailable.
+
+## Passage actions and optional access
+
+Selecting source text on an enabled site or within the PDF/local-text reader opens Explain, Translate, Logic and Define. It preserves selected spans, the section heading, two preceding paragraphs and one following paragraph. Requests use the Quick tier and chosen output language. E supplies basic action instructions; F-06 still owns prompt-quality evaluation and finalization.
+
+No new manifest permissions are added. The panel's site-enable button requests the current origin. The worker injects the content reader only on granted sites; every toolbar appearance and action rechecks permission. Revocation hides existing toolbars. Page UI lives in a closed shadow root, and source extraction excludes Sharh UI. The four controls support keyboard traversal and Escape.
+
+A content-script action begins `sidePanel.open` directly from its button gesture, verifies the source has not navigated, stores the extraction and a window-scoped action intention, and lets the panel own generation. The intention is consumed under a Web Lock so multiple panel instances/reloads cannot replay it. A second pending intention cannot overwrite an unconsumed one. A model is contacted only after Analyze or a passage action.
+
+## Persistence, themes and accessibility
+
+Reopening a document loads saved runs without another generation. History identifies lens, version, target, scope, status and stale extraction. Two saved versions can be inspected side by side, each with its own original paragraphs. D continues to own version allocation, owner recovery, cancellation and deletion maintenance.
+
+System appearance selects ink-and-gold or parchment unless the reader overrides it. Locally bundled Noto Serif covers Latin/extended Latin and Cyrillic/extended Cyrillic; Noto Sans Arabic supplies Arabic. Font and graph-library licenses ship with the reproducible package. User text uses automatic direction and bidi isolation. Focus is visible and reduced motion disables transitions/animation.
+
+Automated tests run axe on panel/settings and every Phase 1 view in both themes, exercise keyboard inspection/toolbar controls, and observe actual main-thread tasks while 200 records stream. E-07 remains IMPLEMENTED — VERIFY until an owner-machine screen-reader report is recorded. Automated accessibility checks do not replace that pass.

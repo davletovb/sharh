@@ -7,24 +7,32 @@ import {PDFView} from './pdf-view.mjs';
 import {sourceURL,sourceOrigin,hasSourceAccess} from '../lib/opening.mjs';
 import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
+import {createWorkspace} from './workspace.mjs';
+import {installSelectionToolbar} from './passage-toolbar.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 // E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
 export const {engine:analysisEngine}=createAnalysisEngine(store);
 const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
-let busy=false;
+let busy=false,workspace;
 let pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
   if (sourceTab !== null) return readerMessage('selection',{version:doc.version});
   return blockSelection() || lastSelection;
-},onChapterLevel:()=>store.saveDocument(doc).catch(fail)});
+},onChapterLevel:()=>store.saveDocument(doc).catch(fail),onChange:scope=>workspace?.setScope(scope),measure:(value,scope)=>workspace?.measureScope(value,scope)});
 const state=text=>{ $('reader-state').textContent=text; };
 const fail=error=> {
   const hints={READABILITY_NO_ARTICLE:'No main article was found. Try Whole page or choose a region.',REGION_NOT_FOUND:'No page element matches that region selector.',NO_TEXT_BLOCKS:'No readable text was found in this source.',INVALID_ARCHIVE:'Choose a Sharh documents export file.',INVALID_DOCUMENT:'The document archive has an invalid document.',NO_SELECTION:'Select source text first.'};
   state(error.name==='PasswordException'?'This PDF needs a password. Open it in Chrome’s viewer.':hints[error.message] || error.message || String(error));
 };
+workspace=await createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
+  onReference:async(block,source)=>{if(source.id!==doc?.id || source.version!==doc?.version){await reopen(source.id,source.version);}await jump(block);},
+  onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}});
+installSelectionToolbar({document,selection:async()=>pdf?pdfView.selection():blockSelection(),
+  onAction:async(action,selection)=>{lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
+  onPrepare:()=>maintenanceClient.call('prepare',{trigger:'passage-toolbar',target:workspace.target}).catch(()=>{})});
 async function operate(action) {
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
   busy=true;
@@ -98,7 +106,7 @@ async function showDocument(value) {
   }
   $('text-blocks').hidden=doc.kind==='pdf';
   $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
-  await picker.setDocument(doc); await savedList();
+  await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
 async function readTab(tabId) {
@@ -184,8 +192,8 @@ function rememberSelection() {
 document.addEventListener('pointerup',rememberSelection);
 document.addEventListener('keyup',rememberSelection);
 document.addEventListener('pointerdown',event=>{if(event.target.closest('button,input,select'))rememberSelection();},true);
-async function reopen(id) {
-  const value=await store.getDocument(id);
+async function reopen(id,version) {
+  const value=await store.getDocument(id,version);
   if(!value)throw Error('This saved document could not be found. Open its source again.');
   const source=await store.getSource(id,value.version);
   if (value.kind==='pdf') {
@@ -200,7 +208,7 @@ async function savedList() {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
     open.addEventListener('click',()=>operate(()=>reopen(item.id)));
-    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
+    remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; await workspace.setDocument(null);picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
     row.append(title,open,remove); $('saved-documents').append(row);
   }
 }
@@ -233,6 +241,6 @@ $('import-data').addEventListener('change',event=> { const file=event.target.fil
 await savedList();
 await operate(async()=> {
   if (params.has('source')) await openPDFAddress(params.get('source'));
-  else if (params.has('doc')) await reopen(params.get('doc'));
+  else if (params.has('doc')) {await reopen(params.get('doc'),params.get('version')||undefined);if(params.has('paragraph'))await jump(doc.blocks[Number(params.get('paragraph'))-1]);}
   else if (initialTab!==null) await readTab(initialTab);
 });
