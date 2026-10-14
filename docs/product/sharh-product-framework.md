@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Proposed. Nothing is implemented yet. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance).
+Status: Proposed. Nothing is implemented yet. Phases and acceptance checks are in [Phases and acceptance](#phases-and-acceptance); progress is recorded in the [implementation tracker](sharh-implementation-tracker.md).
 
 ## What Sharh is
 
