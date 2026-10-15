@@ -4,7 +4,7 @@ import {buildScope} from '../documents/scopes.mjs';
 import {restoreScope} from '../toolkit/workflows.mjs';
 const LIBRARY='sharh-library';
 export function itemKey(item){return JSON.stringify([item.docId,item.version,item.scope]);}
-export function validateItem(item,doc){if(!item||typeof item.id!=='string'||!item.id||item.docId!==doc?.id||item.version!==doc.version||typeof item.title!=='string'||!item.scope||!['document','chapter','section'].includes(item.scope.kind))throw Error('INVALID_LIBRARY_ITEM');const scope=restoreScope(doc,item.scope);if(!scope.blocks.length||scope.blocks.some((b,i)=>i&&b.n!==scope.blocks[i-1].n+1))throw Error('INVALID_LIBRARY_SCOPE');return scope;}
+export function validateItem(item,doc){if(doc?.derived)throw Error('Save an original document or chapter, not a derived report. Reports already remain in saved reading history.');if(!item||typeof item.id!=='string'||!item.id||item.docId!==doc?.id||item.version!==doc.version||typeof item.title!=='string'||!item.scope||!['document','chapter','section'].includes(item.scope.kind))throw Error('INVALID_LIBRARY_ITEM');const scope=restoreScope(doc,item.scope);if(!scope.blocks.length||scope.blocks.some((b,i)=>i&&b.n!==scope.blocks[i-1].n+1))throw Error('INVALID_LIBRARY_SCOPE');return scope;}
 export class Library {
  constructor(store){this.store=store;}
  async items(){return (await this.store.all('collections')).find(c=>c.id===LIBRARY)?.items??[];}

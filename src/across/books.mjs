@@ -27,18 +27,21 @@ export class BookJobs {
     if(options.signal?.aborted)throw Object.assign(Error('Book job paused.'),{code:'CANCELLED'});
     const config={...job.config,doc,scope:restoreScope(doc,chapter.scope),target:job.target,lens:'digest',tier:'analysis',priority:'background',persistent:false};
     let saved=await this.cached(config,[job.target,...job.policy.targets,...job.chapters.filter(c=>c.target).map(c=>c.target)]);
-    if(!saved){const pending=chapter.runId?await this.engine.repository.get(chapter.runId):null;
-     const onBegin=async run=>{chapter.runId=run.id;await this.write(job);await options.onBegin?.(run);};
-     if(pending?.run.canContinue&&pending.run.metrics?.truncated&&!pending.run.continuedBy&&(pending.run.metrics.outputBytes>0||pending.records.length||pending.run.status==='interrupted')){saved=await this.engine.continue(pending.run.id,{...options,onBegin,mode:'new'});}
+    if(!saved){let pending=chapter.runId?await this.engine.repository.get(chapter.runId):null;
+     const ambiguousId=pending?.run.status==='interrupted'&&!pending.records.length?pending.run.id:null;
+     if(ambiguousId&&options.restartInterruptedRunId!==ambiguousId)throw Object.assign(Error('This chapter may already have been sent. No output was saved. Explicitly restart the interrupted chapter only if you accept possible repeated usage.'),{code:'AMBIGUOUS_CHAPTER',runId:ambiguousId});
+     const onBegin=async run=>{if(ambiguousId)await this.engine.repository.write(run.id,{restartedRunId:ambiguousId});chapter.runId=run.id;await this.write(job);await options.onBegin?.(run);};
+     if(ambiguousId)pending=null;
+     if(pending?.run.canContinue&&pending.run.metrics?.truncated&&!pending.run.continuedBy&&(pending.run.metrics.outputBytes>0||pending.records.length)){saved=await this.engine.continue(pending.run.id,{...options,onBegin,mode:'new'});}
      else saved=await runWithFailover(this.engine,config,job.policy,{...options,onBegin,allowSavedExtraction:true,onFailover:event=>{job.target=event.to;options.onFailover?.(event);}});
     }
     chapter.runId=saved.run.id;chapter.target=saved.run.target;job.target=saved.run.target;chapter.completed=saved.run.status==='completed';job.next=chapter.completed?index+1:index;job.mixedTargets=new Set(job.chapters.filter(c=>c.target).map(c=>targetKey(c.target))).size>1;
     if(saved.run.status!=='completed'){job.state='paused';job.error={code:'INCOMPLETE_CHAPTER',message:'Continue this chapter before digesting the next one.'};await this.write(job);options.onProgress?.(job);return job;}
     await this.write(job);options.onProgress?.(job);
    }job.state='completed';await this.write(job);options.onProgress?.(job);return job;
-   }catch(error){job.state='paused';job.error={code:error.code??'JOB_FAILED',message:error.hint??error.message};await this.write(job).catch(()=>{});options.onProgress?.(job);throw Object.assign(error,{jobId:job.id});}
+   }catch(error){job.state='paused';job.error={code:error.code??'JOB_FAILED',message:error.hint??error.message,runId:error.runId??null};await this.write(job).catch(()=>{});options.onProgress?.(job);throw Object.assign(error,{jobId:job.id});}
   },{ifAvailable:true});if(!result)throw Error('Another book job is active. Pause it before starting this one.');return result;
  }
  async digests(id){const job=await this.get(id);if(job.state!=='completed')throw Error('Finish the chapter digests first.');const chapters=[];for(const c of job.chapters){const saved=await this.engine.repository.get(c.runId);if(!saved||saved.run.status!=='completed'||saved.run.extractionVersion!==job.extractionVersion||saved.run.lens!=='digest')throw Error('A saved digest is missing. Resume the book job.');chapters.push({title:c.title,span:c.span,runId:c.runId,target:saved.run.target,records:saved.records});}return {job,chapters};}
- async synthesize(id,config,options={}){if(!['summary','structure','logic','thinking'].includes(config.lens))throw Error('Choose Summary, Structure, Logic or Thinking.');const {job,chapters}=await this.digests(id),doc=await this.store.getDocument(job.docId,job.extractionVersion);const {policy={mode:'ask',targets:[]},...base}=config;return runWithFailover(this.engine,{...base,doc,scope:restoreScope(doc,job.scope),digests:chapters,operation:null,customLens:null,action:null,priority:'interactive',tier:'synthesis',persistent:false,glossary:job.config.glossary},policy,options);}
+ async synthesize(id,config,options={}){if(!['summary','structure','logic','thinking'].includes(config.lens))throw Error('Choose Summary, Structure, Logic or Thinking.');const {job,chapters}=await this.digests(id),doc=await this.store.getDocument(job.docId,job.extractionVersion),glossary=glossarySnapshot(await new Glossary(this.store).list(job.docId),config.language??'en');const {policy={mode:'ask',targets:[]},...base}=config;return runWithFailover(this.engine,{...base,doc,scope:restoreScope(doc,job.scope),digests:chapters,operation:null,customLens:null,action:null,priority:'interactive',tier:'synthesis',persistent:false,glossary},policy,options);}
 }

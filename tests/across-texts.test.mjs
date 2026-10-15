@@ -9,7 +9,7 @@ import {AnalysisEngine} from '../src/analysis/engine.mjs';
 import {FakePath} from '../src/paths/fake.mjs';
 import {Conversations} from '../src/toolkit/conversations.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
-import {assemblePrompt} from '../src/analysis/prompts.mjs';
+import {assemblePrompt,scopeDescriptor} from '../src/analysis/prompts.mjs';
 import {Library} from '../src/across/library.mjs';
 import {BookJobs,chapterPlan} from '../src/across/books.mjs';
 import {Glossary} from '../src/across/glossary.mjs';
@@ -92,4 +92,12 @@ test('invalid cross-text selections allocate no digest jobs, and glossary langua
 
 test('a chapter format repair remains background work and cannot acquire interactive scheduling',async()=>{
  const w=await world({scriptFor:null,scripts:[{text:'not JSON\n'},{text:lines({t:'sum',level:'section',text:'Repaired digest',refs:[2]},end)}]});try{const saved=await w.engine.start({...w.config,lens:'digest',priority:'background'});assert.equal(saved.run.status,'completed');assert.deepEqual(w.path.calls.map(c=>c.request.kind),['analysis','repair']);assert.ok(w.path.calls.every(c=>c.request.priority==='background'));}finally{w.close();}
+});
+
+test('an interrupted zero-output chapter refuses ordinary resume and requires a run-bound explicit restart',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);try{await w.engine.ready;const job=await books.create(w.config),chapter=job.chapters[0],scope={...chapter.scope,blocks:chapter.scope.blocks.map(b=>({...w.doc.blocks[b.n-1],...b}))},prompt=assemblePrompt(w.doc,scope,{...job.config,lens:'digest',priority:'background',tier:'analysis'}),orphan=await w.engine.repository.begin(w.doc,scope,prompt,target);chapter.runId=orphan.id;await books.write(job);await w.engine.recover(w.doc.id);const saved=await w.engine.repository.get(orphan.id);assert.equal(saved.run.canContinue,false);assert.equal(saved.run.needsRestart,true);await assert.rejects(w.engine.continue(orphan.id),/CONTINUATION_UNAVAILABLE/);await assert.rejects(books.run(job.id),{code:'AMBIGUOUS_CHAPTER'});await assert.rejects(books.run(job.id,{restartInterruptedRunId:'another-run'}),{code:'AMBIGUOUS_CHAPTER'});assert.equal(w.path.calls.length,0);assert.equal((await books.get(job.id)).error.runId,orphan.id);const restarted=await books.run(job.id,{restartInterruptedRunId:orphan.id});assert.equal(restarted.state,'completed');assert.equal(w.path.calls.length,3);const first=await w.engine.repository.get(restarted.chapters[0].runId);assert.equal(first.run.restartedRunId,orphan.id);}finally{w.close();}
+});
+
+test('derived reports cannot become library sources through save, direct projection or archive import',async()=>{
+ const w=await world(),lib=new Library(w.store);try{const first=await lib.save(w.doc),second=await lib.save(w.doc,buildScope(w.doc,{kind:'chapter',id:w.doc.sections[1].id})),report=await collectionDocument(w.store,[first,second],{kind:'compare'}),nested={id:crypto.randomUUID(),docId:report.id,version:report.version,title:report.title,scope:scopeDescriptor(buildScope(report))};await assert.rejects(lib.save(report),/original document/);await assert.rejects(collectionDocument(w.store,[first,nested],{kind:'compare'}),/original document/);assert.equal((await lib.items()).length,2);const archive=await w.store.exportData();archive.stores.collections.find(c=>c.kind==='library').items.push(nested);assert.throws(()=>validateArchive(archive),/INVALID_LIBRARY_ITEM/);}finally{w.close();}
 });

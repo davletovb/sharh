@@ -73,7 +73,8 @@ export class RunRepository {
       const records=await request(tx.objectStore('records').index('runId').getAll(id));
       const metrics={...run.metrics,truncated:true,recovered:true,validRecords:records.length,
         retainedRecords:records.filter(e=>e.retained).length,newValidRecords:records.filter(e=>!e.retained).length};
-      tx.objectStore('runs').put({...run,status:'interrupted',metrics,canContinue:error.code!=='TOO_LARGE',
+      const needsRestart=error.code==='INTERRUPTED'&&records.length===0;
+      tx.objectStore('runs').put({...run,status:'interrupted',metrics,canContinue:error.code!=='TOO_LARGE'&&!needsRestart,needsRestart,
         session:run.session?{...run.session,reusable:false}:null,error,updatedAt:this.now()});
       return true;
     });
