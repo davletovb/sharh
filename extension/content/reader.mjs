@@ -1,9 +1,12 @@
-import {extractHTML, extractSelectedHTML, highlightHTML, selectedHTMLBlocks} from '../../src/readers/html.mjs';
+import {extractHTML, extractSelectedHTML, highlightHTML, selectedHTMLBlocks,resolveHTMLAnchor} from '../../src/readers/html.mjs';
+import {textMap} from '../../src/readers/html-text.mjs';
 import {installSelectionToolbar} from '../ui/passage-toolbar.mjs';
 // One listener per frame, including after an extension UI reconnect. Executed in Chrome's isolated world.
 if (!globalThis.__sharhReader) {
   globalThis.__sharhReader = true;
-  let current;
+  let current,ranges=[],viewportTimer=null,lastViewport='';const runtime=chrome.runtime,view=document.defaultView;
+  function viewport(){viewportTimer=null;if(!current)return;const numbers=ranges.filter(({range})=>[...(range.getClientRects?.()??[])].some(r=>r.bottom>0&&r.top<view.innerHeight&&r.right>0&&r.left<view.innerWidth)).map(r=>r.n),key=current.version+':'+numbers.join(',');if(key===lastViewport)return;lastViewport=key;Promise.resolve(runtime.sendMessage({type:'sharh:viewport',version:current.version,numbers})).catch(()=>{});}
+  const scrolled=()=>{if(viewportTimer===null)viewportTimer=setTimeout(viewport,100);};document.addEventListener('scroll',scrolled,{capture:true,passive:true});view.addEventListener('resize',scrolled);
   const toolbar=installSelectionToolbar({document,shadow:true,
     onPrepare:()=>chrome.runtime.sendMessage({type:'sharh:passage:prepare'}).catch(()=>{}),
     enabled:async()=>{const response=await chrome.runtime.sendMessage({type:'sharh:passage:enabled'});return response?.result===true;},
@@ -19,6 +22,7 @@ if (!globalThis.__sharhReader) {
         case 'sharh:reader:passages-off': toolbar.hide();return true;
         case 'sharh:reader:extract':
           current = await extractHTML(document, {mode:message.mode || 'article',region:message.region || null});
+          {const body=textMap(document.body);ranges=current.blocks.map(b=>({n:b.n,range:resolveHTMLAnchor(document,b.anchor,{body})?.range})).filter(b=>b.range);scrolled();}
           return {extraction:current, identity:document.URL, address:document.URL};
         case 'sharh:reader:selection':
           if (!current || current.version !== message.version) throw Error('REEXTRACT_REQUIRED');

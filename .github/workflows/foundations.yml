@@ -30,6 +30,8 @@ jobs:
         run: npm run evaluate -- --fixture
       - name: Reproducible extension package
         run: node scripts/verify-package.mjs
+      - name: Scholar toolkit lens matrix (scripted, not live)
+        run: npm run evaluate -- --fixture --phase-two
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -73,6 +75,8 @@ jobs:
         run: node scripts/verify-analysis-engine.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
       - name: Phase 1 evaluation through the production path and pinned broker (stand-ins, not live)
         run: npm run evaluate -- --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider --out test-results/f-broker-evaluation.json
+      - name: Scholar toolkit lenses through the production path and pinned broker (stand-ins, not live)
+        run: npm run evaluate -- --phase-two --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider --out test-results/g-broker-evaluation.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

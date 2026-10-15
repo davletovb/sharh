@@ -14,8 +14,10 @@ const $=id=>document.getElementById(id), store=await openDocumentStore(), params
 export const {engine:analysisEngine}=createAnalysisEngine(store);
 const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
+const studioKey=params.get('studio'),studioIntent=studioKey?(await chrome.storage.session.get('sharh:studio:'+studioKey))['sharh:studio:'+studioKey]:null;
+if(studioIntent){params.set('doc',studioIntent.docId);params.set('version',studioIntent.version);}
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
-let busy=false,workspace,workspaceReady;
+let busy=false,workspace,workspaceReady,viewportFrame=null;
 let pdfView=new PDFView($('pdf-pages'));
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
@@ -106,6 +108,7 @@ async function showDocument(value) {
   $('text-blocks').hidden=doc.kind==='pdf';
   $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
   await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
+  viewportChanged();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
 async function readTab(tabId,{recovering=false}={}) {
@@ -260,3 +263,6 @@ await operate(async()=> {
 });
 // The initial open releases operate()'s busy guard before following a deep link.
 if(params.has('doc') && params.has('paragraph') && doc){const block=doc.blocks[Number(params.get('paragraph'))-1];if(block)await jump(block).catch(fail);else state('This paragraph is not in the saved extraction.');}
+if(studioIntent){if(studioIntent.scope?.version===doc?.version)await picker.restore(studioIntent.scope).catch(fail);await workspace.restoreStudio(studioIntent).catch(fail);}
+function visibleSource(){viewportFrame=null;if(!doc)return;const numbers=[];for(const block of doc.blocks){let rects=[];if(pdf){const page=pdfView.pages.get(block.page);rects=(block.anchor.items??[]).map(i=>page?.items?.[i]?.getBoundingClientRect()).filter(Boolean);}else{const row=$('text-blocks').querySelector(`[data-n="${block.n}"]`);if(row&&!$('text-blocks').hidden)rects=[row.getBoundingClientRect()];}if(rects.some(r=>r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth))numbers.push(block.n);}workspace.visibleParagraphs(numbers,{docId:doc.id,version:doc.version});}
+function viewportChanged(){if(viewportFrame===null)viewportFrame=requestAnimationFrame(visibleSource);}document.addEventListener('scroll',viewportChanged,{capture:true,passive:true});window.addEventListener('resize',viewportChanged);viewportChanged();

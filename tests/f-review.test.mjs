@@ -25,9 +25,9 @@ const specimen={id:'example',path:'example',format:'html',language:'en',expected
 const answer=request=>phaseOneOutput(JSON.parse(request.task.split('\n')[1]),JSON.parse(request.document));
 async function world(path=new FakePath({wait:async()=>{}})){const indexedDB=new IDBFactory(),store=await openDocumentStore({indexedDB});return {indexedDB,store,path,engine:new AnalysisEngine({store,paths:{seatline:path}})};}
 
-test('stand-in CLIs retain the legacy fallback for non-Phase-1 lenses, including actionless passage',async()=>{
+test('stand-in CLIs retain the legacy fallback for unsupported fixture lenses, including actionless passage',async()=>{
   const doc=await exampleDocument(),scope=buildScope(doc);
-  for(const provider of ['claude','codex'])for(const lens of Object.keys(LENSES).filter(l=>!['summary','structure','logic','thinking'].includes(l))){
+  for(const provider of ['claude','codex'])for(const lens of Object.keys(LENSES).filter(l=>!['summary','structure','logic','thinking','themes','meta-reading','critique','literature','terms','questions'].includes(l))){
     const request=assemblePrompt(doc,scope,{lens}).request,text=turnFor({provider},request).messages[0].text,input=provider==='claude'?JSON.stringify({message:{content:[{text}]}}):text;
     const events=execFileSync(process.execPath,['scripts/lib/stand-in-cli.mjs',provider],{input,encoding:'utf8'}).trim().split('\n').map(JSON.parse);
     const output=provider==='claude'?events.find(e=>e.type==='result').result:events.find(e=>e.type==='item.completed').item.text;
@@ -72,7 +72,7 @@ test('cleanup failures cannot skip later teardown and are serializable in a fail
 test('a real CLI browser-setup failure writes a failed report and still closes its store and server',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'sharh-f-setup-failure-')),out=join(dir,'failed.json');
   try{assert.throws(()=>execFileSync(process.execPath,['scripts/evaluate-phase-one.mjs','--fixture','--item','article-en','--lens','logic','--no-passages','--out',out],{env:{...process.env,SHARH_CHROME_EXECUTABLE:join(dir,'missing-chromium')},stdio:'pipe',timeout:20000}),error=>error.status===1);
-    const report=JSON.parse(await readFile(out));assert.equal(report.automaticPassed,false);assert.equal(report.liveProviderClaim,false);assert.equal(report.runs.length,0);assert.ok(report.failure.reason.includes('missing-chromium'));assert.equal(report.cleanup.completed,true);assert.equal(report.cleanup.pending,0);assert.deepEqual(report.cleanup.errors,[]);
+    const report=JSON.parse(await readFile(out));assert.equal(report.automaticPassed,false);assert.equal(report.liveProviderClaim,false);assert.equal(report.runs.length,0);assert.ok(report.failure.reason.includes('missing-chromium'),report.failure.reason);assert.equal(report.cleanup.completed,true);assert.equal(report.cleanup.pending,0);assert.deepEqual(report.cleanup.errors,[]);
   }finally{await rm(dir,{recursive:true,force:true});}
 });
 

@@ -3,7 +3,7 @@ import {createDocument} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {buildScope} from '../../src/documents/scopes.mjs';
 export const passageKey = windowId => `sharh:passage:${windowId}`;
-const actions=new Set(['Explain','Translate','Logic','Define']);
+const actions=new Set(['Explain','Translate','Logic','Define','Ask about this']);
 export function installPassages(chrome,{prepare=()=>{}}={}) {
   const store=openDocumentStore();
   async function inject(tab) {

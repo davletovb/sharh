@@ -56,6 +56,6 @@ export async function createModelPicker(container,{client,storage=chrome.storage
     const saved=sameProvider?{...desired,model:choice.info.models?.length?choice.model:desired.model}:{};
     return {target:validateTarget(targetFor(choice.info,saved),choice.info),info:choice.info};
   }
-  return {ready,forTier,get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
+  return {ready,forTier,get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTarget(value){choose(value);},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
     setDisabled(value){for(const control of container.querySelectorAll('input,select,button'))control.disabled=value;},dispose(){revision++;}};
 }

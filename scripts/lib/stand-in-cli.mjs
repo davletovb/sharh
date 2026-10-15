@@ -2,7 +2,8 @@
 import {readFileSync} from 'node:fs';
 import {standInOutput} from './draft-prompts.mjs';
 import {phaseOneOutput} from './phase-one-fixtures.mjs';
-import {PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
+import {phaseTwoOutput} from './phase-two-fixtures.mjs';
+import {PHASE_ONE_LENSES,PHASE_TWO_LENSES,PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
 const [provider, ...args] = process.argv.slice(2);
 const emit = value => process.stdout.write(JSON.stringify(value) + '\n');
 if (provider === 'codex' && args[0] === 'login') { process.stderr.write('Logged in using ChatGPT\n'); }
@@ -20,7 +21,7 @@ else {
     pause=task.focus==='fixture:pause';
     if(sourceMatch) {
       const phaseOne=PHASE_ONE_LENSES.includes(task.lens) || Object.hasOwn(PASSAGE_ACTIONS,task.action??'');
-      output=task.focus?.startsWith('fixture:') || !phaseOne?standInOutput(task.lens,JSON.parse(sourceMatch[1])):phaseOneOutput(task,JSON.parse(sourceMatch[1]));
+      output=task.focus?.startsWith('fixture:')?standInOutput(task.lens,JSON.parse(sourceMatch[1])):PHASE_TWO_LENSES.includes(task.lens)?phaseTwoOutput(task,JSON.parse(sourceMatch[1])):phaseOne?phaseOneOutput(task,JSON.parse(sourceMatch[1])):standInOutput(task.lens,JSON.parse(sourceMatch[1]));
       if(task.focus==='fixture:truncate')output=output.replace('{"t":"end"}\n','');
     } else {
       // A session follow-up contains the task and retained records, but no document layer.

@@ -49,6 +49,10 @@ export class DocumentStore {
     const tx = this.db.transaction(name, 'readwrite'), complete = done(tx);
     if(name==='maintenance')queueMaintenance(tx,row);else tx.objectStore(name).put(row);await complete;
   }
+  async writeOwned(name,row) {
+    if(!['chats','jobs'].includes(name))throw Error('INVALID_OWNED_STORE');
+    return transaction(this.db,['docs',name],'readwrite',async tx=>{if(!await result(tx.objectStore('docs').getKey(row.docId)))throw Error('DOCUMENT_REMOVED');tx.objectStore(name).put(row);});
+  }
   async rememberSession(context,handle) {
     if(typeof handle!=='string' || !SESSION_HANDLE.test(handle))throw Error('INVALID_SESSION');
     return transaction(this.db,['runs','maintenance'],'readwrite',async tx=> {
@@ -161,7 +165,8 @@ export function validateArchive(archive) {
     const extraction=versions.get(`${run.docId}:${run.extractionVersion}`);
     if(!extraction || !Array.isArray(run.scope?.blocks))throw Error('INVALID_RUN');
     const records=data.records.filter(r=>r.runId===run.id),scope=new Set(run.scope.blocks.map(b=>b.n));
-    assertCanonicalRecords(records,run.lens,{scope,sections:extraction.sections});
+    assertCanonicalRecords(records,run.lens,{scope,sections:extraction.sections,customLens:run.config?.customLens});
+    const sourceURLs=new Set((run.sources??[]).map(s=>s.url));if(records.some(e=>e.flags?.includes('source_verified') && !sourceURLs.has(e.record.url)))throw Error('UNVERIFIED_SOURCE_LINK');
     const quotes=new QuotationIndex(extraction.blocks.filter(b=>scope.has(b.n)));
     if(records.some(({record:r})=>r.quote && !quotes.verify(r.quote,r.refs??(r.ref?[r.ref]:[]))))throw Error('INVALID_ARCHIVE_QUOTATION');
   }
