@@ -12,6 +12,7 @@ Status: A–G implementation is present. H adds collections, resumable chapter d
 | [Phase 1 evaluation](architecture/phase-one-evaluation.md) | Production prompts, corpus/broker harness, automatic targets, expert forms and owner live commands |
 | [F scope decision](decisions/f-phase-one-evaluation.md) | Accepted implementation dependencies and the live/owner acceptance boundary |
 | [Reader evidence](evidence/2026-10-14-c-readers.md) | The C-slice readers, storage, opening controls and scopes |
+| [Interface](architecture/interface.md) | The side panel, full tab, Settings and selection toolbar: states, the consent rule, the design tokens and the accessibility checks |
 | [Reader architecture](architecture/readers.md) | Production entry points, model/storage contracts, permission rules and limits |
 | [Seatline path evidence](evidence/2026-10-14-b-seatline.md) | The B-slice extension, native client, path, policy, pacing and validation |
 | [Foundation decision](decisions/a-foundations.md) | The A-slice toolchain, scope defaults, verification commands and remaining owner-machine gates |

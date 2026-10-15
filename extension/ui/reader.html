@@ -1,47 +1,62 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sharh reader</title>
   <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="../pdf_viewer.css"><link rel="stylesheet" href="reader.css">
 </head>
-<body>
+<body class="reader-body">
 <a class="skip-link" href="#analysis-workspace">Skip to analysis</a>
-<main>
-  <header><p class="eyebrow">Sharh · Reader</p><h1 id="document-title">Open a text</h1><p id="document-detail">Read a web page, a local HTML file or a PDF with selectable text.</p></header>
-  <section aria-labelledby="open-heading">
+<header class="app-header" id="app-header"></header>
+<main id="reader-main" class="reader-app" data-has-doc="false">
+  <div class="doc-title">
+    <h1 id="document-title">Open a text</h1>
+    <p id="document-detail">Read a web page, a local HTML file or a PDF with selectable text.</p>
+  </div>
+  <section id="source-bar" class="source-bar" aria-labelledby="open-heading">
     <h2 id="open-heading">Open a document</h2>
-    <div class="row wrap"><button id="read-current">Read current tab</button><label>File <input id="open-file" type="file" accept=".pdf,.html,.htm,application/pdf,text/html"></label></div>
-    <form id="open-address"><label>PDF address <input id="source-address" type="url" placeholder="https://example.org/book.pdf"></label><button>Open PDF</button></form>
-    <button id="allow-source" hidden>Allow access to this source</button>
-    <p id="access-help" class="note"></p>
-    <p class="note">You can also drop a PDF or HTML file anywhere in this tab. Files and extracted text are saved locally.</p>
-    <div class="row wrap"><label>Page extraction <select id="html-mode"><option value="article">Main article</option><option value="whole">Whole page</option><option value="region">Region</option></select></label><label>Region selector <input id="html-region" placeholder="article or #chapter"></label><button id="reextract" disabled>Re-extract page</button></div>
-    <p id="reader-state" role="status" aria-live="polite">Choose a source.</p>
-    <button id="chrome-viewer" hidden>Use Chrome’s PDF viewer (turn auto-open off)</button>
-  </section>
-  <section id="scope-picker" aria-labelledby="scope-heading" hidden>
-    <h2 id="scope-heading">Scope</h2>
-    <div class="row wrap">
-      <label>Read <select id="scope-kind"></select></label>
-      <label id="scope-section-label" hidden>Section <select id="scope-section"></select></label>
-      <label id="chapter-level-label">Chapters <select id="chapter-level"></select></label>
+    <div class="source-actions">
+      <button id="read-current" type="button" class="primary">Read current tab</button>
+      <label class="file-button">Choose a file… <input id="open-file" type="file" accept=".pdf,.html,.htm,application/pdf,text/html"></label>
+      <form id="open-address"><label>PDF address <input id="source-address" type="url" placeholder="https://example.org/book.pdf"></label><button type="submit">Open PDF</button></form>
     </div>
-    <div id="scope-pages" hidden><label>First PDF page <input id="scope-first" type="number" min="1" value="1"></label><label>Last PDF page <input id="scope-last" type="number" min="1" value="1"></label></div>
-    <button id="scope-refresh">Refresh selection</button>
-    <p id="scope-size" role="status"></p><p id="scope-help" class="note"></p>
-    <p class="note">Reading and choosing a scope sends no document text to a model.</p>
+    <p class="note drop-note">Or drop a PDF or HTML file anywhere in this tab. Files and extracted text are saved on this computer.</p>
+    <div id="extraction" class="extraction" hidden>
+      <label>Page extraction <select id="html-mode"><option value="article">Main article</option><option value="whole">Whole page</option><option value="region">Region</option></select></label>
+      <label id="html-region-label" hidden>Region selector <input id="html-region" placeholder="article or #chapter"></label>
+      <button id="reextract" type="button" disabled>Re-extract page</button>
+    </div>
+    <button id="allow-source" type="button" hidden>Allow access to this source</button>
+    <p id="access-help" class="note"></p>
+    <p id="reader-state" role="status" aria-live="polite">Choose a source.</p>
+    <button id="chrome-viewer" type="button" class="ghost" hidden>Use Chrome’s PDF viewer (turn auto-open off)</button>
   </section>
-  <div id="analysis-workspace"></div>
-  <section id="reference-extraction" aria-label="Saved extraction reference" hidden></section>
-  <nav id="outline" aria-label="Document sections"></nav>
-  <div id="pdf-pages" aria-label="PDF pages"></div>
-  <button id="show-text" hidden>Show numbered text</button>
-  <section id="text-blocks" aria-label="Numbered document text" hidden></section>
-  <section aria-labelledby="saved-heading">
+  <div class="reader-grid">
+    <div class="source-column">
+      <section id="reference-extraction" aria-label="Saved extraction reference" hidden></section>
+      <nav id="outline" aria-label="Document sections"></nav>
+      <div id="pdf-pages" aria-label="PDF pages"></div>
+      <button id="show-text" type="button" hidden>Show numbered text</button>
+      <section id="text-blocks" aria-label="Numbered document text" hidden></section>
+    </div>
+    <div class="analysis-column">
+      <section id="scope-picker" aria-labelledby="scope-heading" hidden>
+        <h2 id="scope-heading">Scope</h2>
+        <div class="row wrap">
+          <label>Read <select id="scope-kind"></select></label>
+          <label id="scope-section-label" hidden>Section <select id="scope-section"></select></label>
+          <label id="chapter-level-label">Chapters <select id="chapter-level"></select></label>
+        </div>
+        <div id="scope-pages" hidden><label>First PDF page <input id="scope-first" type="number" min="1" value="1"></label><label>Last PDF page <input id="scope-last" type="number" min="1" value="1"></label></div>
+        <button id="scope-refresh" type="button">Refresh selection</button>
+        <p id="scope-size" role="status"></p><p id="scope-help" class="note"></p>
+        <p class="note">Reading and choosing a scope sends no document text to a model.</p>
+      </section>
+      <div id="analysis-workspace"></div>
+    </div>
+  </div>
+  <section id="saved-section" class="recents" aria-labelledby="saved-heading">
     <h2 id="saved-heading">Saved documents</h2><div id="saved-documents"></div>
-    <button id="export-data">Export documents</button><label>Import documents <input id="import-data" type="file" accept="application/json,.json"></label>
-    <p class="note">Export includes saved PDF files and extraction history. Import adds documents; conflicting saved data is kept.</p>
   </section>
 </main>
 <script type="module" src="reader.mjs"></script>

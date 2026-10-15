@@ -10,6 +10,7 @@ import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
 import {createWorkspace} from './workspace.mjs';
 import {installSelectionToolbar} from './passage-toolbar.mjs';
+import {brand,iconButton} from './icons.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 // E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
 export const {engine:analysisEngine}=createAnalysisEngine(store);
@@ -46,11 +47,22 @@ const fail=error=> {
 installSelectionToolbar({document,selection:async()=>pdf?pdfView.selection():blockSelection(),
   onAction:async(action,selection)=>{if(workspace.active)throw Error('Stop the current run before starting another.');lastSelection=selection;$('scope-kind').value='selection';await picker.refresh();await workspace.passage(action,selection);},
   onPrepare:()=>maintenanceClient.call('prepare',{trigger:'passage-toolbar',target:workspace.target}).catch(()=>{})});
+// A reader with nothing open is a drop zone; once something is open the source bar shrinks to one row.
+let framed=null;
+function frame() {
+  const open=!!doc;
+  // Without a document the useful part of the workspace is the library; opening one returns to analysis.
+  if(workspace&&framed!==open){workspace.openArea(open?'analyze':'library');framed=open;}
+  $('reader-main').dataset.hasDoc=String(open);$('source-bar').classList.toggle('compact',!!doc);
+  $('extraction').hidden=doc?.kind!=='html';
+}
+$('html-mode').addEventListener('change',()=>{$('html-region-label').hidden=$('html-mode').value!=='region';});
+{const header=$('app-header'),spacer=document.createElement('span');spacer.className='spread';header.append(brand(),spacer,iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage()));}
 async function operate(action) {
   await workspaceReady;
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
   busy=true;
-  const controls=['read-current','open-file','source-address','allow-source','reextract','import-data','export-data'];
+  const controls=['read-current','open-file','source-address','allow-source','reextract'];
   for (const id of controls) $(id).disabled=true;
   $('open-address').querySelector('button').disabled=true;
   try { await action(); } catch(error) { fail(error); }
@@ -59,6 +71,7 @@ async function operate(action) {
     for (const id of controls) $(id).disabled=false;
     $('open-address').querySelector('button').disabled=false;
     $('reextract').disabled=doc?.kind!=='html' || (sourceTab===null && !localHTML);
+    frame();
   }
 }
 async function readerMessage(operation,values={},tabId=sourceTab) {
@@ -228,7 +241,7 @@ async function reopen(id,version) {
   } else await commitDocument(value,{localHTML:source?.html?{text:source.html,name:value.fileName,identity:value.identity}:null});
 }
 async function savedList() {
-  const rows=await store.listDocuments(); $('saved-documents').replaceChildren();
+  const rows=await store.listDocuments(); $('saved-documents').replaceChildren();$('saved-section').hidden=!rows.length;
   for (const item of rows) {
     const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
     title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
@@ -261,8 +274,6 @@ $('chrome-viewer').addEventListener('click',()=>chrome.runtime.sendMessage({type
 document.addEventListener('dragover',event=>{ if ([...event.dataTransfer.types].includes('Files')) { event.preventDefault(); document.body.classList.add('dragover'); } });
 document.addEventListener('dragleave',()=>document.body.classList.remove('dragover'));
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
-$('export-data').addEventListener('click',()=>operate(async()=> { const archive=await store.exportData(), url=URL.createObjectURL(new Blob([JSON.stringify(archive)],{type:'application/json'})), a=document.createElement('a'); a.href=url; a.download='sharh-documents.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); state('Documents exported.'); }));
-$('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
 // Register source controls before asynchronous workspace/preferences initialization.
 // A file chosen during startup waits for the workspace rather than losing its change event.
 workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',
