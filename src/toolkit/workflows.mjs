@@ -17,7 +17,7 @@ export async function reconcile(engine,{doc,scope,pair,outputs,selected}){
   if(pair.docId!==doc.id || pair.extractionVersion!==doc.version || outputs.length!==2 || pair.sourceRuns.length!==2 || outputs.some((s,i)=>s.run.id!==pair.sourceRuns[i] || s.run.docId!==doc.id || s.run.extractionVersion!==doc.version || s.run.lens!==pair.lens || s.run.scopeKey!==scopeKey(scope)))throw Error('RECONCILIATION_SCOPE_CHANGED');
   const candidates=outputs.flatMap((s,i)=>namespaceRecords(s.records,i?'R':'L').map(e=>({...e,choice:`${i}:${e.sequence}`}))),entries=candidates.filter(e=>selected.includes(e.choice)).map(({choice,...e},i)=>({...e,sequence:i+1}));if(!entries.length)throw Error('Choose findings to keep.');
   try{assertCanonicalRecords(entries,pair.lens,{scope:new Set(scope.blocks.map(b=>b.n)),sections:doc.sections});}catch{throw Error('Keep the findings referenced by selected codes, excerpts or links too.');}
-  const prompt=assemblePrompt(doc,scope,{lens:pair.lens}),run=await engine.repository.begin(doc,scope,prompt,{path:'local',provider:'reconciled'},{allowStale:true});
+  const prompt=assemblePrompt(doc,scope,{...outputs[0].run.config,lens:pair.lens,customLens:null,operation:null,session:{mode:'none'}}),run=await engine.repository.begin(doc,scope,prompt,{path:'local',provider:'reconciled'},{allowStale:true});
   await engine.repository.write(run.id,{status:'completed',sourceRuns:pair.sourceRuns,origin:'human-reconciliation',metrics:{truncated:false,validRecords:entries.length,newValidRecords:entries.length,validRate:1},canContinue:false,completedAt:Date.now()},entries,{replace:true});
   await engine.store.writeOwned('jobs',{...pair,reconciledRunId:run.id});return engine.repository.get(run.id);
 }
