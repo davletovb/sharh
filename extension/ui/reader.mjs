@@ -265,9 +265,9 @@ $('export-data').addEventListener('click',()=>operate(async()=> { const archive=
 $('import-data').addEventListener('change',event=> { const file=event.target.files[0]; operate(async()=> { if(!file)return; const count=await store.importData(JSON.parse(await file.text())); await savedList(); state(`Imported ${count} document(s).`); }).finally(()=>{event.target.value='';}); });
 // Register source controls before asynchronous workspace/preferences initialization.
 // A file chosen during startup waits for the workspace rather than losing its change event.
-workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
+workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',
   onReference:reference,
-  onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
+  onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;workspace.scopeHost.append($('scope-picker'));});
 await workspaceReady;
 await savedList();
 await operate(async()=> {

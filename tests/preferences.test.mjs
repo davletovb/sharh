@@ -9,7 +9,7 @@ test('new readers ask before reading, report standard detail and follow no model
   assert.deepEqual(Object.keys(AUTO_READ),['never','allowed']);
 });
 test('invalid stored choices fall back and are never trusted',async()=>{
-  const storage=memory();await storage.set({sharhReading:{detail:'enormous',autoRead:'always',follow:['analysis','quick','nope'],partner:{path:'api',provider:'x'},language:'not a code!'}});
+  const storage=memory();await storage.set({sharhReading:{detail:'enormous',autoRead:'always',follow:['analysis','quick','nope'],partner:{path:'Not A Path!',provider:'x'},language:'not a code!'}});
   const value=await new ReadingPreferences(storage).load();
   assert.equal(value.detail,'standard');assert.equal(value.autoRead,'never');assert.deepEqual(value.follow,['quick']);assert.deepEqual(value.partner,PARTNER_DEFAULT);assert.equal(value.language,'en');
 });

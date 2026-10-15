@@ -31,7 +31,7 @@ export function icon(name, {size = 18, className = ''} = {}) {
   svg.setAttribute('focusable', 'false');
   svg.setAttribute('fill', name === 'star' ? 'currentColor' : 'none');
   svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', name === 'star' ? '0' : '1.8');
+  svg.setAttribute('stroke-width', name === 'star' ? '0' : name === 'more' ? '3.4' : '1.8');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   if (className) svg.setAttribute('class', className);

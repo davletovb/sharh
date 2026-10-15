@@ -45,9 +45,9 @@ test('passages preserve the analysis tier, unsaved target and scope; an invalid 
   const engine=new AnalysisEngine({store,paths:{seatline:path}});let workspace;
   try{
     workspace=await createWorkspace(document.getElementById('host'),{store,engine,client:{call:async()=>[provider]},storage,changes});await workspace.ready;await workspace.setDocument(doc);
-    const root=document.querySelector('.workspace'),model=field(root,'Model ID'),tier=field(root,'Task tier'),budget=field(root,'Record budget');
+    const root=document.querySelector('.workspace'),model=field(root,'Model ID'),tier=field(root,'Task tier'),budget=field(root,'Number of findings (1–200)');
     model.value='chapter-override';field(root,'Effort').value='high';field(root,'Speed').value='fast';const target=workspace.target,scope=workspace.selectionScope;budget.value='0';
-    await assert.rejects(workspace.run(),/record budget/);assert.equal(path.calls.length,0);let accepted=0;
+    await assert.rejects(workspace.run(),/number of findings/);assert.equal(path.calls.length,0);let accepted=0;
     await workspace.passage('Explain',{spans:[{n:5,start:0,end:8}]},{onAccepted:()=>accepted++});assert.equal(accepted,1);
     assert.equal(path.calls[0].request.tier,'quick');assert.equal(path.calls[0].target.model,'haiku');assert.equal(path.calls[0].target.effort,'low');
     assert.equal(tier.value,'analysis');assert.deepEqual(workspace.target,target);assert.equal(workspace.selectionScope,scope);assert.equal(budget.value,'0');
@@ -80,7 +80,7 @@ test('alternate passage snapshots preserve the current article, run freshness, L
     const first=await engine.start({doc,scope:buildScope(doc),target,lens:'logic'}),current=await store.getDocument(doc.id),snapshot={...doc,version:await versionOf(doc.identity,'sidebar')};
     await store.saveDocument(snapshot,undefined,{makeCurrent:false});assert.deepEqual(await store.getDocument(doc.id),current);assert.equal((await engine.repository.get(first.run.id)).run.stale,false);
     await assert.rejects(engine.start({doc:snapshot,scope:buildScope(snapshot),target,lens:'passage'}),/STALE_SCOPE/);
-    workspace=await createWorkspace(document.getElementById('host'),{store,engine,client:{call:async()=>path.discover()},storage,changes});await workspace.ready;await workspace.setDocument(snapshot);
+    workspace=await createWorkspace(document.getElementById('host'),{store,engine,client:{call:async()=>path.discover()},storage,changes,surface:'tab'});await workspace.ready;await workspace.setDocument(snapshot);
     const passage=await workspace.passage('Explain',{spans:[{n:5,start:0,end:8}]});assert.equal(passage.run.extractionVersion,snapshot.version);
     assert.equal((await store.getDocument(doc.id)).version,doc.version);assert.equal((await engine.repository.get(first.run.id)).run.stale,false);
     const again=await engine.start({doc,scope:buildScope(doc),target,lens:'logic'});assert.equal(again.run.stale,false);

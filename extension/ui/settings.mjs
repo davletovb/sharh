@@ -4,7 +4,9 @@ import {ReadingPreferences, DETAIL_LABELS, AUTO_READ} from '../../src/ui/prefere
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {sourceOrigin} from '../lib/opening.mjs';
 import {buildModelSettings} from './settings-models.mjs';
+import {connectionSteps} from '../../src/ui/connection.mjs';
 import {icon, brand} from './icons.mjs';
+import {LANGUAGES} from '../../src/ui/languages.mjs';
 import {element} from './dom.mjs';
 
 const client = new PathClient(),
@@ -72,18 +74,8 @@ $('#gemini-cloud').addEventListener('change', async () => {
   await check();
 });
 $('#check').addEventListener('click', () => check());
-function summarize(results) {
-  const states = results.map(p => diagnostic(p).state);
-  const hostMissing = states.length > 0 && states.every(s => s === 'companion_missing');
-  const notAuthorized = !hostMissing && states.length > 0 && states.every(s => s === 'sharh_not_authorized');
-  const ready = results.filter((p, i) => states[i] === 'ready');
-  return {
-    steps: {install: hostMissing ? 'bad' : 'ok', authorize: hostMissing ? 'wait' : notAuthorized ? 'bad' : 'ok', signin: hostMissing || notAuthorized ? 'wait' : ready.length ? 'ok' : 'bad'},
-    ready
-  };
-}
 function renderStatus(results) {
-  const {steps, ready} = summarize(results);
+  const {steps, ready, next} = connectionSteps(results);
   for (const li of document.querySelectorAll('#setup-steps li')) {
     const state = steps[li.dataset.step];
     if (state === 'wait') li.removeAttribute('data-state'); else li.dataset.state = state;
@@ -95,7 +87,6 @@ function renderStatus(results) {
   if (ready.length) {
     body.append(element('span', 'Connected', 'title'), element('p', `${ready.map(p => p.label).join(' and ')} ${ready.length === 1 ? 'is' : 'are'} ready to read with.`));
   } else {
-    const next = steps.install === 'bad' ? 'Install Seatline to get started.' : steps.authorize === 'bad' ? 'Allow Sharh to use Seatline with the command below.' : 'Sign in to a model CLI, then check again.';
     body.append(element('span', 'Not connected yet', 'title'), element('p', next));
   }
   $('#setup-details').open = !ready.length && steps.install !== 'bad' ? steps.authorize === 'bad' : steps.install === 'bad';
@@ -138,7 +129,6 @@ models = {
 await check({fresh: false});
 
 // ───────── Reading ─────────
-const LANGUAGES = [['en', 'English'], ['uz', 'Oʻzbekcha (Latin)'], ['uz-Cyrl', 'Ўзбекча (Кирилл)'], ['ru', 'Русский'], ['ar', 'العربية'], ['fa', 'فارسی'], ['tr', 'Türkçe'], ['kk', 'Қазақша'], ['fr', 'Français'], ['de', 'Deutsch'], ['es', 'Español'], ['it', 'Italiano'], ['pt', 'Português'], ['zh', '中文'], ['ja', '日本語'], ['hi', 'हिन्दी']];
 const language = $('#language');
 for (const [code, name] of [...LANGUAGES, ['other', 'Other…']]) language.append(Object.assign(element('option', name), {value: code}));
 function showLanguage() {

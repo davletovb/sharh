@@ -56,7 +56,7 @@ test('mouse-clicking all four passage actions completes through the Quick target
   }finally{toolbar.dispose();w.close();}
 });
 
-test('invalid Quick output explains rejection, survives reopening, and retries the saved passage with the selected model',async()=>{
+test('invalid Quick output explains rejection, survives reopening, and retries the saved passage with the default model',async()=>{
   const bad={text:'{"text":"Missing record tag","refs":[5]}\n{"t":"end"}\n'},w=await fixture(({target,request})=>target.model==='haiku'?bad:answer(request));let workspace=w.workspace;
   try{const failed=await workspace.passage('Translate',{spans:[{n:5,start:2,end:12}]});assert.equal(failed.run.status,'invalid');assert.equal(w.path.calls.length,2);assert.equal(failed.run.attempts.length,2);
     assert.match(document.querySelector('.run-state').textContent,/Response format failed/);assert.match(document.querySelector('.run-diagnostics').textContent,/missing or unsupported record type/);assert.equal(document.querySelector('.run-diagnostics').hidden,false);
@@ -64,7 +64,7 @@ test('invalid Quick output explains rejection, survives reopening, and retries t
     const updated=structuredClone(w.doc);updated.version=await versionOf(w.doc.identity,'newer extraction');updated.blocks[4].text='Changed source text in a newer extraction';updated.blocks[4].anchor.quote.exact=updated.blocks[4].text;updated.blocks[4].anchor.position.end=updated.blocks[4].anchor.position.start+updated.blocks[4].text.length;await w.store.saveDocument(updated);
     workspace.dispose();workspace=await createWorkspace(document.getElementById('host'),{store:w.store,engine:w.engine,client:w.client,storage:w.storage,changes});await workspace.ready;await workspace.setDocument(updated);
     assert.equal(w.path.calls.length,2);assert.match(document.querySelector('.run-state').textContent,/Response format failed/);assert.equal(workspace.selectionScope.kind,'document');
-    const retry=[...document.querySelectorAll('button')].find(b=>b.textContent==='Retry with selected model');assert.equal(retry.hidden,false);retry.click();
+    const retry=[...document.querySelectorAll('button')].find(b=>b.textContent==='Retry with default model');assert.equal(retry.hidden,false);retry.click();
     for(let i=0;i<100 && w.path.calls.length<3;i++)await tick();for(let i=0;i<100 && workspace.active;i++)await tick();
     assert.equal(w.path.calls.length,3);const call=w.path.calls[2],task=JSON.parse(call.request.task.split('\n')[1]),data=JSON.parse(call.request.document),rows=await w.engine.list(w.doc.id),recovered=await w.engine.repository.get(rows[0].id);
     assert.equal(call.target.model,'sonnet');assert.equal(call.target.effort,'medium');assert.equal(call.request.tier,'analysis');assert.equal(task.action,'Translate');assert.equal(task.outputLanguage,'uz-Latn');assert.equal(data.blocks.find(b=>b.n===5).selected[0].text,w.doc.blocks[4].text.slice(2,12));

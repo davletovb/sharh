@@ -40,7 +40,7 @@ export class ReadingPreferences {
     const tiers=Object.fromEntries(Object.keys(TIERS).map(k=>[k,{...DEFAULTS[k],...(saved.tiers?.[k]??{})}]));
     const follow=Array.isArray(saved.follow)?FOLLOWING.filter(k=>saved.follow.includes(k)):[];
     for(const k of follow)tiers[k]={...tiers.analysis};
-    const partner=saved.partner && typeof saved.partner==='object' && saved.partner.path==='seatline' && typeof saved.partner.provider==='string'?{path:'seatline',provider:saved.partner.provider,model:saved.partner.model||null}:{...PARTNER_DEFAULT};
+    const partner=saved.partner && typeof saved.partner==='object' && /^[a-z][a-z0-9-]{0,31}$/.test(saved.partner.path) && typeof saved.partner.provider==='string' && saved.partner.provider.length<=64?{path:saved.partner.path,provider:saved.partner.provider,model:saved.partner.model||null}:{...PARTNER_DEFAULT};
     this.value={theme:['system','ink','parchment'].includes(saved.theme)?saved.theme:'system',
       language:typeof saved.language==='string' && LANGUAGE.test(saved.language)?saved.language:'en',
       detail:Object.hasOwn(DETAIL,saved.detail)?saved.detail:'standard',

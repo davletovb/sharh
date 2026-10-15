@@ -2,34 +2,71 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sharh</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <a class="skip-link" href="#analysis-workspace">Skip to analysis</a>
-    <main>
-      <header>
-        <p class="eyebrow">Read closely</p>
-        <h1>Sharh</h1>
-        <p>Your reading workspace.</p>
-      </header>
-      <section aria-labelledby="read-heading">
-        <h2 id="read-heading">Read a document</h2>
-        <button id="read-page">Read current page</button><button id="open-current-pdf">Open current PDF</button><button id="open-reader">Open PDF or local file</button>
-        <button id="allow-source" hidden>Allow access to this source</button>
-        <button id="enable-passages" hidden>Enable passage actions on this site</button>
-        <button id="retry-passage" hidden>Retry pending passage</button><button id="dismiss-passage" hidden>Dismiss pending passage</button>
-        <p id="read-state" role="status"></p>
+  <body class="panel-body">
+    <a class="skip-link" href="#panel-main">Skip to content</a>
+    <header class="app-header" id="app-header"></header>
+    <main id="panel-main" class="panel">
+      <h1 class="sr-only">Sharh</h1>
+
+      <div id="notices" class="notices">
+        <p id="read-state" role="status" class="status-line"></p>
+        <div class="row wrap">
+          <button id="allow-source" type="button" hidden>Allow access to this site</button>
+          <button id="retry-passage" type="button" hidden>Retry pending passage</button>
+          <button id="dismiss-passage" type="button" class="ghost" hidden>Dismiss pending passage</button>
+        </div>
+      </div>
+
+      <!-- 1 · Not connected: setup is a state, not a section. -->
+      <section id="state-connect" class="state-card" aria-labelledby="h-connect" hidden>
+        <span id="connect-art"></span>
+        <h2 id="h-connect">Connect a model to start</h2>
+        <p class="hint">Sharh reads with the models you already use, through Seatline, a small companion app on this computer.</p>
+        <ol class="steps" id="panel-steps">
+          <li data-step="install"><span class="num">1</span><div><strong>Install Seatline</strong></div></li>
+          <li data-step="authorize"><span class="num">2</span><div><strong>Allow Sharh to use it</strong></div></li>
+          <li data-step="signin"><span class="num">3</span><div><strong>Sign in to a model</strong></div></li>
+        </ol>
+        <p id="connect-next" class="hint"></p>
+        <div class="row wrap">
+          <button id="check" type="button" class="primary">Check again</button>
+          <button id="open-connection" type="button">Open setup</button>
+        </div>
+        <p id="state" class="status-line" role="status"></p>
       </section>
-      <div id="panel-scope"></div>
-      <div id="analysis-workspace"></div>
-      <section>
-        <h2>Model connection</h2>
-        <p>Set up Seatline to reach models through your signed-in CLIs.</p>
-        <button id="settings">Open Seatline settings</button><button id="check">Check connection</button>
-        <p id="state" role="status"></p>
-        <div id="providers" aria-live="polite"></div>
+
+      <!-- 2 · Ask before reading. -->
+      <section id="state-consent" class="state-card" aria-labelledby="h-consent" hidden>
+        <span id="consent-art"></span>
+        <h2 id="h-consent">Read this page?</h2>
+        <p id="consent-page" class="hint"></p>
+        <p class="hint consent-note">Sharh extracts the text on this computer. Nothing goes to a model until you choose a lens.</p>
+        <div class="row wrap">
+          <button id="read-page" type="button" class="primary">Read page</button>
+          <button id="not-now" type="button" class="ghost">Not now</button>
+          <button id="open-current-pdf" type="button" class="primary" hidden>Open this PDF in Sharh</button>
+        </div>
+      </section>
+
+      <!-- 3 · Reading. -->
+      <section id="state-reading" aria-label="Reading" hidden>
+        <div id="connection-banner" hidden></div>
+        <div id="enable-passages-bar" class="callout" hidden>
+          <span class="dot warn"></span>
+          <div><span class="title">Selection tools are off on this site</span><p class="hint">Turn them on to explain, translate or define a passage right where you read.</p>
+            <button id="enable-passages" type="button">Turn on selection tools</button></div>
+        </div>
+        <div id="analysis-workspace"></div>
+      </section>
+
+      <section id="recents" class="recents" aria-labelledby="h-recents" hidden>
+        <h2 id="h-recents">Saved readings</h2>
+        <div id="recent-list"></div>
+        <button id="open-reader" type="button" class="ghost">Open a PDF or file…</button>
       </section>
     </main>
     <script type="module" src="panel.mjs"></script>
