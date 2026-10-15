@@ -32,7 +32,7 @@ async function showDocument(doc,{tabId=null,selection=null}={}) {
   await chrome.storage.session.set({[contextKey]:{docId:doc.id,version:doc.version,sourceTab}});
 }
 workspace=await createWorkspace($('analysis-workspace'),{store,engine,client,onControlsChanged:()=>{if(current)picker.refresh();},
-  onOpenDocument:async id=>{const doc=await store.getDocument(id);if(doc)await showDocument(doc);},
+  onOpenDocument:async(id,version,scope)=>{const doc=await store.getDocument(id,version);if(doc){await showDocument(doc);if(scope)await picker.restore(scope);}},
   onReference:async(block,source)=> {
     if(sourceTab!==null && source.id===current.id && source.version===current.version){try{const hit=await sourceMessage('highlight',{anchor:block.anchor});$('read-state').textContent=hit?`Highlighted ¶${block.n} in the source page.`:'This paragraph could not be found in the current page.';return;}catch(error){fail(error);}}
     const url=new URL(readerURL(chrome.runtime,{docId:source.id}));url.searchParams.set('version',source.version);url.searchParams.set('paragraph',block.n);await chrome.tabs.create({url:url.href});

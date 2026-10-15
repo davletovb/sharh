@@ -1,0 +1,11 @@
+# H — Across texts evidence
+
+Base: merged G `632291a045449d932a892831e1018adc5e708455`. [Decision](../decisions/h-across-texts.md) · [Architecture and commands](../architecture/across-texts.md).
+
+H-01 implements extraction-bound document/chapter library items, ordered collections and deletion of dependent reports. H-02 implements chapter digest prompts, exact-identity caching, one background job, incremental persistence, explicit pause/resume and size preflight. H-03 implements per-tier seat orders with foreground approval, restricted automatic background switching, mixed-target labels and unchanged Seatline policy/isolation enforcement. H-08 implements the editable running glossary and explicit script aliases, automatic non-overwriting Terms capture and frozen conversation snapshots.
+
+H-04–H-07 implement digest-only book lenses, collection literature review, a qualitative texts-by-criteria matrix and two-text comparison. References resolve to frozen original items/paragraphs, cross-text cells validate their source ownership, support notes are required, and portable report exports include source dependencies. These four items retain IMPLEMENTED — VERIFY for real recorded quality and expert assessment.
+
+Sixteen H unit groups cover identity-bound digest reuse, interruption/partial continuation, global background exclusion with an interactive turn, failover allow/deny cases, glossary aliases/language separation and snapshots, collection/source deletion, archive validation, qualitative views, concurrent preference writes, invalid selection and oversized preflight. Four packaged browser workflows cover collection order/compare/source references/JSON dependencies, book pause/resume/synthesis, glossary edits and foreground failover approval. CI adds a 132-turn scripted workflow matrix and the same matrix through the pinned real broker with stand-in providers. The six language/script tags test wire/contract handling only, not language quality.
+
+Final test counts, current-head CI and artifacts are linked from the implementation PR. Historical F/G evidence remains source-labelled and unchanged. H-09 is BLOCKED: no live 300-page acceptance, real multilingual output quality, quota/latency behaviour or owner/expert approval is claimed. Prior A/B/E/F/G gates remain open.

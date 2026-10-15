@@ -1,12 +1,12 @@
 import {graphRecords} from '../../src/ui/graph-layout.mjs';
 import {element,button,uid} from './dom.mjs';
-const labels={sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
+const labels={finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
 const readable=s=>String(s??'').replaceAll('_',' ');
 export function referenceButtons(doc,record,onReference) {
   const row=element('div','','references'),refs=record.refs??(record.ref?[record.ref]:[]);
   // Long section spans remain fully reachable without building ten thousand buttons.
   for(const n of refs.length>12?[...refs.slice(0,6),...refs.slice(-6)]:refs) {
-    const block=doc?.blocks.find(b=>b.n===n),link=button(`¶${n}${block?.pageLabel?' · p. '+block.pageLabel:''}`,()=>onReference(n),'reference');link.dataset.ref=n;row.append(link);
+    const block=doc?.blocks.find(b=>b.n===n),link=button(block?.source?`${block.source.title} · ¶${block.source.n}`:`¶${n}${block?.pageLabel?' · p. '+block.pageLabel:''}`,()=>onReference(n),'reference');link.dataset.ref=n;row.append(link);
   }
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
@@ -17,7 +17,7 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
   root.append(outlineTitle,outline);container.append(root);
   root.dataset.lens=lens;
-  const tabular=['themes','literature','terms'].includes(lens),table=element('table','','reading-table');
+  const across=['meta-synthesis','compare'].includes(lens),tabular=across||['themes','literature','terms'].includes(lens),table=element('table','','reading-table');
   if(tabular){table.append(element('caption',lens==='themes'?'Codebook and source excerpts':lens==='terms'?'Contextual glossary':'Citations in the text'));outline.before(table);}
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('role','group');svg.setAttribute('aria-label',`${readable(lens)} map; use the text outline for all details`);svg.setAttribute('viewBox','0 0 500 240');svg.classList.add('analysis-map');
   function move(){if(lastLayout)svg.setAttribute('viewBox',`${pan.x} ${pan.y} ${lastLayout.width/pan.zoom} ${lastLayout.height/pan.zoom}`);}
@@ -40,6 +40,7 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
     const name=r.title??r.label??r.term??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
     title.append(button(name,()=>inspect(entry),'inspect-finding'));card.append(title);
     const text=r.gist??r.gloss??r.text;if(text){const p=element('p',text,'reading-text');p.dir='auto';card.append(p);}
+    if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
     if(r.src)card.append(element('p',r.src,'source-term'));if(r.tr)card.append(element('p',r.tr,'translation'));
     if(r.basis)card.append(element('span',r.basis,'basis '+r.basis));
     if(r.t==='edge')card.append(element('p',`${r.from} → ${r.to} · ${readable(r.rel)}`));
@@ -56,7 +57,8 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
     card.dataset.refs=(r.refs??(r.ref?[r.ref]:[])).join(',');
     if(r.id)cards.set(r.id,card);
   }
-  function tableRows(){if(!tabular)return;table.querySelectorAll('thead,tbody').forEach(n=>n.remove());const head=element('thead'),tr=element('tr'),body=element('tbody');for(const label of lens==='themes'?['Theme','Code','Excerpt','Paragraph']:lens==='terms'?['Original','Translation','Meaning','Paragraph']:['Author / work','Role','Use in this text','Paragraph']){const th=element('th',label);th.scope='col';tr.append(th);}head.append(tr);const rs=records.map(e=>e.record),byId=new Map(rs.filter(r=>r.id).map(r=>[r.id,r]));for(const r of rs.filter(r=>lens==='themes'?r.t==='excerpt':lens==='terms'?r.t==='term':r.t==='cite')){const row=element('tr'),code=byId.get(r.code),values=lens==='themes'?[byId.get(code?.theme)?.label??'',code?.label??'',r.quote??'Unverified excerpt omitted']:lens==='terms'?[r.src,r.tr,r.text]:[[r.who,r.work].filter(Boolean).join(' · '),r.role,r.text];for(const text of values)row.append(element('td',text));const cell=element('td');cell.append(referenceButtons(doc,r,onReference));row.append(cell);body.append(row);}table.append(head,body);}
+  function tableRows(){if(!tabular)return;if(across){matrix();return;}table.querySelectorAll('thead,tbody').forEach(n=>n.remove());const head=element('thead'),tr=element('tr'),body=element('tbody');for(const label of lens==='themes'?['Theme','Code','Excerpt','Paragraph']:lens==='terms'?['Original','Translation','Meaning','Paragraph']:['Author / work','Role','Use in this text','Paragraph']){const th=element('th',label);th.scope='col';tr.append(th);}head.append(tr);const rs=records.map(e=>e.record),byId=new Map(rs.filter(r=>r.id).map(r=>[r.id,r]));for(const r of rs.filter(r=>lens==='themes'?r.t==='excerpt':lens==='terms'?r.t==='term':r.t==='cite')){const row=element('tr'),code=byId.get(r.code),values=lens==='themes'?[byId.get(code?.theme)?.label??'',code?.label??'',r.quote??'Unverified excerpt omitted']:lens==='terms'?[r.src,r.tr,r.text]:[[r.who,r.work].filter(Boolean).join(' · '),r.role,r.text];for(const text of values)row.append(element('td',text));const cell=element('td');cell.append(referenceButtons(doc,r,onReference));row.append(cell);body.append(row);}table.append(head,body);}
+  function matrix(){table.querySelectorAll('thead,tbody').forEach(n=>n.remove());const sources=doc.derived?.sources??[],head=element('thead'),row=element('tr');row.append(element('th','Criterion'));for(const item of sources)row.append(element('th',item.title));head.append(row);const body=element('tbody');for(const criterion of ['question','method','data','findings','concepts','stance']){const row=element('tr');row.append(element('th',readable(criterion)));for(const item of sources){const cell=element('td'),matches=records.filter(e=>e.record.t==='cell'&&e.record.item===item.itemId&&e.record.criterion===criterion);if(!matches.length)cell.append(element('p','Not reported in this reading.'));for(const e of matches){cell.append(element('p',e.record.text),referenceButtons(doc,e.record,onReference));}row.append(cell);}body.append(row);}table.append(head,body);}
   function highlightVisible(){for(const card of root.querySelectorAll('[data-sequence]')){const refs=(card.dataset.refs??'').split(',').map(Number),active=refs.some(n=>visible.has(n));card.classList.toggle('in-source-view',active);if(active)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}for(const node of svg.querySelectorAll('[data-record-id]'))node.classList.toggle('in-source-view',cards.get(node.dataset.recordId)?.classList.contains('in-source-view')===true);}
   function updateVisibility() {const visible=new Set(graphRecords(records,lens,[...collapsed]).nodes.map(n=>n.id));for(const [id,card]of cards)card.hidden=!visible.has(id);}
   function scheduleLayout(){if(!worker || layoutTimer!==null)return;layoutTimer=setTimeout(()=>{layoutTimer=null;if(disposed)return;if(mapBusy){layoutPending=true;return;}mapBusy=true;worker.postMessage({id:++ticket,lens,graph:graphRecords(records,lens,[...collapsed])});},80);}

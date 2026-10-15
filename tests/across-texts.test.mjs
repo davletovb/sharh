@@ -1,0 +1,91 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {IDBFactory} from 'fake-indexeddb';
+import {JSDOM} from 'jsdom';
+import {openDocumentStore,validateArchive} from '../src/documents/store.mjs';
+import {createDocument,versionOf,makeSections} from '../src/documents/model.mjs';
+import {buildScope} from '../src/documents/scopes.mjs';
+import {AnalysisEngine} from '../src/analysis/engine.mjs';
+import {FakePath} from '../src/paths/fake.mjs';
+import {Conversations} from '../src/toolkit/conversations.mjs';
+import {RecordParser} from '../src/analysis/parser.mjs';
+import {assemblePrompt} from '../src/analysis/prompts.mjs';
+import {Library} from '../src/across/library.mjs';
+import {BookJobs,chapterPlan} from '../src/across/books.mjs';
+import {Glossary} from '../src/across/glossary.mjs';
+import {runWithFailover,FailoverPreferences} from '../src/across/failover.mjs';
+import {AcrossTexts,collectionDocument} from '../src/across/synthesis.mjs';
+import {markdown,runArchive} from '../src/toolkit/exports.mjs';
+import {createAnalysisView} from '../extension/ui/views.mjs';
+import {phaseThreeOutput} from '../scripts/lib/phase-three-fixtures.mjs';
+const end={t:'end'},lines=(...r)=>r.map(JSON.stringify).join('\n')+'\n',target={path:'fake',provider:'one'},policy={mode:'automatic',targets:[{path:'fake',provider:'two'}]};
+async function book(identity='book',count=3){const texts=Array.from({length:count},(_,i)=>['Chapter '+(i+1),'Evidence for chapter '+(i+1)+'. A different meaning of evidence is considered.']).flat(),blocks=texts.map((text,i)=>({n:i+1,kind:i%2?'para':'heading',...(i%2?{}:{level:1}),text,anchor:{type:'html',path:`p:nth-child(${i+1})`,quote:{exact:text,prefix:'',suffix:''},position:{start:i*100,end:i*100+text.length}}}));return createDocument({extractorVersion:'test',version:await versionOf(identity,JSON.stringify(blocks)),blocks,sections:makeSections(blocks)},{kind:'html',identity,title:identity,language:'en'});}
+async function world(options={}){const store=await openDocumentStore({indexedDB:new IDBFactory(),name:crypto.randomUUID()}),doc=await book();await store.saveDocument(doc);const path=new FakePath({wait:async()=>{},scriptFor:({request})=>{const task=JSON.parse(request.task.split('\n')[1]);if(task.operation==='ask')return {text:lines({t:'note',text:'Grounded answer',refs:[2]},end)};return {text:phaseThreeOutput(task,JSON.parse(request.document))};},...options});path.discover=async()=>['one','two'].map(provider=>({path:'fake',provider,available:true,signedIn:true,accepted:true,models:[],capabilities:{toolIsolation:true,sessions:path.sessions}}));const engine=new AnalysisEngine({store,paths:{fake:path}});return {store,doc,path,engine,config:{doc,scope:buildScope(doc),target,language:'en'},close(){store.close();}};}
+const entry=(record,i)=>({record,sequence:i+1,flags:[]});
+
+test('library saves extraction-bound documents and chapters, deduplicates, orders memberships and cascades collection reports',async()=>{
+ const w=await world(),lib=new Library(w.store);try{const a=await lib.save(w.doc),b=await lib.save(w.doc,buildScope(w.doc,{kind:'chapter',id:w.doc.sections[1].id}));assert.equal((await lib.save(w.doc)).id,a.id);assert.equal((await lib.items()).length,2);const c=await lib.create('Reading list'),d=await lib.create('Other');await lib.add(c.id,a.id);await lib.add(c.id,b.id);await lib.reorder(c.id,[b.id,a.id]);assert.deepEqual((await lib.collections())[0].items.map(i=>i.id),[b.id,a.id]);await lib.order([d.id,c.id]);assert.equal((await lib.collections())[0].id,d.id);await assert.rejects(lib.reorder(c.id,[a.id,a.id]),/ORDER/);const derived=await collectionDocument(w.store,[a,b],{kind:'compare',collectionId:c.id});await w.engine.start({...w.config,doc:derived,scope:buildScope(derived),lens:'compare'});await lib.delete(c.id);assert.equal(await w.store.getDocument(derived.id),null);assert.ok(await w.store.getDocument(w.doc.id));assert.equal((await w.store.all('runs')).length,0);await w.store.deleteDocument(w.doc.id);assert.equal((await lib.items()).length,0);}finally{w.close();}
+});
+
+test('book digests are sequential, resumable, cache-bound to extraction/prompt/model/language/frame, and saved before the next chapter',async()=>{
+ const w=await world(),books=new BookJobs(w.engine),abort=new AbortController();try{const job=await books.create(w.config),progress=[];await assert.rejects(books.run(job.id,{signal:abort.signal,onProgress:j=>{progress.push(j.next??0);if(j.next===1)abort.abort();}}),/paused/);assert.equal(w.path.calls.length,1);const first=(await books.get(job.id)).chapters[0].runId;const resumed=await books.run(job.id);assert.equal(resumed.state,'completed');assert.equal(w.path.calls.length,3);assert.equal(resumed.chapters[0].runId,first);assert.ok(w.path.calls.every(c=>c.request.priority==='background'&&c.request.session.mode==='none'));const cached=await books.create(w.config);await books.run(cached.id);assert.equal(w.path.calls.length,3);const framed=await books.create({...w.config,frame:'Bourdieu'});await books.run(framed.id);assert.equal(w.path.calls.length,6);const other=await books.create({...w.config,target:{...target,model:'other'}});await books.run(other.id);assert.equal(w.path.calls.length,9);const changed=await book('book',4);await w.store.saveDocument(changed);const fresh=await books.create({...w.config,doc:changed,scope:buildScope(changed)});await books.run(fresh.id);assert.equal(w.path.calls.length,13);assert.ok((await w.engine.repository.get(first)).run.stale);}finally{w.close();}
+});
+
+test('only one background book job can hold a generation while an interactive reading remains available',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);let release,entered;const started=new Promise(r=>entered=r),blocked=new Promise(r=>release=r),original=w.path.run.bind(w.path);w.path.run=async(...args)=>{if(args[1].priority==='background'&&!release.done){entered();await blocked;release.done=true;}return original(...args);};try{const one=await books.create(w.config),two=await books.create(w.config),active=books.run(one.id);await started;await assert.rejects(books.run(two.id),/Another book job/);const interactive=await w.engine.start({...w.config,lens:'digest',priority:'interactive'});assert.equal(interactive.run.status,'completed');release();await active;assert.equal(w.path.calls.length,4);}finally{release();w.close();}
+});
+
+test('a partial chapter stops before the next and explicit resume continues it without repeating completed records',async()=>{
+ const partial=lines({t:'sum',level:'section',text:'First',refs:[2]}),w=await world({scriptFor:null,scripts:[{text:partial,truncated:true},{text:lines({t:'concept',id:'c',term:'Evidence',gloss:'Meaning',refs:[2]},end)},...Array.from({length:2},()=>({text:lines({t:'sum',level:'section',text:'Later',refs:[4]},end)}))]}),books=new BookJobs(w.engine);try{const job=await books.create(w.config),first=await books.run(job.id);assert.equal(first.state,'paused');assert.equal(w.path.calls.length,1);const next=await books.run(job.id);assert.equal(next.state,'completed');assert.equal(w.path.calls.length,4);assert.equal((await w.engine.repository.get(next.chapters[0].runId)).records.length,2);assert.equal(w.path.calls[1].request.session.mode,'none');}finally{w.close();}
+});
+
+test('known rate limits may fail over between empty turns and mixed-target books record their seats',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);let calls=0,original=w.path.scriptFor;w.path.scriptFor=args=>++calls===2?{error:{code:'RATE_LIMITED',reason:'PROVIDER_RATE_LIMITED'}}:original(args);try{const job=await books.create(w.config,{policy}),saved=await books.run(job.id);assert.equal(saved.state,'completed');assert.equal(saved.mixedTargets,true);assert.deepEqual(w.path.calls.map(c=>c.target.provider),['one','one','two','two']);assert.equal((await books.digests(job.id)).chapters[1].target.provider,'two');}finally{w.close();}
+});
+
+test('foreground failover always asks; policy, isolation, invalid, disconnect and partial-output failures never switch',async()=>{
+ for(const [code,output]of [['RATE_LIMITED','partial'],['POLICY_DENIED',''],['ISOLATION_UNAVAILABLE',''],['TOO_LARGE',''],['DISCONNECTED',''],['MODEL_UNSUPPORTED',''],['OPTION_UNSUPPORTED','']]){const w=await world({scriptFor:null,scripts:[{text:output,error:{code,reason:code}}]});let asked=0;try{await assert.rejects(runWithFailover(w.engine,{...w.config,lens:'digest'},policy,{approveFailover:async()=>{asked++;return true;}}));assert.equal(w.path.calls.length,1,code);assert.equal(asked,0,code);}finally{w.close();}}
+ const w=await world(),original=w.path.scriptFor;let calls=0,asked=0;w.path.scriptFor=args=>++calls===1?{error:{code:'RATE_LIMITED',reason:'PROVIDER_RATE_LIMITED'}}:original(args);try{const saved=await runWithFailover(w.engine,{...w.config,lens:'digest'},policy,{approveFailover:async()=>{asked++;return true;}});assert.equal(asked,1);assert.equal(saved.run.target.provider,'two');assert.equal(saved.run.failover.failures.length,1);}finally{w.close();}
+});
+
+test('book-level lenses send only chapter digests, keep global references, and use one synthesis seat',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);try{const job=await books.create(w.config);await books.run(job.id);for(const lens of ['summary','structure','logic','thinking']){const saved=await books.synthesize(job.id,{target:{...target,provider:'two'},lens,language:'en'});assert.equal(saved.run.status,'completed',lens);const source=JSON.parse(w.path.calls.at(-1).request.document);assert.ok(source.chapters);assert.equal(source.blocks,undefined);assert.equal(w.path.calls.at(-1).request.tier,'synthesis');assert.equal(saved.run.target.provider,'two');assert.ok(saved.records.every(e=>(e.record.refs??[]).every(n=>w.doc.blocks.some(b=>b.n===n))));}assert.equal(w.path.calls.length,7);}finally{w.close();}
+});
+
+test('running glossary captures terms without overwriting edits, links script aliases, and binds new prompts while existing chats stay frozen',async()=>{
+ const w=await world(),glossary=new Glossary(w.store);try{await glossary.save({bookId:w.doc.id,term:'dalil',translation:'evidence',aliases:['далил'],note:'Chosen term',language:'en'});await assert.rejects(glossary.save({bookId:w.doc.id,term:'other',translation:'x',aliases:['далил']}),/alias/);const chat=new Conversations(w.engine),first=await chat.ask(w.config,'First');assert.equal(w.path.calls.at(-1).request.task.includes('далил'),true);await glossary.save({bookId:w.doc.id,term:'dalil',translation:'proof',aliases:['далил'],note:'Edited',language:'en'});await chat.ask(w.config,'Next',{chatId:first.chatId});assert.equal(JSON.parse(w.path.calls.at(-1).request.task.split('\n')[1]).glossary[0].translation,'evidence');await w.engine.start({...w.config,lens:'digest'});assert.equal(JSON.parse(w.path.calls.at(-1).request.task.split('\n')[1]).glossary[0].translation,'proof');await glossary.capture({run:{docId:w.doc.id,status:'completed',config:{language:'en'}},records:[{record:{t:'term',src:'далил',tr:'wrong',text:'x',refs:[2]}}]});assert.equal((await glossary.list(w.doc.id)).length,1);assert.equal((await glossary.list(w.doc.id))[0].translation,'proof');await w.store.deleteDocument(w.doc.id);assert.deepEqual(await glossary.list(w.doc.id),[]);}finally{w.close();}
+});
+
+test('collection review and meta-synthesis use digest evidence; compare preserves distinct source items and paragraph citations',async()=>{
+ const w=await world(),lib=new Library(w.store),across=new AcrossTexts(w.engine);try{const second=await book('second');await w.store.saveDocument(second);const items=[await lib.save(w.doc),await lib.save(second)],collection=await lib.create('Review');for(const i of items)await lib.add(collection.id,i.id);
+ for(const kind of ['literature-review','meta-synthesis','compare']){const doc=await across.prepare(items,{kind,collectionId:collection.id,target,language:'en'}),saved=await across.run(doc,{target,language:'en'});assert.equal(saved.run.status,'completed',kind);assert.ok(saved.records.some(e=>e.record.t==='finding'));assert.ok(doc.blocks.every(b=>b.source&&b.source.n>0));if(kind==='meta-synthesis')assert.equal(saved.records.filter(e=>e.record.t==='cell').length,12);const text=markdown(saved,doc);assert.match(text,/book · ¶|second · ¶/);const archive=runArchive(saved,doc,null,await Promise.all(items.map(async item=>({doc:await w.store.getDocument(item.docId,item.version)}))));assert.doesNotThrow(()=>validateArchive(archive));const bad=structuredClone(archive);bad.stores.blocks.find(b=>b.source).source.n=999;assert.throws(()=>validateArchive(bad),/SOURCE_REFERENCE/);}
+ assert.equal(w.path.calls.filter(c=>JSON.parse(c.request.task.split('\n')[1]).lens==='digest').length,6);await w.store.deleteDocument(second.id);assert.ok(!(await w.store.listDocuments()).some(d=>d.derived));}finally{w.close();}
+});
+
+test('cross-text cell validation rejects citations assigned to a different library item',()=>{
+ const blocks=[{n:1,text:'First',source:{itemId:'one'}},{n:2,text:'Second',source:{itemId:'two'}}],parser=new RecordParser({lens:'meta-synthesis',blocks});parser.push(lines({t:'cell',item:'one',criterion:'method',text:'Bad',refs:[2]},{t:'cell',item:'two',criterion:'method',text:'Good',refs:[2]},{t:'finding',kind:'theme',text:'Unanchored',support:'None',refs:[999]},end));const result=parser.finish();assert.equal(result.records.length,1);assert.equal(result.records[0].record.text,'Good');assert.equal(result.metrics.dropped.source_reference,2);
+});
+
+test('matrix views show qualitative support notes and original-item paragraph labels as inert text',async()=>{
+ const d=new JSDOM('<main></main>',{pretendToBeVisual:true});for(const key of ['document','CustomEvent','requestAnimationFrame','cancelAnimationFrame','location'])globalThis[key]=typeof d.window[key]==='function'?d.window[key].bind(d.window):d.window[key];const w=await world(),lib=new Library(w.store);let view;try{const a=await lib.save(w.doc),b=await lib.save(w.doc,buildScope(w.doc,{kind:'chapter',id:w.doc.sections[0].id})),doc=await collectionDocument(w.store,[a,b],{kind:'compare'});view=createAnalysisView(document.querySelector('main'),{lens:'compare',doc});for(const [i,record]of [{t:'cell',item:a.id,criterion:'method',text:'<script>bad</script>',refs:[1]},{t:'finding',kind:'concept_usage',text:'Different usage',support:'Two texts, interpreted qualitatively.',refs:[1,doc.blocks.length]}].entries())view.record(entry(record,i));await view.settled();assert.ok(document.querySelector('table'));assert.ok(document.querySelector('.support-note').textContent.includes('2 supporting texts'));assert.equal(document.querySelector('script'),null);assert.match(document.querySelector('.reference').textContent,/book · ¶1/);}finally{view?.dispose();w.close();d.window.close();}
+});
+
+test('failover preferences retain separate tier orders under concurrent saves',async()=>{
+ let data={};const storage={get:async key=>({[key]:structuredClone(data[key])}),set:async values=>Object.assign(data,structuredClone(values))},a=new FailoverPreferences(storage),b=new FailoverPreferences(storage);await Promise.all([a.save('book',policy),b.save('synthesis',{mode:'ask',targets:[target]})]);assert.equal((await a.load('book')).mode,'automatic');assert.deepEqual((await b.load('synthesis')).targets,[target]);await assert.rejects(a.save('book',{mode:'automatic',targets:[target,target]}),/ORDER/);
+});
+
+test('a frozen book job can resume its saved extraction after a re-extraction, and its archive validates',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);try{const job=await books.create(w.config),changed=await book('book',4);await w.store.saveDocument(changed);const saved=await books.run(job.id);assert.equal(saved.state,'completed');assert.equal(saved.extractionVersion,w.doc.version);assert.ok((await w.engine.repository.get(saved.chapters[0].runId)).run.stale);const archive=await w.store.exportData();assert.doesNotThrow(()=>validateArchive(archive));const bad=structuredClone(archive);bad.stores.jobs[0].chapters[0].runId='missing';assert.throws(()=>validateArchive(bad),/DIGEST_RUN/);}finally{w.close();}
+});
+
+test('deleting a book while its digest is active cannot resurrect job progress or glossary rows',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);try{const job=await books.create(w.config);await assert.rejects(books.run(job.id,{onBegin:()=>w.store.deleteDocument(w.doc.id)}));assert.equal((await w.store.all('jobs')).length,0);assert.equal((await w.store.all('runs')).length,0);assert.equal((await w.store.all('glossary')).length,0);}finally{w.close();}
+});
+
+test('an oversized chapter is refused before provider launch and remains resumable as paused job state',async()=>{
+ const w=await world(),books=new BookJobs(w.engine);try{const big=structuredClone(w.doc);big.blocks[1].text='x'.repeat(1100000);big.blocks[1].anchor.quote.exact=big.blocks[1].text;big.blocks[1].anchor.position.end=big.blocks[1].anchor.position.start+big.blocks[1].text.length;big.version=await versionOf(big.identity,big.blocks[1].text);await w.store.saveDocument(big);const job=await books.create({...w.config,doc:big,scope:buildScope(big)});await assert.rejects(books.run(job.id));assert.equal(w.path.calls.length,0);assert.equal((await books.get(job.id)).state,'paused');assert.equal((await w.store.all('runs')).length,0);}finally{w.close();}
+});
+
+test('invalid cross-text selections allocate no digest jobs, and glossary language choices do not leak into another output language',async()=>{
+ const w=await world(),lib=new Library(w.store),across=new AcrossTexts(w.engine);try{const item=await lib.save(w.doc);for(const items of [[],[item],[item,item]])await assert.rejects(across.prepare(items,{kind:'literature-review',target}),/distinct/);assert.equal((await w.store.all('jobs')).length,0);assert.equal(w.path.calls.length,0);await new Glossary(w.store).save({bookId:w.doc.id,term:'dalil',translation:'evidence',aliases:['далил'],language:'en'});const saved=await w.engine.start({...w.config,lens:'digest',language:'ar'});assert.equal(saved.run.status,'completed');assert.equal(JSON.parse(w.path.calls.at(-1).request.task.split('\n')[1]).glossary,undefined);}finally{w.close();}
+});

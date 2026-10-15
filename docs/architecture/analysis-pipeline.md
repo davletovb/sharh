@@ -165,6 +165,8 @@ Every lens answers in JSON Lines: one JSON object per line. The format streams w
 | `term` | `src`, `tr`, `text`, `refs` | A glossary entry: source term, translation, meaning here |
 | `q` | `level`, `text`, `refs` | A study question |
 | `note` | `text`, `refs`? | Anything a lens needs to say that fits no other type |
+| `finding` | `kind`, `text`, `support`, `refs` | A cross-text finding with a qualitative support note and item-mapped evidence |
+| `cell` | `item`, `criterion`, `text`, `refs` | A texts-by-criteria matrix cell; every reference must belong to that library item |
 | `end` | — | End of output |
 
 ### Enumerations
@@ -272,6 +274,8 @@ A chapter is sent whole. A whole book is not: it would exceed request limits on 
    - References stay global ¶ numbers, so jumps still land in the book.
 
 The job runner digests chapters in order, saves each digest as it completes and resumes from the first missing one. It paces itself by the path's rules (on Seatline, at most one background turn, so the reader's own requests do not wait behind the job; see [pacing](seatline-integration.md#scheduling-and-pacing)). If a seat reaches its usage limit, the job continues on the next one in the reader's failover order. Each digest records the model that wrote it, and the synthesis step uses a single model.
+
+The H implementation and its stricter zero-output failover boundary are detailed in [Across texts](across-texts.md). Partial or ambiguous chapters stop for explicit continuation. Collection projections preserve original item/extraction/paragraph provenance, and glossary snapshots are part of prompt identity.
 
 ## Chat answers
 

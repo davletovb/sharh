@@ -17,6 +17,8 @@ export const ENUMS = Object.freeze({
   digestFacet: ['question','reasoning_mode'],
   citation: ['foundation','foil','method','evidence','context','ally'],
   question: ['comprehension','analysis','evaluation','debate'],
+  across: ['theme','agreement','debate','method','gap','disagreement','concept_usage','reciprocal_reading'],
+  criterion: ['question','method','data','findings','concepts','stance'],
   basis: ['stated','inferred']
 });
 // A trailing ? means optional. Only these fields survive validation.
@@ -40,12 +42,15 @@ export const FIELDS = Object.freeze({
   term: {src:'text',tr:'text',text:'text',refs:'refs'},
   q: {level:'enum:question',text:'text',refs:'refs'},
   note: {text:'text',refs:'refs?'},
+  finding: {kind:'enum:across',text:'text',support:'text',refs:'refs'},
+  cell: {item:'short',criterion:'enum:criterion',text:'text',refs:'refs'},
   end: {}
 });
 export const LENSES = Object.freeze({
   summary:['sum','arc','note'], structure:['sec','note'], logic:['node','edge','step','gap','note'],
   thinking:['facet','concept','edge','node','note'], themes:['theme','code','excerpt','tension','memo'],
   'meta-reading':['facet','note'], critique:['facet','note'], literature:['cite','facet','note'],
+  'literature-review':['finding','note'], 'meta-synthesis':['cell','finding','note'],compare:['cell','finding','note','concept'],
   terms:['term'], questions:['q'], passage:['note','term','node'], digest:['sum','node','concept','cite','facet']
 });
 export function customDefinition(value) {
@@ -110,7 +115,7 @@ export function outputContract(lens,definition=null) {
 }
 // Stored records are already normalized. Check their canonical shape at trust boundaries,
 // without rewriting missing failed quotes, unanchored spans, flags or previous IDs.
-export function assertCanonicalRecords(entries,lens,{scope,sections,customLens=null}={}) {
+export function assertCanonicalRecords(entries,lens,{scope,sections,blocks,customLens=null}={}) {
   const allowed=allowedTypes(lens,customLens),ids=new Map();
   const fail=()=>{throw Error('INVALID_RETAINED_RECORD');};
   if(!Array.isArray(entries))fail();
@@ -118,6 +123,7 @@ export function assertCanonicalRecords(entries,lens,{scope,sections,customLens=n
     const r=entry?.record,flags=entry?.flags??[];
     if(!r || typeof r!=='object' || Array.isArray(r) || !allowed.includes(r.t) || ['meta','end'].includes(r.t) ||
       !Array.isArray(flags) || flags.some(f=>typeof f!=='string' || f.length>64) || !Number.isSafeInteger(entry.sequence) || entry.sequence<0)fail();
+    if(['finding','cell'].includes(r.t)&&(!r.refs?.length||r.t==='cell'&&blocks&&r.refs.some(n=>blocks.find(b=>b.n===n)?.source?.itemId!==r.item)))fail();
     const fields=FIELDS[r.t];
     if(Object.keys(r).some(k=>k!=='t' && !Object.hasOwn(fields,k) && !(r.t==='sec' && k==='refs')))fail();
     for(const [key,raw] of Object.entries(fields)) {

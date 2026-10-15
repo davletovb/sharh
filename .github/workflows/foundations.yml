@@ -30,6 +30,8 @@ jobs:
         run: npm run evaluate -- --fixture
       - name: Scholar toolkit lens matrix (scripted, not live)
         run: npm run evaluate -- --fixture --phase-two
+      - name: Across texts workflow matrix (scripted, not live)
+        run: node scripts/verify-across-texts.mjs --fixture
       - name: Reproducible extension package
         run: node scripts/verify-package.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -77,6 +79,8 @@ jobs:
         run: npm run evaluate -- --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider --out test-results/f-broker-evaluation.json
       - name: Scholar toolkit lenses through the production path and pinned broker (stand-ins, not live)
         run: npm run evaluate -- --phase-two --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider --out test-results/g-broker-evaluation.json
+      - name: Across texts through the pinned broker (stand-ins, not live)
+        run: node scripts/verify-across-texts.mjs --companion .seatline-audit/target/release/seatline-companion --fake-provider .seatline-audit/target/release/seatline-fake-provider
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

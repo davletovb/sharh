@@ -17,7 +17,7 @@ export class RecordParser {
   count(group,reason,n=1) { this.metrics[group][reason]=(this.metrics[group][reason]??0)+n; }
   seed(entries) {
     if(this.metrics.lines || this.buffer)throw Error('SEED_MUST_BE_FIRST');
-    assertCanonicalRecords(entries,this.lens,{scope:this.scope,sections:this.sections,customLens:this.customLens});
+    assertCanonicalRecords(entries,this.lens,{scope:this.scope,sections:this.sections,blocks:this.blocks,customLens:this.customLens});
     const retained=entries.map((entry,i)=>({sequence:i+1,record:structuredClone(entry.record),flags:[...(entry.flags??[])],retained:true}));
     for(const entry of retained)if(entry.record.id)this.ids.set(entry.record.id,entry);
     for(const entry of retained)this.emit(entry);
@@ -60,6 +60,7 @@ export class RecordParser {
       this.metrics.referencesRemoved+=before-r.refs.length;
       if(!r.refs.length && r.t!=='note')flags.push('unanchored');
     }
+    if(['finding','cell'].includes(r.t)&&(!r.refs?.length||r.t==='cell'&&r.refs.some(n=>this.blocks.find(b=>b.n===n)?.source?.itemId!==r.item))){this.count('dropped','source_reference');return;}
     if(r.ref!==undefined && !this.scope.has(r.ref)) {delete r.ref;flags.push('unanchored');this.metrics.referencesRemoved++;}
     if(r.span) {
       const [a,b]=r.span,within=this.numbers.filter(n=>n>=a && n<=b);

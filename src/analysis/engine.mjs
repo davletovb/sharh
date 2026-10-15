@@ -1,3 +1,4 @@
+import {Glossary,glossarySnapshot} from '../across/glossary.mjs';
 import {RecordParser} from './parser.mjs';
 import {RunRepository} from './storage.mjs';
 import {RunOwnership} from './ownership.mjs';
@@ -22,6 +23,7 @@ export class AnalysisEngine {
     }
   }
   async list(docId) {await this.ready;await this.recover(docId);return this.repository.list(docId);}
+  async withGlossary(config){if(config.glossary!==undefined)return config;return {...config,glossary:glossarySnapshot(await new Glossary(this.store).list(config.doc.id),config.language??'en')};}
   preview({doc,scope,target,persistent=false,...config}) {
     const prompt=assemblePrompt(doc,scope,{...config,session:{mode:persistent?'start':'none'}});
     return {...prompt,...requestPreview(target,prompt.request)};
@@ -40,6 +42,7 @@ export class AnalysisEngine {
     if(config.operation==='situate')persistent=false;
     await this.ready;if(signal?.aborted)throw cancelled();
     doc=structuredClone(doc);scope=structuredClone(scope);target=structuredClone(target);
+    const enriched=await this.withGlossary({doc,...config});delete enriched.doc;config=enriched;
     const path=this.path(target);
     let prompt=assemblePrompt(doc,scope,{...config,session:{mode:persistent?'start':'none'}});
     preflightRequest(target,prompt.request);
@@ -48,6 +51,7 @@ export class AnalysisEngine {
       if(!info?.capabilities.sessions)prompt=assemblePrompt(doc,scope,config);
       else if(followRunId){const prior=(await this.repository.get(followRunId))?.run;
         if(!prior || prior.docId!==doc.id || prior.extractionVersion!==doc.version || prior.scopeKey!==scopeKey(scope) || prior.promptVersion!==PROMPT_VERSION || ['path','provider','model','effort','serviceTier'].some(k=>(prior.target[k]??null)!==(target[k]??null)))throw Error('SESSION_CONTEXT_CHANGED');
+        if(JSON.stringify(prior.config.glossary??[])!==JSON.stringify(config.glossary??[]))throw Error('SESSION_CONTEXT_CHANGED');
         if(prior.status==='completed' && prior.session?.reusable!==false && SESSION_HANDLE.test(prior.session?.handle??''))prompt=assemblePrompt(doc,scope,{...config,session:{mode:'continue',handle:prior.session.handle}});
       }
     }
@@ -80,9 +84,9 @@ export class AnalysisEngine {
     const prepared=await this.prepareContinuation(id,options);
     return {...prepared.prompt,...requestPreview(prepared.target,prepared.prompt.request)};
   }
-  async continue(id,{mode='auto',signal,onEvent}={}) {
+  async continue(id,{mode='auto',signal,onEvent,onBegin}={}) {
     const prepared=await this.prepareContinuation(id,{mode,signal});
-    return this.launch({...prepared,signal,onEvent});
+    return this.launch({...prepared,signal,onEvent,onBegin});
   }
   cancel(id) {this.active.get(id)?.abort();}
   async execute({run,doc,scope,prompt,path,retained=[],initialSources=[],signal,onEvent,onAttemptOutput}) {
@@ -204,6 +208,7 @@ export class AnalysisEngine {
       await this.repository.write(run.id,patch,final.records,{replace:true});
       terminal(status,{canContinue:patch.canContinue});
       const saved=await this.repository.get(run.id);
+      if(!doc.derived)await new Glossary(this.store).capture(saved);
       if(final.error)throw Object.assign(final.error,{runId:run.id});
       return saved;
     }catch(error){

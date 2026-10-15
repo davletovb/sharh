@@ -27,7 +27,7 @@ async function world(path=new FakePath({wait:async()=>{}})){const indexedDB=new 
 
 test('stand-in CLIs retain the legacy fallback for unsupported fixture lenses, including actionless passage',async()=>{
   const doc=await exampleDocument(),scope=buildScope(doc);
-  for(const provider of ['claude','codex'])for(const lens of Object.keys(LENSES).filter(l=>!['summary','structure','logic','thinking','themes','meta-reading','critique','literature','terms','questions'].includes(l))){
+  for(const provider of ['claude','codex'])for(const lens of Object.keys(LENSES).filter(l=>!['summary','structure','logic','thinking','themes','meta-reading','critique','literature','terms','questions','digest','literature-review','meta-synthesis','compare'].includes(l))){
     const request=assemblePrompt(doc,scope,{lens}).request,text=turnFor({provider},request).messages[0].text,input=provider==='claude'?JSON.stringify({message:{content:[{text}]}}):text;
     const events=execFileSync(process.execPath,['scripts/lib/stand-in-cli.mjs',provider],{input,encoding:'utf8'}).trim().split('\n').map(JSON.parse);
     const output=provider==='claude'?events.find(e=>e.type==='result').result:events.find(e=>e.type==='item.completed').item.text;
