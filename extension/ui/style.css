@@ -569,3 +569,11 @@ bdi {
 .in-source-view {outline:3px solid var(--accent,#956c15);outline-offset:2px}
 .map-node.in-source-view rect {stroke:var(--accent,#956c15);stroke-width:5px}
 .analysis-view[data-lens=critique] .text-outline {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.across-library,.book-jobs,.running-glossary,.failover-settings {border:1px solid var(--border,#888);border-radius:8px;padding:12px;margin:12px 0}
+.across-library select[multiple] {min-height:120px}
+.collection-item {display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}
+.collection-item>span {flex:1 1 180px;overflow-wrap:anywhere}
+.support-note {border-inline-start:3px solid var(--accent,#956c15);padding-inline-start:10px}
+.failover-dialog {max-width:min(90vw,520px);background:var(--surface,#fff);color:var(--text,#222);border:1px solid var(--border,#888);border-radius:12px;padding:20px}
+.failover-dialog::backdrop {background:rgb(0 0 0 / .45)}
+.analysis-view[data-lens=compare],.analysis-view[data-lens=meta-synthesis] {overflow-x:auto}

@@ -267,7 +267,7 @@ $('import-data').addEventListener('change',event=> { const file=event.target.fil
 // A file chosen during startup waits for the workspace rather than losing its change event.
 workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,
   onReference:reference,
-  onOpenDocument:id=>operate(()=>reopen(id)),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
+  onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;});
 await workspaceReady;
 await savedList();
 await operate(async()=> {

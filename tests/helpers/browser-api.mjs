@@ -16,3 +16,9 @@ export {phaseOneOutput} from '../../scripts/lib/phase-one-fixtures.mjs';
 export {phaseTwoOutput} from '../../scripts/lib/phase-two-fixtures.mjs';
 export {Conversations} from '../../src/toolkit/conversations.mjs';
 export {runArchive} from '../../src/toolkit/exports.mjs';
+
+export {Library} from '../../src/across/library.mjs';
+export {BookJobs} from '../../src/across/books.mjs';
+export {Glossary} from '../../src/across/glossary.mjs';
+export {AcrossTexts} from '../../src/across/synthesis.mjs';
+export {phaseThreeOutput} from '../../scripts/lib/phase-three-fixtures.mjs';

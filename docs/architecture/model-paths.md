@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Established: 2026-10-13  
-Status: Seatline path implemented in B ([evidence](../evidence/2026-10-14-b-seatline.md)); tier defaults/model picker implemented in E; failover remains H-03. Seatline is the first path ([Seatline integration](seatline-integration.md)). The API-key path comes in Phase 4.
+Status: Seatline path implemented in B ([evidence](../evidence/2026-10-14-b-seatline.md)); tier defaults/model picker implemented in E; H implements [restricted between-turn failover](across-texts.md). Seatline is the first path ([Seatline integration](seatline-integration.md)). The API-key path comes in Phase 4.
 
 ## Terms
 
@@ -128,7 +128,7 @@ The defaults are proposals, to be revisited after live measurement and real usag
   - *Automatic* is available for background jobs.
 - **Granularity:**
   - Failover happens between turns, never inside one.
-  - A book job continues with its next chapter on the next seat.
+  - A book job uses the next seat for a new turn only after a known failure with zero output. Partial/ambiguous chapters stop for explicit continuation; completed chapters are not redone.
   - A synthesis runs on one target from start to end.
 - **Labels:** every run and digest records the target that produced it, and mixed-target results say so.
 

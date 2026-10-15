@@ -1,3 +1,4 @@
+import {phaseThreeOutput} from './phase-three-fixtures.mjs';
 // Test-only provider CLI. Never use as a live-model quality result.
 import {readFileSync} from 'node:fs';
 import {standInOutput} from './draft-prompts.mjs';
@@ -21,7 +22,7 @@ else {
     pause=task.focus==='fixture:pause';
     if(sourceMatch) {
       const phaseOne=PHASE_ONE_LENSES.includes(task.lens) || Object.hasOwn(PASSAGE_ACTIONS,task.action??'');
-      output=task.focus?.startsWith('fixture:')?standInOutput(task.lens,JSON.parse(sourceMatch[1])):PHASE_TWO_LENSES.includes(task.lens)?phaseTwoOutput(task,JSON.parse(sourceMatch[1])):phaseOne?phaseOneOutput(task,JSON.parse(sourceMatch[1])):standInOutput(task.lens,JSON.parse(sourceMatch[1]));
+      output=['digest','literature-review','meta-synthesis','compare'].includes(task.lens)||JSON.parse(sourceMatch[1]).chapters?phaseThreeOutput(task,JSON.parse(sourceMatch[1])):task.focus?.startsWith('fixture:')?standInOutput(task.lens,JSON.parse(sourceMatch[1])):PHASE_TWO_LENSES.includes(task.lens)?phaseTwoOutput(task,JSON.parse(sourceMatch[1])):phaseOne?phaseOneOutput(task,JSON.parse(sourceMatch[1])):standInOutput(task.lens,JSON.parse(sourceMatch[1]));
       if(task.focus==='fixture:truncate')output=output.replace('{"t":"end"}\n','');
     } else {
       // A session follow-up contains the task and retained records, but no document layer.

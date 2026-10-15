@@ -43,7 +43,7 @@ export async function createToolkit({analyze,ask,root,store,engine,client,storag
   const exports=element('div','','export-controls'),format=element('select');options(format,[['markdown','Markdown'],['json','JSON archive'],['svg','SVG map'],['png','PNG map']]);
   exports.append(field('Export format',format),button('Export this run',async()=>{const saved=api.selected();if(!saved)throw Error('Choose a saved run first.');const doc=await store.getDocument(saved.run.docId,saved.run.extractionVersion);if(!doc)throw Error('The saved extraction was removed.');const type=format.value;
     if(type==='markdown')download(new Blob([markdown(saved,doc)],{type:'text/markdown'}),'sharh-reading.md');
-    if(type==='json')download(new Blob([JSON.stringify(runArchive(saved,doc,await store.getSource(doc.id,doc.version)),null,2)],{type:'application/json'}),'sharh-reading.json');
+    if(type==='json')download(new Blob([JSON.stringify(runArchive(saved,doc,await store.getSource(doc.id,doc.version),await Promise.all((doc.derived?.sources??[]).map(async s=>({doc:await store.getDocument(s.docId,s.version),source:await store.getSource(s.docId,s.version)})))),null,2)],{type:'application/json'}),'sharh-reading.json');
     if(type==='svg'||type==='png'){const svg=await api.view().exportSVG();download(type==='png'?await mapPNG(svg):new Blob([svg],{type:'image/svg+xml'}),'sharh-map.'+type);}
   }));analyze.append(exports);
   root.querySelector('.workspace-title').after(button('Open studio',()=>api.studio({chatId,area:ask.hidden?'analyze':'ask',chatContext,pairId:pairContext?.pair.id})));

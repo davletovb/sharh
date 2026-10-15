@@ -1,18 +1,18 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A–E implemented. G toolkit implemented; G-03–G-06 retain recorded-output verification and G-13 is BLOCKED. F-01–F-06 are IMPLEMENTED — VERIFY for real-provider output quality; F-07 is DONE with scripted/pinned-broker matrices and review-form validation. F-08 is BLOCKED by live/expert and owner-machine gates. A-02/A-03/B-05/E-07 remain IMPLEMENTED — VERIFY. The owner reported one successful Sonnet selection smoke; no corpus-level quality or acceptance is claimed.
+Status: A–H implementation is present. H-04–H-07 retain real-output/expert verification; H-09 is BLOCKED on live 300-page/owner acceptance. G-03–G-06 retain recorded-output verification and G-13 is BLOCKED. F-01–F-06 are IMPLEMENTED — VERIFY for real-provider quality; F-08 is BLOCKED. A-02/A-03/B-05/E-07 remain IMPLEMENTED — VERIFY. No corpus-level live quality or phase acceptance is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **36**
-- IMPLEMENTED — VERIFY: **14**
+- DONE: **40**
+- IMPLEMENTED — VERIFY: **18**
 - IN PROGRESS: **0**
-- BLOCKED: **2**
-- TODO: **20**
+- BLOCKED: **3**
+- TODO: **11**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -168,15 +168,15 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| H-01 | Build the library and collections | D-05 | Documents and chapters can be saved to the library. Collections can be created, reordered and deleted, and deletion cascades | TODO | — | — |
-| H-02 | Build chapter digests and book jobs | B-06, D-05, F-01 | The digest lens stores records keyed by extraction version, chapter span, prompt version and model. A job digests chapters in order, saves each one, and resumes from the first missing chapter. It never holds more than one generation | TODO | — | — |
-| H-03 | Fail over between seats | B-03, H-02 | Each tier has a failover order with *ask* and *automatic* modes. Failover happens only between turns, and never on policy, isolation or invalid-request failures. Results produced by more than one target are labelled | TODO | — | — |
-| H-04 | Build book-level lenses | H-02 | Summary, Structure, Logic and Thinking run on digests. Global ¶ references jump into the book | TODO | — | — |
-| H-05 | Build the literature review | H-01, H-02 | The review covers themes, agreements, debates, methods and gaps across a collection, plus a narrative that cites library items and ¶ | TODO | — | — |
-| H-06 | Build meta-synthesis | H-01, H-02 | A matrix sets texts against criteria, with a support note on each cross-text finding | TODO | — | — |
-| H-07 | Build compare | H-01 | Two texts are shown side by side, including shared concepts used differently | TODO | — | — |
-| H-08 | Build the running glossary | D-05, G-06 | One glossary per book keeps term choices consistent across runs and links Latin and Cyrillic spellings. Its entries are editable | TODO | — | — |
-| H-09 | Accept Phase 3 | H-01 – H-08 | **Live:** the framework's Phase 3 acceptance holds. The report is under `docs/evidence/` | TODO | — | — |
+| H-01 | Build the library and collections | D-05 | Documents and chapters can be saved to the library. Collections can be created, reordered and deleted, and deletion cascades | DONE | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); ordered snapshots, source/collection deletion and portable dependencies covered |
+| H-02 | Build chapter digests and book jobs | B-06, D-05, F-01 | The digest lens stores records keyed by extraction version, chapter span, prompt version and model. A job digests chapters in order, saves each one, and resumes from the first missing chapter. It never holds more than one generation | DONE | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); exact-identity caching, one background lock, incremental progress and explicit resume covered |
+| H-03 | Fail over between seats | B-03, H-02 | Each tier has a failover order with *ask* and *automatic* modes. Failover happens only between turns, and never on policy, isolation or invalid-request failures. Results produced by more than one target are labelled | DONE | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); foreground approval, zero-output allowlist, forbidden failures and mixed-target provenance covered |
+| H-04 | Build book-level lenses | H-02 | Summary, Structure, Logic and Thinking run on digests. Global ¶ references jump into the book | IMPLEMENTED — VERIFY | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); digest-only/global-reference workflow implemented; real recorded quality remains |
+| H-05 | Build the literature review | H-01, H-02 | The review covers themes, agreements, debates, methods and gaps across a collection, plus a narrative that cites library items and ¶ | IMPLEMENTED — VERIFY | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); five finding kinds, cited narrative and original-item references implemented; real/expert quality remains |
+| H-06 | Build meta-synthesis | H-01, H-02 | A matrix sets texts against criteria, with a support note on each cross-text finding | IMPLEMENTED — VERIFY | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); six criteria, item-owned citations and qualitative support notes implemented; real/expert quality remains |
+| H-07 | Build compare | H-01 | Two texts are shown side by side, including shared concepts used differently | IMPLEMENTED — VERIFY | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); two-text matrix, agreement/difference/concept usage/reciprocal reading implemented; real/expert quality remains |
+| H-08 | Build the running glossary | D-05, G-06 | One glossary per book keeps term choices consistent across runs and links Latin and Cyrillic spellings. Its entries are editable | DONE | Codex | [H evidence](../evidence/2026-10-15-h-across-texts.md); editable aliases, non-overwriting capture and prompt/conversation snapshots covered |
+| H-09 | Accept Phase 3 | H-01 – H-08 | **Live:** the framework's Phase 3 acceptance holds. The report is under `docs/evidence/` | BLOCKED | Owner | [H decision](../decisions/h-across-texts.md); live 300-page/responsiveness/resume and prior real/expert/owner gates remain open |
 
 ### I — API-key path (Phase 4)
 
@@ -253,6 +253,7 @@ Completed 2026-10-14:
 | 2026-10-13 | Adopt the proposed plan as the planning baseline | Owner approved the plan |
 | 2026-10-13 | Use several model paths: Seatline first, API keys later | Owner instruction |
 | 2026-10-13 | Name the product Sharh, with the repository `davletovb/sharh` | Owner created the repository |
+| 2026-10-15 | Proceed with H-01–H-08 while preserving the Phase 1/2/3 acceptance gates | Owner requested slice H; [H decision](../decisions/h-across-texts.md) |
 | 2026-10-15 | Proceed with G-01–G-12 while keeping Phase 1/2 owner acceptance open | Owner reported Sonnet selections working and requested the next slice; [G decision](../decisions/g-scholars-toolkit.md) |
 | 2026-10-14 | Accept the E-01–E-07 workspace slice against pinned B/C/D; keep E-07 and existing owner live gates open | Owner requested all of slice E; [decision](../decisions/e-reading-workspace.md) |
 | 2026-10-14 | Track implementation in this document with stable IDs | Owner asked for a tracker plan |
