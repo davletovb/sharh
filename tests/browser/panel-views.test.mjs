@@ -116,8 +116,10 @@ test('E: actual optional-site selection toolbar opens the panel once, carries co
   await reader.evaluate(origin=>chrome.permissions.remove({origins:[origin+'/*']}),server.url);
   await source.waitForFunction(()=>document.querySelector('[data-sharh-toolbar]').getBoundingClientRect().height===0);report.checks.revokedPermissionHidesToolbar=true;
   await reader.locator('#open-file').setInputFiles('corpus/fixtures/pdf/footnotes-injection.pdf');await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered=true]'));
-  await reader.evaluate(()=>{const p=[...document.querySelectorAll('.textLayer span')].find(el=>el.textContent==='Public partici-'),range=document.createRange();range.selectNodeContents(p);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new MouseEvent('pointerup',{bubbles:true}));});
-  const toolbar=reader.getByRole('toolbar',{name:'Passage actions'});await toolbar.waitFor();for(const action of ['Explain','Translate','Logic','Define'])assert.ok(await toolbar.getByRole('button',{name:action,exact:true}).isVisible());
+  const toolbar=reader.getByRole('toolbar',{name:'Passage actions'});
+  // The text layer fills in after the page is marked rendered, so select again until the toolbar answers.
+  for(let attempt=0;attempt<8&&!await toolbar.isVisible();attempt++){await reader.evaluate(()=>{const p=[...document.querySelectorAll('.textLayer span')].find(el=>el.textContent==='Public partici-'),range=document.createRange();if(!p)return;range.selectNodeContents(p);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new MouseEvent('pointerup',{bubbles:true}));});await toolbar.waitFor({timeout:1500}).catch(()=>{});}
+  await toolbar.waitFor();for(const action of ['Explain','Translate','Logic','Define'])assert.ok(await toolbar.getByRole('button',{name:action,exact:true}).isVisible());
   await reader.bringToFront();await toolbar.getByRole('button',{name:'Explain',exact:true}).focus();await reader.keyboard.press('ArrowRight');assert.equal(await reader.evaluate(()=>document.activeElement.textContent),'Translate');await reader.keyboard.press('Escape');assert.equal(await toolbar.isVisible(),false);report.checks.pdfToolbarKeyboard=true;
   assert.deepEqual(report.errors,[]);report.passed=true;
  }finally{await context.close();await server.close();await rm(profile,{recursive:true,force:true});await mkdir('test-results',{recursive:true});await writeFile('test-results/e-passages.json',JSON.stringify(report,null,2)+'\n');}
