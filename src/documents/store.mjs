@@ -83,7 +83,7 @@ export class DocumentStore {
   }
   async getSource(id, version) { const tx = this.db.transaction('sources'), complete = done(tx); const value = await result(tx.objectStore('sources').get([id, version])); await complete; return value; }
   async deleteDocument(id) {const refs={};await transaction(this.db,stores,'readwrite',async tx=>Object.assign(refs,await this.deleteGraph(tx,{docIds:[id]})));return {handles:[...refs.handles].map(JSON.parse),groups:[...refs.groups].map(JSON.parse)};}
-  async deleteCollection(id) {return transaction(this.db,stores,'readwrite',tx=>this.deleteGraph(tx,{collectionIds:[id]}));}
+  async deleteCollection(id) {const refs={};await transaction(this.db,stores,'readwrite',async tx=>Object.assign(refs,await this.deleteGraph(tx,{collectionIds:[id]})));return {handles:[...refs.handles].map(JSON.parse),groups:[...refs.groups].map(JSON.parse)};}
   async deleteGraph(tx,{docIds=[],collectionIds=[]}) {
     const docs=await result(tx.objectStore('docs').getAll()),removed=new Set(docIds),collections=new Set(collectionIds),handles=new Set(),groups=new Set();
     let changed=true;while(changed){changed=false;for(const doc of docs)if(!removed.has(doc.id)&&doc.derived&&(collections.has(doc.derived.collectionId)||doc.derived.sources?.some(s=>removed.has(s.docId)))){removed.add(doc.id);changed=true;}}
@@ -108,6 +108,11 @@ export class DocumentStore {
       const request = tx.objectStore(name).get(key);
       request.onsuccess = () => {
         const existing=['runs','chats','jobs'].includes(name) && request.result ? portableRow(request.result) : request.result;
+        if(name==='collections'&&row.id==='sharh-library'&&existing){
+          const items=new Map(existing.items.map(item=>[item.id,item]));
+          for(const item of row.items){if(items.has(item.id)&&!equalData(items.get(item.id),item)){conflict=Error('IMPORT_CONFLICT: A saved library item has different data.');tx.abort();return;}items.set(item.id,item);}
+          tx.objectStore(name).put({...existing,items:[...items.values()]});return;
+        }
         if (existing && !equalData(existing, row)) { conflict = Error('IMPORT_CONFLICT: Export or delete the existing document before importing a different version.'); tx.abort(); return; }
         if (!request.result) tx.objectStore(name).put(row);
       };
@@ -154,7 +159,7 @@ export function validateArchive(archive) {
     const quotes=new QuotationIndex(extraction.blocks.filter(b=>scope.has(b.n)));
     if(records.some(({record:r})=>r.quote && !quotes.verify(r.quote,r.refs??(r.ref?[r.ref]:[]))))throw Error('INVALID_ARCHIVE_QUOTATION');
   }
-  for(const doc of versions.values())if(doc.derived){if(!['literature-review','meta-synthesis','compare'].includes(doc.derived.kind)||!Array.isArray(doc.derived.sources)||doc.derived.sources.length<2)throw Error('INVALID_DERIVED_DOCUMENT');for(const block of doc.blocks){const ref=block.source,source=doc.derived.sources.find(s=>s.itemId===ref?.itemId&&s.docId===ref.docId&&s.version===ref.version),original=source&&versions.get(`${source.docId}:${source.version}`);if(!original?.blocks.some(b=>b.n===ref.n)||!source.scope?.blocks.some(b=>b.n===ref.n))throw Error('INVALID_SOURCE_REFERENCE');}}
+  for(const doc of versions.values())if(doc.derived){if(!['literature-review','meta-synthesis','compare'].includes(doc.derived.kind)||!Array.isArray(doc.derived.sources)||doc.derived.sources.length<2)throw Error('INVALID_DERIVED_DOCUMENT');for(const block of doc.blocks){const ref=block.source,source=doc.derived.sources.find(s=>s.itemId===ref?.itemId&&s.docId===ref.docId&&s.version===ref.version),original=source&&versions.get(`${source.docId}:${source.version}`),refs=ref?.refs??[ref?.n];if(!Array.isArray(refs)||!refs.length||ref?.n!==refs[0]||new Set(refs).size!==refs.length||refs.some(n=>!original?.blocks.some(b=>b.n===n)||!source.scope?.blocks.some(b=>b.n===n)))throw Error('INVALID_SOURCE_REFERENCE');}}
   for(const collection of data.collections)for(const item of collection.items??[])if(typeof item!=='string'&&item.scope){const original=versions.get(`${item.docId}:${item.version}`);if(!original||original.derived||!Array.isArray(item.scope.blocks)||!item.scope.blocks.length||item.scope.docId!==item.docId||item.scope.version!==item.version||item.scope.blocks.some(b=>!original.blocks.some(x=>x.n===b.n)))throw Error('INVALID_LIBRARY_ITEM');}
   for(const job of data.jobs)if(job.kind==='book'){const doc=versions.get(`${job.docId}:${job.extractionVersion}`);if(!doc||!Array.isArray(job.chapters)||!job.chapters.length||!job.config||!job.policy||!['ask','automatic'].includes(job.policy.mode)||!Array.isArray(job.policy.targets)||!job.scope?.blocks?.length)throw Error('INVALID_BOOK_JOB');for(const chapter of job.chapters){if(!Array.isArray(chapter.span)||chapter.span.length!==2||chapter.span.some(n=>!Number.isSafeInteger(n)||n<1||n>doc.blocks.length)||chapter.span[0]>chapter.span[1]||!chapter.scope?.blocks?.length||chapter.scope.docId!==doc.id||chapter.scope.version!==doc.version||chapter.scope.blocks.some(b=>b.n<chapter.span[0]||b.n>chapter.span[1]))throw Error('INVALID_BOOK_JOB');if(chapter.runId){const run=data.runs.find(r=>r.id===chapter.runId);if(!run||run.docId!==doc.id||run.extractionVersion!==doc.version||run.lens!=='digest')throw Error('INVALID_DIGEST_RUN');}}}
   for (const row of data.glossary) if (!docs.has(row.bookId)) throw Error('ORPHAN_GLOSSARY');

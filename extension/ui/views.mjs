@@ -3,10 +3,10 @@ import {element,button,uid} from './dom.mjs';
 const labels={finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
 const readable=s=>String(s??'').replaceAll('_',' ');
 export function referenceButtons(doc,record,onReference) {
-  const row=element('div','','references'),refs=record.refs??(record.ref?[record.ref]:[]);
+  const row=element('div','','references'),refs=(record.refs??(record.ref?[record.ref]:[])).flatMap(n=>{const block=doc?.blocks.find(b=>b.n===n);return (block?.source?.refs??[block?.source?.n??null]).map(original=>({n,original,block}));});
   // Long section spans remain fully reachable without building ten thousand buttons.
-  for(const n of refs.length>12?[...refs.slice(0,6),...refs.slice(-6)]:refs) {
-    const block=doc?.blocks.find(b=>b.n===n),link=button(block?.source?`${block.source.title} · ¶${block.source.n}`:`¶${n}${block?.pageLabel?' · p. '+block.pageLabel:''}`,()=>onReference(n),'reference');link.dataset.ref=n;row.append(link);
+  for(const {n,original,block} of refs.length>12?[...refs.slice(0,6),...refs.slice(-6)]:refs) {
+    const link=button(block?.source?`${block.source.title} · ¶${original}`:`¶${n}${block?.pageLabel?' · p. '+block.pageLabel:''}`,()=>onReference(n,original),'reference');link.dataset.ref=n;row.append(link);
   }
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
@@ -18,7 +18,7 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
   root.append(outlineTitle,outline);container.append(root);
   root.dataset.lens=lens;
   const across=['meta-synthesis','compare'].includes(lens),tabular=across||['themes','literature','terms'].includes(lens),table=element('table','','reading-table');
-  if(tabular){table.append(element('caption',lens==='themes'?'Codebook and source excerpts':lens==='terms'?'Contextual glossary':'Citations in the text'));outline.before(table);}
+  if(tabular){table.append(element('caption',across?'Evidence matrix':lens==='themes'?'Codebook and source excerpts':lens==='terms'?'Contextual glossary':'Citations in the text'));outline.before(table);}
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('role','group');svg.setAttribute('aria-label',`${readable(lens)} map; use the text outline for all details`);svg.setAttribute('viewBox','0 0 500 240');svg.classList.add('analysis-map');
   function move(){if(lastLayout)svg.setAttribute('viewBox',`${pan.x} ${pan.y} ${lastLayout.width/pan.zoom} ${lastLayout.height/pan.zoom}`);}
   if(mapLens) {

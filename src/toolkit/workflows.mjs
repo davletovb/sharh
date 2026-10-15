@@ -2,11 +2,12 @@ import {assemblePrompt} from '../analysis/prompts.mjs';
 import {scopeKey} from '../analysis/prompts.mjs';
 import {assertCanonicalRecords} from '../analysis/contract.mjs';
 import {alignThemes,alignLogic,namespaceRecords} from './alignment.mjs';
+import {targetKey} from '../paths/targets.mjs';
 export function restoreScope(doc,descriptor){if(descriptor.docId!==doc.id || descriptor.version!==doc.version)throw Error('SAVED_SCOPE_CHANGED');const byN=new Map(doc.blocks.map(b=>[b.n,b]));return {...descriptor,blocks:descriptor.blocks.map(b=>{if(!byN.has(b.n))throw Error('SAVED_SCOPE_CHANGED');return {...byN.get(b.n),...b};})};}
 export async function deepRead(engine,config,options={}){const saved=[];for(const lens of ['structure','logic','thinking']){if(options.signal?.aborted)throw Error('Deep read stopped. Completed lenses are saved.');await options.onLens?.(lens);const result=await engine.start({...config,lens,customLens:null,operation:null,action:null,followRunId:saved.at(-1)?.run.id??null},options);saved.push(result);if(result.run.status!=='completed')break;}return saved;}
 export async function secondReader(engine,config,otherTarget,options={}){
   if(!['themes','logic'].includes(config.lens))throw Error('Choose Themes or Logic for Second reader.');
-  if(['path','provider','model','effort','serviceTier'].every(k=>(config.target[k]??null)===(otherTarget[k]??null)))throw Error('Choose two different reader targets.');
+  if(targetKey(config.target)===targetKey(otherTarget))throw Error('Choose two different reader targets.');
   for(const target of [config.target,otherTarget]){const info=(await engine.path(target).discover()).find(p=>p.provider===target.provider);if(!info?.available || !info.signedIn || !info.accepted || !info.capabilities?.toolIsolation)throw Error('Choose two available, signed-in, accepted readers before starting.');}
   const outputs=[];for(const target of [config.target,otherTarget]){if(options.signal?.aborted)throw Error('Second reader stopped. Completed readings are saved.');await options.onLens?.(config.lens);const result=await engine.start({...config,target,persistent:false,followRunId:null},options);outputs.push(result);if(result.run.status!=='completed')throw Error('A reader returned a partial/invalid response. Completed and partial readings remain in history; retry before alignment.');}
   const alignment=config.lens==='themes'?alignThemes(outputs[0].records,outputs[1].records,config.scope.blocks.map(b=>b.n)):alignLogic(outputs[0].records,outputs[1].records),id=crypto.randomUUID();

@@ -1,5 +1,5 @@
 import {scopeDescriptor,scopeKey,PROMPT_VERSION,assemblePrompt} from '../analysis/prompts.mjs';
-const targetKey=t=>JSON.stringify(['path','provider','model','effort','serviceTier'].map(k=>t[k]??null));
+import {targetKey} from '../paths/targets.mjs';
 const identity=config=>assemblePrompt(config.doc,config.scope,{...config,customLens:null,lens:'passage',action:null,operation:'ask',question:'',history:[],session:{mode:'none'}}).promptKey;
 export class Conversations {
   constructor(engine){this.engine=engine;this.store=engine.store;}
