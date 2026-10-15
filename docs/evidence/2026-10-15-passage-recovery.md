@@ -1,0 +1,13 @@
+# Selection response formatting and recovery
+
+Base: merged F `70d17d2dbcf9b0516d92f727d8b850feb217d93e`.
+
+The owner's screenshot shows passage and selection-Logic runs saved as `invalid` with Claude/Haiku/low, alongside successful whole-document runs with Sonnet or Codex. This establishes that the selection reached a saved engine run and its response failed validation. It does not establish a selection-only defect or Haiku's exact rejected output: the screenshot contains neither raw responses nor rejection metrics, and the models differ.
+
+Two request ambiguities are corrected in prompt version `analysis-4`: the advertised record definitions now explicitly include the mandatory literal `t` discriminator, and serialized selected spans include exact source text alongside UTF-16 offsets. Shared rules clarify one complete object per line and integer references. Validation remains strict; the change does not treat arbitrary prose as successful findings.
+
+The workspace now explains response-format failure and exposes existing per-attempt rejection counts, including failed repair. The same explanation works when opening old runs. A failed passage can be explicitly retried with the selected workspace model. The new run preserves the original action, output language, budget, selection and saved extraction, even after re-extraction. It leaves the failed version in history and starts fresh rather than reusing the failed model session. No automatic fallback or extra raw-response persistence is introduced.
+
+Local tests cover all four actual toolbar button handlers through the production engine using contract-driven scripted responses, exact multi-span Unicode selection text, rejected Quick output and repair, reopening a version-3 failure without generation, and retrying its old extraction with the selected Sonnet target under version 4. All 178 unit tests pass. Packaged Chromium coverage exercises the clicks, validation explanation and explicit retry; current-head CI is linked in the PR. Package reproducibility and both 224-run evaluation matrices remain required checks.
+
+These are deterministic mechanics checks. The owner's original Haiku response has not been reproduced against a live provider; owner-machine passage quality and F-08 acceptance remain open. To retest, reload the updated extension and source page, select a passage, and click an action. If it fails, open **Response details**. In **Model and task tier**, choose the working model, then click **Retry with selected model**; this repeats the saved passage without selecting it again. To change the model used by future toolbar actions, choose the Quick tier and save its model default.

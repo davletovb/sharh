@@ -20,7 +20,7 @@ test('D prompts preserve three layers, source metadata, selection marks, languag
   const prompt=assemblePrompt(doc,scope,{lens:'logic',language:'uz-Latn',focus:'evidence',frame:'sociology',budget:12});
   assert.equal(prompt.request.rules,RULES);const source=JSON.parse(prompt.request.document);
   assert.equal(source.lang,'uz');assert.equal(source.blocks.find(b=>b.n===5).kind,'note');assert.equal(source.blocks.find(b=>b.n===5).pageLabel,'iv');
-  assert.deepEqual(source.blocks.find(b=>b.n===5).selected,[{start:0,end:8}]);assert.ok(source.blocks.some(b=>b.context));assert.ok(source.blocks.some(b=>b.kind==='heading' && b.level===2));
+  assert.deepEqual(source.blocks.find(b=>b.n===5).selected,[{start:0,end:8,text:doc.blocks[4].text.slice(0,8)}]);assert.ok(source.blocks.some(b=>b.context));assert.ok(source.blocks.some(b=>b.kind==='heading' && b.level===2));
   assert.match(prompt.request.task,/uz-Latn/);assert.match(prompt.request.task,/sociology/);
   const first=turnFor({provider:'codex'},prompt.request);assert.equal(first.system,RULES);assert.ok(first.messages[0].text.indexOf(prompt.request.document)<first.messages[0].text.indexOf('SHARH_TASK'));
   const continued=assemblePrompt(doc,scope,{lens:'logic',session:{mode:'continue',handle:'abc'}});

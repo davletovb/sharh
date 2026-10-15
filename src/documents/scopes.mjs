@@ -41,7 +41,7 @@ export function serializeScope(doc, scope) {
   if (scope.docId !== doc.id || scope.version !== doc.version) throw Error('STALE_SCOPE');
   // JSON escapes delimiters in source text. Prompt rules and lens instructions belong to D-01.
   return JSON.stringify({title:doc.title, lang:doc.language, scope:scope.label, blocks:scope.blocks.map(({n,kind,level,text,page,pageLabel,context,selected}) =>
-    ({n,kind,...(level ? {level} : {}),text,...(page !== undefined ? {page,pageLabel} : {}),...(context ? {context:true} : {}),...(selected ? {selected} : {})}))});
+    ({n,kind,...(level ? {level} : {}),text,...(page !== undefined ? {page,pageLabel} : {}),...(context ? {context:true} : {}),...(selected ? {selected:selected.map(({start,end})=>({start,end,text:text.slice(start,end)}))} : {})}))});
 }
 export function scopeRequest(doc, scope, request = {}) {
   return {kind:'analysis', rules:'', task:'Read the selected scope.', priority:'interactive', session:{mode:'none'}, cleanupGroup:`doc-${doc.id.slice(0,32)}`, ...request, document:serializeScope(doc,scope)};

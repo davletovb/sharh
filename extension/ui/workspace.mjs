@@ -6,6 +6,7 @@ import {bindAppearance} from './theme.mjs';
 import {createAnalysisView,referenceButtons} from './views.mjs';
 import {element,button,field,options,uid} from './dom.mjs';
 import {PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
+import {resultMessage,responseDetails} from '../../src/ui/run-feedback.mjs';
 export {PASSAGE_ACTIONS};
 export async function createWorkspace(container,{store,engine,client,storage=chrome.storage.local,changes=chrome.storage.onChanged,onReference=()=>{},onOpenDocument=()=>{},onControlsChanged=()=>{}}) {
   let doc=null,scope=null,selectedRun=null,view=null,epoch=0,controller=null,runId=null,preview=null,modelPicker,appearance,loading=0,viewDoc=null;
@@ -20,15 +21,17 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   function openArea(key){for(const [name,v]of Object.entries(areas)){v.area.hidden=name!==key;v.tab.setAttribute('aria-pressed',String(name===key));}if(key==='library')library().catch(fail);}
   const controls=element('div','','analysis-controls'),lens=element('select'),budget=element('input'),focus=element('textarea');
   options(lens,[['summary','Summary'],['structure','Structure'],['logic','Logic'],['thinking','Thinking']]);budget.type='number';budget.min=1;budget.max=200;budget.value=24;focus.maxLength=4000;focus.rows=2;
-  const analyze=button('Analyze',()=>run()),stop=button('Stop',()=>controller?.abort()),resume=button('Continue',()=>continueRun()),freshResume=button('Continue with fresh context',()=>continueRun('new'));
-  analyze.classList.add('primary');stop.hidden=resume.hidden=freshResume.hidden=true;
-  controls.append(field('Lens',lens),field('Record budget',budget),field('Focus (optional)',focus),analyze,stop,resume,freshResume);
+  const analyze=button('Analyze',()=>run()),stop=button('Stop',()=>controller?.abort()),resume=button('Continue',()=>continueRun()),freshResume=button('Continue with fresh context',()=>continueRun('new')),retry=button('Retry with selected model',()=>retryPassage());
+  retry.title='Send the same saved passage and action as a new run using the model selected above.';
+  analyze.classList.add('primary');stop.hidden=resume.hidden=freshResume.hidden=retry.hidden=true;
+  controls.append(field('Lens',lens),field('Record budget',budget),field('Focus (optional)',focus),analyze,stop,resume,freshResume,retry);
   const status=element('p','Choose a scope and model.','run-state');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const diagnostics=element('details','','run-diagnostics');diagnostics.hidden=true;
   const history=element('div','','run-history'),versions=element('select'),compareWith=element('select'),compare=button('Compare versions',()=>compareRuns()),historyLabel=field('Saved runs',versions),compareLabel=field('Compare with',compareWith);
   history.append(historyLabel,compareLabel,compare);
   const runMeta=element('p','','run-metadata'),results=element('div','','analysis-results'),inspection=element('aside','','finding-inspector');inspection.setAttribute('aria-label','Finding inspection');inspection.hidden=true;
   const comparison=element('section','','version-comparison');comparison.hidden=true;
-  areas.analyze.area.append(controls,status,history,runMeta,results,inspection,comparison);
+  areas.analyze.area.append(controls,status,diagnostics,history,runMeta,results,inspection,comparison);
   areas.ask.area.append(element('h3','Ask about your text'),element('p','Grounded conversation is coming soon. You can already select a passage and choose Explain, Translate, Logic or Define.'),button('Analyze this scope',()=>openArea('analyze')));
   const documents=element('div','','library-documents');areas.library.area.append(element('h3','Saved documents'),element('p','Documents and their reading history stay on this computer. Open a document to see its saved runs.'),documents);
   root.addEventListener('sharh:error',event=>{event.stopPropagation();fail(event.detail);});
@@ -45,6 +48,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       else size.textContent='';
     }catch(error){fail(error);size.textContent='';}
     analyze.disabled=!!controller || !preview?.fits || !usable(modelPicker?.info);
+    retry.disabled=!!controller || !usable(modelPicker?.info);
   }
   function changed(){updatePreview();onControlsChanged();}
   appearance=await bindAppearance(appearanceHost,{storage,changes,onChange:()=>{if(appearance)changed();}});
@@ -60,6 +64,13 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   }
   function newView(lensName,source) {view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:lensName,doc:source,onReference:n=>reference(n,source),onInspect:entry=>inspect(entry,source)});return view;}
   function metadata(run){return `${run.lens} · v${run.version} · ${run.status}${run.stale?' · older extraction':''} · ${targetName(run.target)} · ${run.scope.label} · ${new Date(run.createdAt).toLocaleString()}`;}
+  function feedback(saved,{loaded=false}={}) {
+    status.textContent=resultMessage(saved.run,saved.records.length,{loaded});
+    retry.hidden=!saved.run.config?.action || !['invalid','failed','interrupted'].includes(saved.run.status);
+    const lines=responseDetails(saved.run);diagnostics.replaceChildren(element('summary','Response details'),...lines.map(text=>element('p',text)));
+    diagnostics.hidden=(!lines.length && retry.hidden) || saved.run.status==='completed';
+    if(!retry.hidden)diagnostics.append(element('p','Passage actions use the saved Quick model. Choose a model in “Model and task tier”, then use “Retry with selected model” to send this saved selection again.'));
+  }
   async function savedRuns({select=selectedRun?.run.id,display=false}={}) {
     const snapshot=doc,ticket=++loading;if(!snapshot)return;
     const rows=await engine.list(snapshot.id);if(snapshot!==doc || ticket!==loading)return;
@@ -73,12 +84,12 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const source=await store.getDocument(snapshot.id,saved.run.extractionVersion);if(stamp!==epoch || !source)return;
     selectedRun=saved;newView(saved.run.lens,source);for(const entry of saved.records)view.record(entry);runMeta.textContent=metadata(saved.run);
     resume.hidden=freshResume.hidden=!(saved.run.canContinue!==false && saved.run.metrics?.truncated && !saved.run.continuedBy && saved.run.status!=='running');
-    status.textContent=`Loaded ${saved.records.length} saved findings. No new analysis requested.`;inspection.hidden=true;comparison.hidden=true;
+    feedback(saved,{loaded:true});inspection.hidden=true;comparison.hidden=true;
   }
   versions.addEventListener('change',()=>loadRun(versions.value).catch(fail));
   async function work(operation,lensName,source) {
     if(controller)throw Error('Stop the current run before starting another.');const stamp=epoch,abort=new AbortController();controller=abort;runId=null;selectedRun=null;
-    const sink=newView(lensName,source);openArea('analyze');inspection.hidden=true;comparison.hidden=true;resume.hidden=freshResume.hidden=true;stop.hidden=false;runMeta.textContent='';status.textContent='Connecting…';
+    const sink=newView(lensName,source);openArea('analyze');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;stop.hidden=false;runMeta.textContent='';status.textContent='Connecting…';
     for(const control of controls.querySelectorAll('input,select,textarea'))control.disabled=true;modelPicker.setDisabled(true);history.inert=true;analyze.disabled=true;
     try {
       const saved=await operation({signal:abort.signal,onEvent:event=> {
@@ -88,9 +99,9 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
         if(event.type==='repairing')status.textContent='Checking the partial response…';if(event.type==='session_reset')status.textContent='Session expired. Sending this scope again.';
       }});
       if(stamp!==epoch)return saved;selectedRun=saved;sink.reset();for(const entry of saved.records)sink.record(entry);
-      runMeta.textContent=metadata(saved.run);status.textContent=`${saved.run.status==='completed'?'Completed':'Partial result saved'} · ${saved.records.length} findings.`;
+      runMeta.textContent=metadata(saved.run);feedback(saved);
       resume.hidden=freshResume.hidden=!(saved.run.canContinue && !saved.run.continuedBy);return saved;
-    }catch(error){if(stamp===epoch){fail(error);if(error.runId){selectedRun=await engine.repository.get(error.runId);if(selectedRun){runMeta.textContent=metadata(selectedRun.run);resume.hidden=freshResume.hidden=!(selectedRun.run.canContinue && !selectedRun.run.continuedBy);}}}throw error;}
+    }catch(error){if(stamp===epoch){fail(error);if(error.runId){selectedRun=await engine.repository.get(error.runId);if(selectedRun){runMeta.textContent=metadata(selectedRun.run);feedback(selectedRun);resume.hidden=freshResume.hidden=!(selectedRun.run.canContinue && !selectedRun.run.continuedBy);}}}throw error;}
     finally{if(controller===abort){controller=null;stop.hidden=true;for(const control of controls.querySelectorAll('input,select,textarea'))control.disabled=false;modelPicker.setDisabled(false);history.inert=false;updatePreview();if(stamp===epoch)await savedRuns({select:selectedRun?.run.id});}}
   }
   async function run(extra={},startOptions={}) {
@@ -104,6 +115,20 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     if(!preview.fits)throw Error(preview.hint);const source=await store.getDocument(doc.id,selectedRun.run.extractionVersion);
     return work(opts=>engine.continue(id,{...opts,mode}),selectedRun.run.lens,source);
   }
+  async function retryPassage() {
+    await ready;if(controller)throw Error('Stop the current run before starting another.');
+    const prior=selectedRun?.run,stamp=epoch;
+    if(!prior?.config?.action || !['invalid','failed','interrupted'].includes(prior.status))throw Error('Choose a failed passage run first.');
+    if(!usable(modelPicker.info))throw Error('Choose a signed-in, accepted provider first.');
+    const target=modelPicker.target,tier=outputTier(modelPicker.tier),persistent=modelPicker.info.capabilities?.sessions===true;
+    const source=await store.getDocument(prior.docId,prior.extractionVersion);
+    if(stamp!==epoch || selectedRun?.run.id!==prior.id)throw Error('The selected run changed. Choose it again.');
+    if(!source)throw Error('The saved extraction was deleted. Select the passage again.');
+    const spans=prior.scope.blocks.flatMap(b=>(b.selected??[]).map(span=>({n:b.n,...span}))),chosen=buildScope(source,{kind:'selection',spans});
+    const config={...prior.config,doc:source,scope:chosen,target,tier,persistent},measured=engine.preview(config);
+    if(!measured.fits)throw Error(measured.hint);
+    return work(opts=>engine.start(config,{...opts,allowSavedExtraction:true}),config.lens,source);
+  }
   let compareViews=[];
   async function compareRuns() {
     if(controller)return;if(!versions.value || !compareWith.value || versions.value===compareWith.value)throw Error('Choose two different saved runs.');
@@ -116,7 +141,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     for(const item of rows){const card=element('article');card.append(element('h4',item.title),element('p',[item.kind.toUpperCase(),item.updatedAt?new Date(item.updatedAt).toLocaleDateString():null].filter(Boolean).join(' · ')),button('Open saved document',()=>onOpenDocument(item.id)));documents.append(card);}
   }
   openArea('analyze');history.hidden=true;updatePreview();
-  return {ready,run,async setDocument(value){epoch++;loading++;controller?.abort();doc=value;scope=value?buildScope(value):null;selectedRun=null;title.textContent=value?.title??'Choose a document';inspection.hidden=true;comparison.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;results.replaceChildren();runMeta.textContent='';resume.hidden=freshResume.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;},
+  return {ready,run,async setDocument(value){epoch++;loading++;controller?.abort();doc=value;scope=value?buildScope(value):null;selectedRun=null;title.textContent=value?.title??'Choose a document';inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;results.replaceChildren();runMeta.textContent='';resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;},
     setScope(value){scope=value;updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
     async passage(action,selection,{intentId,onAccepted}={}){
       if(controller)throw Error('Stop the current run before starting another.');
