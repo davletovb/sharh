@@ -410,3 +410,75 @@ button.recent span { font-weight: 400; }
 .lens-types .check > span:first-of-type { font-size: 14px; font-weight: 600; }
 .lens-types .check .hint { margin: 0; font-size: 12.5px; line-height: 1.35; }
 .lens-types .check input { align-self: start; }
+
+/* ───────────────────────── Reading conversation ───────────────────────── */
+.workspace[data-layout='studio'] > .convo { display: none; }
+.workspace[data-layout='conversation'] > .doc-header,
+.workspace[data-layout='conversation'] > .workspace-nav,
+.workspace[data-layout='conversation'] > .finding-inspector:not(.keep) { display: none; }
+.workspace[data-layout='conversation'][data-view='library'] > .convo { display: none; }
+.workspace[data-layout='conversation'] { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.convo { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.convo-head { padding: 2px 0 6px; }
+.convo-title { font: 600 16px/1.3 var(--serif); margin: 0 0 2px; overflow-wrap: anywhere; }
+.workspace[data-surface='tab'] .convo-title { display: none; }
+.convo-scope { background: none; border: 0; padding: 2px 0; min-height: 0; color: var(--muted); font-size: 13px; display: inline-flex; gap: 4px; align-items: center; }
+.convo-scope:hover { background: none; color: var(--text); }
+.convo-scope[aria-expanded='true'] svg { transform: rotate(180deg); }
+.convo-scope-slot .scope-host { margin: 6px 0; }
+.convo-stream { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 8px 0 14px; min-width: 0; }
+.convo-say { color: var(--muted); margin: 0; }
+.convo-me { align-self: flex-end; background: var(--surface-2); border: 1px solid var(--line); padding: 7px 12px; border-radius: 14px 14px 4px 14px; max-width: 88%; overflow-wrap: anywhere; }
+.convo-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
+.convo-card > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.convo-card-title { font: 600 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin: 0; }
+.convo-card.busy .convo-card-title::after { content: ' …'; }
+.convo-card .analysis-results { min-width: 0; }
+.convo-card .analysis-view > h3, .convo-card .record-group:only-child > h4 { display: none; }
+.convo-card .analysis-view h3 { font-size: 14px; }
+.card-details { margin-top: 10px; color: var(--muted); font-size: 12.5px; }
+.card-details summary { cursor: pointer; }
+.card-meta { margin: 4px 0 0; overflow-wrap: anywhere; }
+.follow-ups { margin-top: -2px; }
+
+.dock { position: sticky; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 0 12px; display: flex; flex-direction: column; gap: 9px; }
+.goals[hidden], .convo-quote[hidden] { display: none; }
+.goals .chip.accent { background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
+.goals .chip:disabled { opacity: 0.45; }
+.ask-form { display: flex; align-items: flex-end; gap: 4px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; padding: 4px; }
+.ask-form:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ask-input { flex: 1; min-width: 0; border: 0 !important; background: transparent !important; resize: none; min-height: 36px; max-height: 140px; padding: 7px 6px; box-shadow: none; }
+.ask-input:focus, .ask-input:focus-visible { outline: none; }
+.ask-form .ways { background: transparent; border-color: transparent; color: var(--gold); }
+.send { width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 10px; border: 0; background: var(--gold); color: var(--on-gold); display: grid; place-items: center; }
+.send:disabled { opacity: 0.4; }
+.ask-form .menu-wrap .menu { bottom: calc(100% + 6px); top: auto; inset-inline-start: 0; }
+.convo-quote { display: flex; align-items: center; gap: 6px; border-inline-start: 3px solid var(--gold); background: var(--surface); padding: 5px 6px 5px 10px; border-radius: 4px 10px 10px 4px; }
+.convo-quote .ghost { margin-inline-start: auto; min-height: 28px; padding: 3px; }
+
+.convo-strip { display: flex; flex-direction: column; gap: 8px; }
+.convo-strip[data-tone='idle'] { display: none; }
+.convo-strip .run-state { margin: 0; border: 0; padding: 0; color: var(--muted); font-size: 13px; }
+.convo-strip[data-tone='problem'] { border: 1px solid var(--warn); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
+.convo-strip[data-tone='problem'] .run-state { color: var(--text); }
+.convo-strip .actions { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.convo-strip .strip-notice { margin: 0; }
+.convo-strip .run-diagnostics { font-size: 13px; }
+.workspace[data-layout='conversation'] .analyze-btn { display: none; }
+.library-back { align-self: flex-start; margin-bottom: 8px; }
+
+/* The dock sits at the bottom of the screen even when the conversation is short. */
+.panel-body { min-height: 100vh; display: flex; flex-direction: column; }
+.panel-body main.panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#state-reading:not([hidden]) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#analysis-workspace { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.convo-card .record-group { margin: 0; padding: 0; background: none; border: 0; border-radius: 0; }
+.convo-card .finding h5 { margin: 0 0 4px; font-size: 13px; text-transform: capitalize; }
+.convo-card .finding .inspect-finding { font-size: 13px; min-height: 0; padding: 0; border: 0; background: none; color: var(--muted); font-weight: 600; text-align: start; }
+.convo-card .finding .inspect-finding:hover { color: var(--text); background: none; }
+.convo-card .finding .reading-text { margin: 0 0 6px; }
+.convo-card .finding.sum:first-child h5 { display: none; }
+.convo-card .finding.sum:first-child .reading-text { font: 600 17px/1.45 var(--serif); }
+.convo-strip[data-idle='true'] .run-state { display: none; }
+.panel-body main.panel { width: 100%; margin: 0 auto; }
+.convo-card .finding.in-source-view { outline: 0; box-shadow: none; border-inline-start: 3px solid var(--gold); padding-inline-start: 10px; }

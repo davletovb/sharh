@@ -70,7 +70,7 @@ test('J: a connected panel asks before reading, offers Not now, and reads on its
     await source.bringToFront();
     await source.reload();
     await panel.locator('#state-reading').waitFor();
-    assert.match(await panel.locator('.workspace-title').textContent(), /\S/);
+    assert.match(await panel.locator('.convo-title').textContent(), /\S/);
     report.checks.autoReadWhenAllowed = true;
 
     // With the setting back on "Ask me first", reading again needs a click.

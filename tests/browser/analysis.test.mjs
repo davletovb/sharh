@@ -12,7 +12,7 @@ test('D engine in packaged Chromium: timed streaming text view, repair, continua
   const profile=await mkdtemp(join(tmpdir(),'sharh-d-engine-')),report={checks:{},errors:[]};let context;
   try {
     const extension=resolve('dist/sharh');
-    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
+    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});await context.addInitScript(()=>{try{localStorage.setItem('sharh:layout','studio');}catch{/* The tests drive every control. */}});
     const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));await page.goto(`${base}/ui/reader.html`);await installBrowserTestAPI(page);
     await page.evaluate(async()=> {
       const {openDocumentStore,exampleDocument,buildScope,AnalysisEngine,FakePath,createRecordSink}=SharhTest;

@@ -11,6 +11,7 @@ import {PathClient} from './client.mjs';
 import {createWorkspace} from './workspace.mjs';
 import {installSelectionToolbar} from './passage-toolbar.mjs';
 import {brand,iconButton} from './icons.mjs';
+import {menuButton} from './components.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 // E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
 export const {engine:analysisEngine}=createAnalysisEngine(store);
@@ -57,7 +58,12 @@ function frame() {
   $('extraction').hidden=doc?.kind!=='html';
 }
 $('html-mode').addEventListener('change',()=>{$('html-region-label').hidden=$('html-mode').value!=='region';});
-{const header=$('app-header'),spacer=document.createElement('span');spacer.className='spread';header.append(brand(),spacer,iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage()));}
+const preferredLayout=(()=>{try{return params.get('layout')||localStorage.getItem('sharh:layout')||'conversation';}catch{return 'conversation';}})()==='studio'?'studio':'conversation';
+{
+  const header=$('app-header'),spacer=document.createElement('span'),menu=menuButton({label:'Sharh menu',iconName:'more'});spacer.className='spread';
+  menu.setItems(()=>[...(workspace?workspace.menuItems():[]),'-',{label:'Open a document…',action:()=>{$('source-bar').scrollIntoView({block:'start'});$('open-file').focus();}}]);
+  header.append(brand(),spacer,menu.root,iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage()));
+}
 async function operate(action) {
   await workspaceReady;
   if (busy) { state('A document is still opening. Wait for it to finish.'); return; }
@@ -276,7 +282,7 @@ document.addEventListener('dragleave',()=>document.body.classList.remove('dragov
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
 // Register source controls before asynchronous workspace/preferences initialization.
 // A file chosen during startup waits for the workspace rather than losing its change event.
-workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',
+workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',layout:preferredLayout,onLayout:value=>{try{localStorage.setItem('sharh:layout',value);}catch{/* A remembered view is a convenience. */}},
   onReference:reference,
   onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;workspace.scopeHost.append($('scope-picker'));});
 await workspaceReady;

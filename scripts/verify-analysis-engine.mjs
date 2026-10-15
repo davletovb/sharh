@@ -17,7 +17,7 @@ try {
   await mkdir(join(profile,'NativeMessagingHosts'),{recursive:true});
   await cp(join(world.env.XDG_CONFIG_HOME,'google-chrome/NativeMessagingHosts/com.seatline.host.json'),join(profile,'NativeMessagingHosts/com.seatline.host.json'));
   const extension=resolve('dist/sharh');
-  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:world.env,args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
+  context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:world.env,args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});await context.addInitScript(()=>{try{localStorage.setItem('sharh:layout','studio');}catch{/* The tests drive every control. */}});
   const page=await context.newPage();await page.goto(`${world.origin}ui/reader.html`);await page.locator('.workspace-nav').waitFor();await installBrowserTestAPI(page);
   const result=await page.evaluate(async()=> {
     const {openDocumentStore,exampleDocument,buildScope,createAnalysisEngine}=SharhTest;

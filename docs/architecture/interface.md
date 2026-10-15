@@ -23,9 +23,15 @@ Sharh never reads a page without being asked.
 
 1. **Not connected.** A numbered setup (install Seatline, allow Sharh, sign in) with Check again and Open setup. The same `connectionSteps` helper drives Settings.
 2. **Ask first.** The consent card above, with a compact form after Not now. A PDF tab offers Open this PDF in Sharh instead.
-3. **Reading.** Title and chips (scope, model, language), then Analyze / Ask / History. Analyze has lens chips (Summary, Structure, Logic, Thinking, and a More menu with the rest, Deep read and Second reading), an Adjust section (Detail, number of findings, Focus, Theoretical frame), and a menu for exports and Open in full tab.
+3. **Reading: a conversation.** The title and one quiet line for what is being read (whole page, or a chosen section), then the conversation, then one input at the bottom.
+   - Before anything is asked: "I’ve read this text. What would you like to know?" and four goals: *Get the gist* (Summary), *Check the argument* (Logic), *Learn the terms* (Terms) and *Study it deeply* (Structure, Logic and Thinking together).
+   - Choosing a goal adds what was asked as a bubble and the answer as a card with a plain title ("The gist", "The argument", "Explain · ¶3"). The model, date and status sit behind **Details** on each card. After an answer, two follow-up chips offer the other goals.
+   - The same input is **Ask**. Answers are cards with paragraph references. Selecting text on the page uses the selection toolbar; its answers arrive as "Explain · ¶3" cards, and *Ask about this* puts the passage above the input.
+   - The ✦ button beside the input lists every other lens in plain words ("How it is built", "Who it cites") and any custom lenses.
+   - Progress, "Continue", "Retry with default model" and problems share one strip above the input. It is hidden when there is nothing to say. With no usable model it says so once and offers *Choose a model*.
+   - There is no tab bar, no model, language or token chips, and no Adjust. The header ⋯ menu holds earlier readings, exports, and in the full tab the Library and the Studio view.
 
-Saved readings list under the cards. A chosen passage waits in the panel until it is answered; the toolbar button shows a dot while one is pending.
+The full tab uses the same conversation beside the source text. **Studio view** (⋯ menu in the full tab, or `?layout=studio`) restores the complete set of controls for power use: lens list, Adjust (detail, number of findings, focus, theoretical frame), history and comparison, Second reading and the Library tools.
 
 ## Settings
 

@@ -20,7 +20,7 @@ test('failed opens preserve the current reader, pending PDF grants resume the re
   const profile=await mkdtemp(join(tmpdir(),'sharh-c-review-')),server=await serveRepository(),report={checks:{},errors:[]};let context;
   try {
     const extension=resolve('dist/sharh');
-    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});context.setDefaultTimeout(15000);
+    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});context.setDefaultTimeout(15000);await context.addInitScript(()=>{try{localStorage.setItem('sharh:layout','studio');}catch{/* The tests drive every control. */}});
     const reader=await context.newPage();reader.on('pageerror',e=>report.errors.push(e.message));await reader.goto(`${base}/ui/reader.html`);await reader.locator('.workspace-nav').waitFor();
     const file={name:'index.html',mimeType:'text/html',buffer:Buffer.from('<h1>First local file</h1><p>First source content.</p>')};
     await reader.locator('#open-file').setInputFiles(file);await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));

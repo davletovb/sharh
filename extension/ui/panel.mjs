@@ -28,12 +28,13 @@ const openSettings=(section='connection')=>chrome.tabs.create({url:chrome.runtim
 const menu=menuButton({label:'Sharh menu',iconName:'more'});
 $('app-header').append(brand(),Object.assign(element('span'),{className:'spread'}),menu.root);
 const gear=iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage());gear.id='settings';$('app-header').append(gear);
-menu.setItems([
+menu.setItems(()=>[
+  ...(current&&workspace?[...workspace.menuItems(),'-']:[]),
   {label:'Read the page in this tab',action:()=>readActive()},
   {label:'Open a PDF or file…',action:()=>chrome.tabs.create({url:readerURL(chrome.runtime)})},
   {label:'Close this reading',action:()=>closeDocument(),get hidden(){return !current;}},
   '-',
-  {label:'Open Sharh in a full tab',action:()=>chrome.tabs.create({url:readerURL(chrome.runtime,current?{docId:current.id}:{})})},
+  {label:'Open Sharh in a full tab',action:()=>chrome.tabs.create({url:readerURL(chrome.runtime,current?{docId:current.id}:{})}),get hidden(){return !!current;}},
   {label:'Settings',action:()=>chrome.runtime.openOptionsPage()}
 ]);
 $('connect-art').replaceWith(icon('star',{size:44,className:'art'}));
@@ -47,8 +48,6 @@ function render() {
   $('state-consent').hidden=hasDocument||connected===false;
   $('recents').hidden=hasDocument;
   $('state-consent').classList.toggle('compact',dismissed);
-  const banner=$('connection-banner');banner.hidden=!(hasDocument&&connected===false);
-  if(!banner.hidden&&!banner.firstChild){const box=callout('warn','No model is connected');box.querySelector('div').append(button('Open setup',()=>openSettings('connection')));banner.append(box);}
   renderTab();
 }
 function renderTab() {
@@ -106,7 +105,7 @@ async function closeDocument() {
   await workspace.setDocument(null);picker.clear();await chrome.storage.session.remove(contextKey);
   say('');await showRecents();render();
 }
-workspace=await createWorkspace($('analysis-workspace'),{store,engine,client,onControlsChanged:()=>{if(current)picker.refresh();},
+workspace=await createWorkspace($('analysis-workspace'),{store,engine,client,layout:'conversation',onControlsChanged:()=>{if(current)picker.refresh();},
   onOpenDocument:async(id,version,scope)=>{const doc=await store.getDocument(id,version);if(doc){await showDocument(doc);if(scope)await picker.restore(scope);}},
   onReference:async(block,source)=> {
     if(sourceTab!==null && source.id===current.id && source.version===current.version){try{const hit=await sourceMessage('highlight',{anchor:block.anchor});say(hit?`Highlighted ¶${block.n} in the source page.`:'This paragraph could not be found in the current page.');return;}catch(error){fail(error);}}
@@ -121,7 +120,7 @@ async function readTab(tab,{recovering=false}={}) {
   catch{const address=recovering?null:recoverableAddress(tab.url,current?.address);pendingSource=address?{tabId:tab.id,address}:null;$('allow-source').hidden=!pendingSource;throw Error(recovering?SOURCE_STILL_BLOCKED:SOURCE_ACCESS_HINT);}
   const response=await chrome.tabs.sendMessage(tab.id,{type:'sharh:reader:extract',mode:'article'},{frameId:0});if(response?.error)throw Error(response.error);
   const value=createDocument(response.result.extraction,{kind:'html',identity:response.result.identity,address:response.result.address});await store.saveDocument(value);await showDocument(value,{tabId:tab.id});
-  pendingSource=null;$('allow-source').hidden=true;say('Ready. Choose a lens and Analyze.');
+  pendingSource=null;$('allow-source').hidden=true;say('');
 }
 async function readActive() {
   const [tab]=await chrome.tabs.query({active:true,currentWindow:true});if(!tab)throw Error('Open the page you want to read.');

@@ -11,6 +11,7 @@ test('Settings → Lenses saves, edits, exports, imports and deletes custom lens
   const profile = await mkdtemp(join(tmpdir(), 'sharh-lenses-')), extension = resolve('dist/sharh'), report = {checks: {}, errors: []};
   const context = await chromium.launchPersistentContext(profile, {...browserOptions(), channel: 'chromium', args: ['--no-sandbox', `--disable-extensions-except=${extension}`, `--load-extension=${extension}`], ignoreDefaultArgs: ['--disable-extensions']});
   context.setDefaultTimeout(20000);
+  await context.addInitScript(() => { try { localStorage.setItem('sharh:layout', 'studio'); } catch { /* Studio shows the complete lens list. */ } });
   try {
     const settings = await context.newPage();
     settings.on('pageerror', e => report.errors.push(e.message));

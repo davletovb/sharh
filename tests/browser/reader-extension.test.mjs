@@ -13,7 +13,7 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
   try {
     const extension=resolve('dist/sharh');
     context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
-    context.setDefaultTimeout(15000);
+    context.setDefaultTimeout(15000);await context.addInitScript(()=>{try{localStorage.setItem('sharh:layout','studio');}catch{/* The tests drive every control. */}});
     const reader=await context.newPage(); reader.on('pageerror',error=>report.errors.push(error.message));
     await reader.goto(`${base}/ui/reader.html`);await reader.locator('.workspace-nav').waitFor();
     await reader.locator('#open-file').setInputFiles('corpus/fixtures/html/article-en.html');

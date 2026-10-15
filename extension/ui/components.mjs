@@ -49,7 +49,7 @@ export function menuButton({label, iconName = null, text = '', className = ''} =
   }
   function render() {
     list.replaceChildren();
-    for (const item of items.filter(i => i === '-' || !i.hidden)) {
+    for (const item of (typeof items === 'function' ? items() : items).filter(i => i === '-' || !i.hidden)) {
       if (item === '-') { list.append(element('hr')); continue; }
       const b = element('button', item.label);
       b.type = 'button';

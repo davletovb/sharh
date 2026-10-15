@@ -12,7 +12,7 @@ test('D review: browser locks preserve live owners and recover a closed continua
   const profile=await mkdtemp(join(tmpdir(),'sharh-d-owner-')),report={checks:{},errors:[]};let context;
   try {
     const extension=resolve('dist/sharh');
-    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
+    context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});await context.addInitScript(()=>{try{localStorage.setItem('sharh:layout','studio');}catch{/* The tests drive every control. */}});
     const owner=await context.newPage();owner.on('pageerror',e=>report.errors.push(e.message));await owner.goto(base+'/ui/reader.html');await installBrowserTestAPI(owner);
     const ids=await owner.evaluate(async()=> {
       const {openDocumentStore,exampleDocument,buildScope,AnalysisEngine,FakePath}=SharhTest;
