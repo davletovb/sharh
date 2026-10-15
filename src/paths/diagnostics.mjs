@@ -10,7 +10,7 @@ const states = {
   ],
   sharh_not_authorized: [
     'Sharh not authorized',
-    'Run the authorize command above. It replaces the grant; include every provider and origin you use.'
+    'Run the authorize command shown on this page. It replaces the grant; include every provider and origin you use.'
   ],
   extension_too_old: ['Sharh too old', 'Update Sharh to work with this Seatline version.'],
   companion_too_old: [
@@ -19,13 +19,13 @@ const states = {
   ],
   provider_not_authorized: [
     'Provider not authorized',
-    'Add this provider to the Sharh grant using the command above.'
+    'Add this provider to the Sharh grant using the authorize command shown on this page.'
   ],
   cli_missing: ['CLI missing', 'Install this provider’s CLI.'],
   signed_out: ['Signed out', 'Sign in to this provider’s CLI, then check again.'],
   sign_in_not_accepted: [
     'Sign-in not accepted',
-    'Seatline accepts subscription sign-ins. Gemini requires the explicit Antigravity cloud opt-in below. API keys and unknown sign-ins are refused.'
+    'Seatline accepts subscription sign-ins. Gemini requires the explicit Antigravity cloud opt-in under Sign-in policy. API keys and unknown sign-ins are refused.'
   ],
   isolation_unavailable: [
     'Isolation unavailable',

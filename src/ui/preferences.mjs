@@ -25,13 +25,27 @@ export function providerBadges(info) {
   return [info.available?'Installed':'Unavailable',info.signedIn?`Signed in · ${info.signIn??'unknown'}`:'Sign-in needed',
     info.accepted?'Policy accepted':'Policy not accepted',...['streaming','sessions','webSearch','toolIsolation'].map((k,i)=>`${c[k]?'':'No '}${['streaming','sessions','web search','tool isolation'][i]}`)];
 }
+// How much a lens reports. The numbers are record budgets; the reader only chooses a word.
+export const DETAIL = Object.freeze({brief:12,standard:24,thorough:60});
+export const DETAIL_LABELS = Object.freeze({brief:'Brief',standard:'Standard',thorough:'Thorough'});
+export const AUTO_READ = Object.freeze({never:'Ask me first',allowed:'On sites I have allowed'});
+// Jobs other than Analysis can follow the default model. Analysis is the default.
+export const FOLLOWING = Object.freeze(['quick','book','synthesis']);
+export const PARTNER_DEFAULT = Object.freeze({path:'seatline',provider:'codex',model:null});
+const LANGUAGE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8}){0,3}$/;
 export class ReadingPreferences {
-  constructor(storage) {this.storage=storage;this.value={theme:'system',language:'en',tiers:structuredClone(DEFAULTS)};}
+  constructor(storage) {this.storage=storage;this.value={theme:'system',language:'en',detail:'standard',autoRead:'never',follow:[],partner:{...PARTNER_DEFAULT},tiers:structuredClone(DEFAULTS)};}
   async load() {
     const saved=(await this.storage.get('sharhReading'))?.sharhReading??{};
+    const tiers=Object.fromEntries(Object.keys(TIERS).map(k=>[k,{...DEFAULTS[k],...(saved.tiers?.[k]??{})}]));
+    const follow=Array.isArray(saved.follow)?FOLLOWING.filter(k=>saved.follow.includes(k)):[];
+    for(const k of follow)tiers[k]={...tiers.analysis};
+    const partner=saved.partner && typeof saved.partner==='object' && saved.partner.path==='seatline' && typeof saved.partner.provider==='string'?{path:'seatline',provider:saved.partner.provider,model:saved.partner.model||null}:{...PARTNER_DEFAULT};
     this.value={theme:['system','ink','parchment'].includes(saved.theme)?saved.theme:'system',
-      language:typeof saved.language==='string' && /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8}){0,3}$/.test(saved.language)?saved.language:'en',
-      tiers:Object.fromEntries(Object.keys(TIERS).map(k=>[k,{...DEFAULTS[k],...(saved.tiers?.[k]??{})}]))};
+      language:typeof saved.language==='string' && LANGUAGE.test(saved.language)?saved.language:'en',
+      detail:Object.hasOwn(DETAIL,saved.detail)?saved.detail:'standard',
+      autoRead:Object.hasOwn(AUTO_READ,saved.autoRead)?saved.autoRead:'never',
+      follow,partner,tiers};
     return this.value;
   }
   async save(patch) {

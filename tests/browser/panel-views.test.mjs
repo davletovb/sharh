@@ -46,8 +46,8 @@ test('E: packaged panel/settings themes, all streaming views, keyboard inspectio
  try{
   const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));await page.goto(base+'/ui/panel.html');await page.locator('.workspace-nav').waitFor();
   for(const theme of ['light','dark']){await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});report.a11y['panel-'+theme]=await axe(page);assert.deepEqual(report.a11y['panel-'+theme].violations,[]);}
-  const settings=await context.newPage();settings.on('pageerror',e=>report.errors.push(e.message));await settings.goto(base+'/ui/settings.html');await settings.locator('#appearance-controls select').waitFor();
-  for(const theme of ['light','dark']){await settings.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});report.a11y['settings-'+theme]=await axe(settings);assert.deepEqual(report.a11y['settings-'+theme].violations,[]);}
+  const settings=await context.newPage();settings.on('pageerror',e=>report.errors.push(e.message));await settings.goto(base+'/ui/settings.html');await settings.locator('#theme-choices input').first().waitFor({state:'attached'});
+  for(const theme of ['light','dark']){await settings.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});for(const section of ['connection','models','reading','sites','appearance','data']){await settings.evaluate(name=>{location.hash=name;},section);await settings.locator('section[data-section='+section+']').waitFor({state:'visible'});const key='settings-'+section+'-'+theme;report.a11y[key]=await axe(settings);assert.deepEqual(report.a11y[key].violations,[],key);}}
   await settings.close();await installBrowserTestAPI(page);
   await page.evaluate(async()=>{
    const {openDocumentStore,exampleDocument,AnalysisEngine,FakePath,createWorkspace}=SharhTest;

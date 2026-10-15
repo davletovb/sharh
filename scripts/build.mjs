@@ -1,5 +1,5 @@
 import {build} from 'esbuild';
-import {cp, mkdir, rm, writeFile,readFile} from 'node:fs/promises';
+import {cp, mkdir, rm, writeFile, readFile, readdir} from 'node:fs/promises';
 await rm('dist', {recursive: true, force: true});
 await mkdir('dist', {recursive: true});
 await build({entryPoints:['src/prototypes/browser-entry.mjs'], bundle:true, format:'esm', target:'chrome124', outfile:'dist/prototype.mjs'});
@@ -13,9 +13,10 @@ await cp('config/seatline-contract.json', 'dist/probe/contract.json');
 await writeFile('dist/index.html', '<!doctype html><meta charset="utf-8"><title>Sharh extraction prototype</title><style>::highlight(sharh-reference){background:#ffd660;color:#16171c}</style><script type="module">import * as prototype from "./prototype.mjs"; window.prototype = prototype;</script>');
 
 await cp('extension','dist/sharh',{recursive:true});
-await build({entryPoints:['extension/worker.mjs','extension/ui/settings.mjs','extension/ui/panel.mjs','extension/ui/runs.mjs','extension/ui/client.mjs','extension/ui/panel-context.mjs','extension/lib/preferences.mjs','extension/ui/reader.mjs','extension/ui/graph-worker.mjs'],bundle:true,format:'esm',target:'chrome124',outbase:'extension',outdir:'dist/sharh',outExtension:{'.js':'.mjs'}});
-// These private helpers are inlined into their consumers. Do not ship their raw source copies.
-for(const file of ['ui/across-texts.mjs','ui/paragraph-viewport.mjs','ui/pdf-view.mjs','ui/scope-picker.mjs','ui/scope-controls.mjs','ui/analysis.mjs','ui/workspace.mjs','ui/toolkit.mjs','ui/views.mjs','ui/model-picker.mjs','ui/dom.mjs','ui/theme.mjs','ui/passage-toolbar.mjs','ui/passage-handoff.mjs','lib/opening.mjs','lib/passages.mjs'])await rm(`dist/sharh/${file}`);
+const entries=['worker.mjs','ui/settings.mjs','ui/panel.mjs','ui/runs.mjs','ui/client.mjs','ui/panel-context.mjs','lib/preferences.mjs','ui/reader.mjs','ui/graph-worker.mjs'];
+await build({entryPoints:entries.map(file=>`extension/${file}`),bundle:true,format:'esm',target:'chrome124',outbase:'extension',outdir:'dist/sharh',outExtension:{'.js':'.mjs'}});
+// Every other module is a private helper inlined into its consumers. Do not ship raw source copies.
+for(const dir of ['ui','lib'])for(const file of await readdir(`dist/sharh/${dir}`))if(file.endsWith('.mjs') && !entries.includes(`${dir}/${file}`))await rm(`dist/sharh/${dir}/${file}`);
 await build({entryPoints:['extension/content/reader.mjs'],bundle:true,format:'iife',target:'chrome124',outfile:'dist/sharh/content/reader.mjs'});
 await cp('node_modules/pdfjs-dist/build/pdf.worker.mjs','dist/sharh/pdf.worker.mjs');
 await cp('node_modules/pdfjs-dist/standard_fonts','dist/sharh/standard_fonts',{recursive:true});

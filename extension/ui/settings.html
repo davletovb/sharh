@@ -2,65 +2,128 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Sharh settings · Seatline</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sharh settings</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <a class="skip-link" href="#reading-preferences">Skip to reading preferences</a>
-    <main>
-      <header>
-        <p class="eyebrow">Sharh settings</p>
-        <h1>Seatline</h1>
-        <p>Connect the model CLIs you use on this computer.</p>
-      </header>
-      <section id="reading-preferences" aria-labelledby="reading-preferences-heading">
-        <h2 id="reading-preferences-heading">Reading preferences</h2>
-        <div id="appearance-controls" class="appearance-controls"></div>
-        <h3>Models by task tier</h3><p class="note">Choose a tier, set its target and save its default. Each reading run can override these choices.</p>
-        <div id="tier-models" class="control-grid"></div>
-      </section>
-      <section aria-labelledby="reader-settings">
-        <h2 id="reader-settings">Reader</h2>
-        <label><input type="checkbox" id="pdf-auto-open"> Open .pdf addresses in Sharh on allowed sites</label>
-        <p class="note">Site access stays optional. Allow an individual source in the reader, or enable automatic opening across websites below. With this setting off, .pdf addresses use Chrome’s viewer. The toolbar and context menu still open a PDF in Sharh.</p>
-        <button id="allow-pdf-sites">Allow reader and passage actions on all websites</button><button id="file-access">Open Chrome file-access settings</button>
-        <p id="reader-settings-state" role="status"></p>
-      </section>
-      <section aria-labelledby="setup">
-        <h2 id="setup">Set up Seatline</h2>
-        <ol>
-          <li>Install Seatline with <code>seatline-companion install</code>.</li>
-          <li>Install and sign in to Claude Code, Codex, Antigravity or Grok.</li>
-          <li>Authorize this extension with the command below.</li>
-        </ol>
-        <pre id="authorize"></pre>
-        <button id="copy">Copy command</button><span id="copied" role="status"></span>
-        <p class="note">
-          The command replaces your Sharh grant. Keep every provider and extension origin you use in it.
-        </p>
-      </section>
-      <section aria-labelledby="providers">
-        <div class="row">
-          <h2 id="providers">Providers</h2>
-          <button id="check">Check</button>
-        </div>
-        <p id="check-state" role="status">Check for a fresh sign-in and capability report.</p>
-        <div id="diagnostics" aria-live="polite"></div>
-      </section>
-      <section aria-labelledby="policy">
-        <h2 id="policy">Sign-in policy</h2>
-        <p>
-          Claude Code, Codex and Grok use subscription sign-ins. API-key and unknown sign-ins are refused on
-          this path.
-        </p>
-        <label><input type="checkbox" id="gemini-cloud" /> Allow the Antigravity cloud route</label>
-        <p class="note">
-          Seatline reports Gemini through Antigravity as a cloud route. It cannot certify it as a subscription
-          route. Enable this only if you want to use that sign-in.
-        </p>
-      </section>
-    </main>
+    <a class="skip-link" href="#settings-content">Skip to settings</a>
+    <div class="settings-shell">
+      <nav class="side-nav" id="settings-nav" aria-label="Settings sections">
+        <span id="brand-slot"></span>
+        <a href="#connection" data-section="connection" data-icon="plug">Connection</a>
+        <a href="#models" data-section="models" data-icon="model">Models</a>
+        <a href="#reading" data-section="reading" data-icon="book">Reading</a>
+        <a href="#sites" data-section="sites" data-icon="globe">Sites and PDFs</a>
+        <a href="#appearance" data-section="appearance" data-icon="palette">Appearance</a>
+        <a href="#data" data-section="data" data-icon="data">Your data</a>
+      </nav>
+      <main id="settings-content" class="settings-page">
+        <h1 class="sr-only">Sharh settings</h1>
+
+        <section id="connection" data-section="connection" aria-labelledby="h-connection">
+          <header>
+            <h2 id="h-connection">Connection</h2>
+            <p>Sharh reads with the models you already use, through Seatline, a small companion app on this computer. Nothing is sent to a model until you run something.</p>
+          </header>
+          <div id="connection-status" class="callout" role="status"><span class="dot"></span><div><span class="title">Checking…</span></div></div>
+          <div class="card">
+            <h3>Setup</h3>
+            <ol class="steps" id="setup-steps">
+              <li data-step="install"><span class="num">1</span><div><strong>Install Seatline</strong><p class="hint">Run <code>seatline-companion install</code> in a terminal.</p></div></li>
+              <li data-step="authorize"><span class="num">2</span><div><strong>Allow Sharh to use it</strong><p class="hint">Run the authorize command below once.</p></div></li>
+              <li data-step="signin"><span class="num">3</span><div><strong>Sign in to a model</strong><p class="hint">Install and sign in to Claude Code, Codex, Antigravity or Grok.</p></div></li>
+            </ol>
+            <details id="setup-details">
+              <summary>Show the authorize command</summary>
+              <pre id="authorize"></pre>
+              <button id="copy" type="button">Copy command</button><span id="copied" role="status"></span>
+              <p class="note">The command replaces your Sharh grant. Keep every provider and extension origin you use in it.</p>
+            </details>
+          </div>
+          <div class="card">
+            <div class="row"><h3>Models on this computer</h3><button id="check" type="button" class="primary">Check again</button></div>
+            <p id="check-state" class="status-line" role="status">Check for a fresh sign-in and capability report.</p>
+            <div id="diagnostics" aria-live="polite"></div>
+          </div>
+          <div class="card">
+            <h3>Sign-in policy</h3>
+            <p class="hint">Claude Code, Codex and Grok use subscription sign-ins. API-key and unknown sign-ins are refused on this path.</p>
+            <label class="switch"><input type="checkbox" id="gemini-cloud" /><span>Allow the Antigravity cloud route<span class="hint">Seatline reports Gemini through Antigravity as a cloud route and cannot certify it as a subscription route. Turn this on only if you want to use that sign-in.</span></span></label>
+          </div>
+        </section>
+
+        <section id="models" data-section="models" aria-labelledby="h-models" hidden>
+          <header>
+            <h2 id="h-models">Models</h2>
+            <p>Choose which model does the reading. Sharh uses these everywhere, so the side panel stays simple.</p>
+          </header>
+          <div id="models-content"></div>
+        </section>
+
+        <section id="reading" data-section="reading" aria-labelledby="h-reading" hidden>
+          <header>
+            <h2 id="h-reading">Reading</h2>
+            <p>How Sharh answers and when it reads a page.</p>
+          </header>
+          <div class="card">
+            <div class="field-row"><div class="label"><label for="language"><span>Answer language</span></label><span class="hint">The text can be in any language.</span></div>
+              <div><select id="language"></select><label class="stacked" id="language-other-field" hidden><span>Language code</span><input id="language-other" maxlength="35" placeholder="e.g. uz-Cyrl" pattern="[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8}){0,3}" /></label></div></div>
+            <div class="field-row"><div class="label"><span id="detail-label">Detail</span><span class="hint">How many findings a reading reports.</span></div>
+              <div class="segmented" role="group" aria-labelledby="detail-label" id="detail"></div></div>
+            <div class="field-row"><div class="label"><span id="auto-label">Reading a page</span><span class="hint">Sharh never reads a page without your say-so unless you choose otherwise.</span></div>
+              <div id="auto-read" role="radiogroup" aria-labelledby="auto-label"></div></div>
+          </div>
+          <p id="reading-state" class="status-line" role="status"></p>
+        </section>
+
+        <section id="sites" data-section="sites" aria-labelledby="h-sites" hidden>
+          <header>
+            <h2 id="h-sites">Sites and PDFs</h2>
+            <p>Sharh asks for access one site at a time. Selection tools appear only on the sites listed here and in the PDF reader.</p>
+          </header>
+          <div class="card">
+            <h3>Allowed sites</h3>
+            <div id="site-list"></div>
+            <form id="add-site" class="row wrap"><label class="stacked"><span>Add a site</span><input id="site-address" type="url" placeholder="https://example.org" /></label><button type="submit">Allow site</button></form>
+            <button id="allow-pdf-sites" type="button" class="ghost">Allow all websites instead</button>
+            <p id="reader-settings-state" class="status-line" role="status"></p>
+          </div>
+          <div class="card">
+            <h3>PDFs and local files</h3>
+            <label class="switch"><input type="checkbox" id="pdf-auto-open" /><span>Open PDF links in Sharh<span class="hint">On allowed sites. With this off, PDFs use Chrome’s viewer. The toolbar button and the page menu still open a PDF in Sharh.</span></span></label>
+            <button id="file-access" type="button">Open Chrome file-access settings</button>
+            <p class="hint">Turn on “Allow access to file URLs” there to read local files from disk.</p>
+          </div>
+        </section>
+
+        <section id="appearance" data-section="appearance" aria-labelledby="h-appearance" hidden>
+          <header>
+            <h2 id="h-appearance">Appearance</h2>
+            <p>Ink is dark with gold, Parchment is light. System follows your device.</p>
+          </header>
+          <div class="card"><fieldset class="theme-choices" id="theme-choices"><legend class="sr-only">Theme</legend></fieldset></div>
+        </section>
+
+        <section id="data" data-section="data" aria-labelledby="h-data" hidden>
+          <header>
+            <h2 id="h-data">Your data</h2>
+            <p>Documents, readings, chats and settings stay in this browser. Sharh has no account and no server.</p>
+          </header>
+          <div class="card">
+            <p id="storage-used" class="status-line">Checking storage…</p>
+            <div class="row wrap"><button id="export-data" type="button">Export documents</button><label class="stacked"><span>Import documents</span><input id="import-data" type="file" accept="application/json,.json" /></label></div>
+            <p class="hint">Export includes saved PDF files and reading history. Import adds documents; conflicting saved data is kept.</p>
+          </div>
+          <div class="card">
+            <h3>Delete everything</h3>
+            <p class="hint">Removes every saved document, reading and chat from this browser. Provider sessions Sharh started are closed. This cannot be undone.</p>
+            <button id="delete-all" type="button" class="danger">Delete all saved data…</button>
+            <p id="data-state" class="status-line" role="status"></p>
+          </div>
+        </section>
+      </main>
+    </div>
     <script type="module" src="settings.mjs"></script>
   </body>
 </html>

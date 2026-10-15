@@ -1,6 +1,6 @@
 const hints = {
   NOT_INSTALLED: 'Install Seatline and register it for this browser.',
-  NOT_AUTHORIZED: 'Run the authorize command in Settings → Seatline.',
+  NOT_AUTHORIZED: 'Run the authorize command in Settings → Connection.',
   SIGNED_OUT: 'Sign in to this provider’s CLI, then check again.',
   POLICY_DENIED: 'This sign-in is not accepted on the Seatline path.',
   RATE_LIMITED: 'Wait for your plan’s limit to reset or choose another target.',
