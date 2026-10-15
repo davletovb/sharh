@@ -392,3 +392,21 @@ button.recent span { font-weight: 400; }
 .lens-bar { gap: 6px; }
 .lens-bar .chips { gap: 6px; }
 .workspace-area { min-width: 0; }
+
+/* Settings → Lenses */
+.lens-card .row { align-items: flex-start; }
+.lens-card strong { font-family: var(--serif); font-size: 17px; }
+.lens-card p { margin: 6px 0 0; }
+.lens-types { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 12px; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 16px; }
+.lens-types legend { font-weight: 600; padding: 0 6px; }
+.lens-types .check { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: start; margin: 6px 0; }
+.lens-types .check .hint { grid-column: 2; }
+.lens-form h3 { margin-top: 0; }
+.lens-form input:not([type='checkbox']), .lens-form select { max-width: 420px; }
+.lens-types .check input { margin: 3px 0 0; min-height: 0; }
+.lens-types .check { margin: 4px 0; }
+.lens-types .check .hint { margin-top: -2px; }
+.lens-types .check { row-gap: 0; align-items: baseline; }
+.lens-types .check > span:first-of-type { font-size: 14px; font-weight: 600; }
+.lens-types .check .hint { margin: 0; font-size: 12.5px; line-height: 1.35; }
+.lens-types .check input { align-self: start; }

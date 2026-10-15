@@ -4,6 +4,7 @@ import {ReadingPreferences, DETAIL_LABELS, AUTO_READ} from '../../src/ui/prefere
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {sourceOrigin} from '../lib/opening.mjs';
 import {buildModelSettings} from './settings-models.mjs';
+import {buildLensSettings} from './settings-lenses.mjs';
 import {connectionSteps} from '../../src/ui/connection.mjs';
 import {icon, brand} from './icons.mjs';
 import {LANGUAGES} from '../../src/ui/languages.mjs';
@@ -30,6 +31,9 @@ function show(name) {
 }
 addEventListener('hashchange', () => show(location.hash.slice(1)));
 show(location.hash.slice(1));
+
+// ───────── Lenses ─────────
+await buildLensSettings($('#lenses-content'));
 
 // ───────── Appearance ─────────
 function applyTheme(theme) { document.documentElement.dataset.theme = theme; }

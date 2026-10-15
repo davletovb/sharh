@@ -29,7 +29,9 @@ Saved readings list under the cards. A chosen passage waits in the panel until i
 
 ## Settings
 
-Sections: Connection, Models, Reading, Sites and PDFs, Appearance, Your data. Models has a default model, per-job overrides (quick passage actions, book chapters, synthesis follow the default unless overridden) and the second reader. Reading has the output language, Detail (concise, standard, thorough; 12, 24 or 60 findings), and the auto-read choice. Preferences live in `chrome.storage.local.sharhReading` (`src/ui/preferences.mjs`, validated on load).
+Sections: Connection, Models, Reading, Lenses, Sites and PDFs, Appearance, Your data. Models has a default model, per-job overrides (quick passage actions, book chapters, synthesis follow the default unless overridden) and the second reader. Reading has the output language, Detail (concise, standard, thorough; 12, 24 or 60 findings), and the auto-read choice. Preferences live in `chrome.storage.local.sharhReading` (`src/ui/preferences.mjs`, validated on load).
+
+Lenses lists the custom lenses (stored in `sharhCustomLenses`, at most 30) with Edit, Export and Delete, a form (name, instructions, what the lens may produce, default model job) and file import. Choosing a record type also chooses the types it refers to, so a saved lens always passes validation. A saved lens appears in the More menu of every lens bar without a reload. The full-tab Library keeps its own editor over the same store.
 
 ## Design system
 
