@@ -38,6 +38,10 @@ test('Ask session loss before output rebuilds with scope/history and reports the
  const w=await world(),chat=new Conversations(w.engine);try{const first=await chat.ask(w.config,'First question');w.path.handles.clear();const events=[],next=await chat.ask(w.config,'Second question',{chatId:first.chatId,onEvent:e=>events.push(e)});assert.equal(next.run.status,'completed');assert.equal(w.path.calls.length,3);assert.equal(w.path.calls[1].request.document,null);assert.ok(w.path.calls[2].request.document);assert.equal(JSON.parse(w.path.calls[2].request.task.split('\n')[1]).question,'Second question');assert.equal(w.path.calls[2].request.history.length,2);assert.ok(events.some(e=>e.type==='session_reset'));}finally{w.close();}
 });
 
+test('Ask binds Focus, Frame and output settings before a following turn can allocate or launch',async()=>{
+ const w=await world(),chat=new Conversations(w.engine);try{const first=await chat.ask(w.config,'Question');for(const patch of [{focus:'new focus'},{frame:'Bourdieu'},{budget:12}])await assert.rejects(chat.ask({...w.config,...patch},'Follow-up',{chatId:first.chatId}),/instructions changed/);assert.equal(w.path.calls.length,1);assert.equal((await chat.open(first.chatId)).turns.length,1);assert.equal((await w.engine.list(w.doc.id)).length,1);}finally{w.close();}
+});
+
 test('Ask drafts send nothing, retain their intent, and deleted drafts cannot be replayed',async()=>{
  const w=await world(),chat=new Conversations(w.engine);try{const draft=await chat.create(w.config,{passageIntentId:'intent'});assert.equal(w.path.calls.length,0);assert.equal((await chat.open(draft.id)).passageIntentId,'intent');await w.store.deleteDocument(w.doc.id);await assert.rejects(chat.ask(w.config,'Question',{chatId:draft.id}),/CHAT_REMOVED/);assert.equal((await w.store.all('chats')).length,0);assert.equal(w.path.calls.length,0);}finally{w.close();}
 });
@@ -61,6 +65,10 @@ test('G evaluation selects its own matrix and never marks Phase 2 accepted',asyn
 test('Situate keeps only source-event-backed URLs clickable; ordinary analyses cannot bless recalled URLs',async()=>{
  const url='https://example.org/review',other='https://example.org/invented',cite=u=>({t:'cite',who:'Author',role:'context',text:'External context',refs:[3],url:u}),w=await world({scriptFor:null,scripts:[{text:lines(cite(url),cite(other),end),sources:[{id:'s',title:'Review',url,snippet:'Context'}]},{text:lines(cite(url),end),sources:[{id:'s',title:'Review',url,snippet:'Context'}]}]});
  try{const found=await w.engine.start({...w.config,lens:'literature',operation:'situate'});assert.equal(w.path.calls[0].request.kind,'search');assert.ok(found.records[0].flags.includes('source_verified'));assert.ok(found.records[1].flags.includes('source_not_returned'));assert.equal(found.run.sources[0].url,url);const ordinary=await w.engine.start({...w.config,lens:'literature'});assert.ok(ordinary.records[0].flags.includes('source_not_returned'));assert.equal(validateFields(cite('javascript:alert(1)'),'literature').error,'url');const archive=runArchive(found,w.doc);archive.stores.runs[0].sources=[];assert.throws(()=>validateArchive(archive),/UNVERIFIED_SOURCE_LINK/);}finally{w.close();}
+});
+
+test('Situate uses an ephemeral production Seatline frame even when the caller/provider supports sessions',async()=>{
+ const w=await world();try{const config={...w.config,target:{path:'seatline',provider:'claude'},persistent:true,lens:'literature',operation:'situate'},preview=w.engine.preview(config);assert.equal(preview.request.session.mode,'none');assert.equal(preview.fits,true);const saved=await w.engine.start(config);assert.equal(saved.run.status,'completed');assert.equal(w.path.calls[0].request.kind,'search');assert.equal(w.path.calls[0].request.session.mode,'none');assert.equal(saved.run.session,null);}finally{w.close();}
 });
 
 test('Situate continuation preserves the original search-source proof for retained citations',async()=>{
@@ -103,5 +111,11 @@ test('workspace Ask-from-toolbar acknowledges one draft, restores a repeated han
  try{workspace=await createWorkspace(document.getElementById('host'),{store:w.store,engine:w.engine,client:{call:async m=>m==='discover'?w.path.discover():null},storage,changes});await workspace.ready;await workspace.setDocument(w.doc);const key='pending',intent={id:'ask-intent',docId:w.doc.id,version:w.doc.version,action:'Ask about this',selection:{spans:[{n:5,start:0,end:8}]}};await session.set({[key]:intent});
  const handoff=()=>acceptPassage({key,storage:session,store:w.store,engine:w.engine,show:()=>workspace.setDocument(w.doc),onPassage:(...args)=>workspace.passage(...args),onAsk:id=>workspace.openChat(id)}),result=await handoff();assert.ok(result.chatId);assert.equal((await session.get(key))[key],undefined);assert.equal(w.path.calls.length,0);const chat=(await w.store.all('chats'))[0];assert.equal(chat.scope.kind,'selection');assert.equal(document.querySelector('.chat-transcript').closest('.workspace-area').hidden,false);
  await session.set({[key]:intent});assert.equal((await handoff()).restored,true);assert.equal((await w.store.all('chats')).length,1);assert.equal((await session.get(key))[key],undefined);await workspace.restoreStudio({docId:w.doc.id,version:w.doc.version,chatId:chat.id,scope:chat.scope,area:'ask'});assert.equal(w.path.calls.length,0);
+ }finally{workspace?.dispose();w.close();d.window.close();}
+});
+
+test('passage actions do not inherit Situate search or a selected custom contract',async()=>{
+ const d=dom(),w=await world(),storage=memory();await storage.set({sharhCustomLenses:[{version:1,id:'local',name:'Local reading',instructions:'Read the supplied scope.',types:['note'],tier:'analysis'}]});let workspace;
+ try{workspace=await createWorkspace(document.getElementById('host'),{store:w.store,engine:w.engine,client:{call:async m=>m==='discover'?w.path.discover():null},storage,changes});await workspace.ready;await workspace.setDocument(w.doc);const lens=document.querySelector('.analysis-controls select');for(const choice of ['situate','custom:local']){lens.value=choice;const saved=await workspace.passage('Explain',{spans:[{n:5,start:0,end:8}]});assert.equal(saved.run.status,'completed');assert.equal(saved.run.config.customLens,undefined);assert.equal(saved.run.config.operation,undefined);assert.equal(w.path.calls.at(-1).request.kind,'analysis');}assert.equal(w.path.calls.length,2);
  }finally{workspace?.dispose();w.close();d.window.close();}
 });

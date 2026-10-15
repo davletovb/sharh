@@ -37,6 +37,7 @@ export class AnalysisEngine {
     });
   }
   async start({doc,scope,target,persistent=false,followRunId=null,...config},{signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction=false}={}) {
+    if(config.operation==='situate')persistent=false;
     await this.ready;if(signal?.aborted)throw cancelled();
     doc=structuredClone(doc);scope=structuredClone(scope);target=structuredClone(target);
     const path=this.path(target);

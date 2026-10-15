@@ -160,7 +160,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       if(action==='Ask about this'){await ready;return toolkit.askSelection({...configuration(),scope:buildScope(doc,{kind:'selection',spans:selection.spans})},{intentId,onAccepted});}
       if(!Object.hasOwn(PASSAGE_ACTIONS,action))throw Error('Unknown passage action.');await ready;
       const passageScope=buildScope(doc,{kind:'selection',spans:selection.spans}),quick=await modelPicker.forTier('quick'),lensName=action==='Logic'?'logic':'passage';
-      return run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:24,lens:lensName,action,focus:''},
+      return run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:24,lens:lensName,action,focus:'',operation:null,customLens:null},
         {providerInfo:quick.info,allowSavedExtraction:true,onBegin:async run=>{if(intentId)await engine.repository.write(run.id,{passageIntentId:intentId});await onAccepted?.(run);}});
     },
     openSaved:loadRun,openChat:toolkit.openChat,
