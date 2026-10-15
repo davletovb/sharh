@@ -482,3 +482,4 @@ button.recent span { font-weight: 400; }
 .convo-strip[data-idle='true'] .run-state { display: none; }
 .panel-body main.panel { width: 100%; margin: 0 auto; }
 .convo-card .finding.in-source-view { outline: 0; box-shadow: none; border-inline-start: 3px solid var(--gold); padding-inline-start: 10px; }
+.convo-card .analysis-view[data-lens='passage'] .record-group > h4 { display: none; }

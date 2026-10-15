@@ -17,8 +17,9 @@ import {menuButton,callout} from './components.mjs';
 import {element,button} from './dom.mjs';
 const $=id=>document.getElementById(id),client=new PathClient(),store=await openDocumentStore(),{engine}=createAnalysisEngine(store),preferences=new ReadingPreferences(chrome.storage.local);
 await preferences.load();document.documentElement.dataset.theme=preferences.value.theme;
+try{ownTabId=(await chrome.tabs.getCurrent())?.id??null;}catch{/* The side panel is not a tab. */}
 const {id:windowId}=await chrome.windows.getCurrent();const contextKey=`sharh:panel-context:${windowId}`;
-let sourceTab=null,current=null,workspace,lastSelection=null,pendingSource=null,connected=null,dismissed=false,activeTab=null;const autoTried=new Set();
+let ownTabId=null,anchor=null,earlierId=null,sourceTab=null,current=null,workspace,lastSelection=null,pendingSource=null,connected=null,dismissed=false,activeTab=null;const autoTried=new Set();
 chrome.runtime.onMessage.addListener((message,sender)=>{if(message?.type==='sharh:viewport'&&sender.id===chrome.runtime.id&&sender.tab?.id===sourceTab&&sender.frameId===0&&message.version===current?.version&&Array.isArray(message.numbers)&&message.numbers.every(n=>Number.isSafeInteger(n)&&n>0&&n<=current.blocks.length))workspace?.visibleParagraphs(message.numbers,{docId:current.id,version:current.version});});
 const say=text=>{$('read-state').textContent=text;};
 const fail=error=>say(error.hint??error.message);
@@ -59,9 +60,34 @@ function renderTab() {
   $('consent-page').textContent=!readable?'Open a web page or a PDF in this tab, or open a saved reading below.':activeTab?.title?`${activeTab.title} · ${host??'The page in this tab.'}`:host??'The page in this tab.';
   document.querySelector('.consent-note').hidden=!readable||pdf;
 }
+const stripHash=value=>value?String(value).split('#')[0]:null;
+// The panel follows the tab you are looking at. A reading belongs to the page it came from; once you
+// move to another tab, or the page itself moves on, the panel asks about the page in front of you instead.
+function leftReading(tab) {
+  if(!tab||!anchor)return false;
+  if(anchor.tabId===null){anchor={tabId:tab.id,url:stripHash(tab.url)};return false;}
+  if(tab.id!==anchor.tabId)return true;
+  const url=stripHash(tab.url);return !!(url&&anchor.url&&url!==anchor.url);
+}
 async function refreshTab() {
-  try{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});activeTab=tab??null;}catch{activeTab=null;}
-  dismissed=false;renderTab();render();await maybeAutoRead();
+  let tab=null;
+  try{[tab]=await chrome.tabs.query({active:true,currentWindow:true});}catch{/* No window to ask. */}
+  // When this page is itself open as a tab, keep following the page it was reading.
+  if(tab&&tab.id===ownTabId)tab=activeTab;
+  activeTab=tab??null;
+  if(current&&leftReading(activeTab)){
+    // Never cut an answer short because someone looked at another tab.
+    if(workspace?.active){setTimeout(refreshTab,1500);return;}
+    await closeDocument();
+  }
+  dismissed=false;renderTab();render();await offerEarlier();await maybeAutoRead();
+}
+// A page that was read before can be reopened without reading it again.
+async function offerEarlier() {
+  earlierId=null;$('open-earlier').hidden=true;
+  if(current||!activeTab?.url)return;
+  const url=stripHash(activeTab.url),rows=(await store.listDocuments()).filter(d=>!d.derived&&d.address&&stripHash(d.address)===url).sort((a,b)=>(b.updatedAt??0)-(a.updatedAt??0));
+  if(rows[0]){earlierId=rows[0].id;$('open-earlier').hidden=false;}
 }
 // Reading without being asked is a setting, and it never applies to a site Sharh cannot already see.
 async function maybeAutoRead() {
@@ -95,13 +121,14 @@ const picker=bindScopePicker(controls,{selection:async()=>{try{return await sour
   onChange:scope=>workspace?.setScope(scope),measure:(doc,scope)=>workspace?.measureScope(doc,scope),onChapterLevel:()=>store.saveDocument(current).catch(fail)});
 async function showDocument(doc,{tabId=null,selection=null}={}) {
   current=doc;sourceTab=tabId;lastSelection=selection;
+  anchor={tabId:tabId??activeTab?.id??null,url:tabId!==null?stripHash(doc.address):stripHash(activeTab?.url)};
   await workspace.setDocument(doc);await picker.setDocument(doc);
   $('enable-passages-bar').hidden=sourceTab===null || !doc.address || await hasSourceAccess(chrome,doc.address);
   await chrome.storage.session.set({[contextKey]:{docId:doc.id,version:doc.version,sourceTab}});
   render();
 }
 async function closeDocument() {
-  current=null;sourceTab=null;lastSelection=null;dismissed=false;
+  current=null;anchor=null;sourceTab=null;lastSelection=null;dismissed=false;
   await workspace.setDocument(null);picker.clear();await chrome.storage.session.remove(contextKey);
   say('');await showRecents();render();
 }
@@ -131,6 +158,7 @@ $('read-page').addEventListener('click',async()=> {
   try {await readActive();}catch(error){fail(error);}finally{$('read-page').disabled=false;}
 });
 $('not-now').addEventListener('click',()=>{dismissed=true;render();});
+$('open-earlier').addEventListener('click',()=>{(async()=>{const doc=earlierId&&await store.getDocument(earlierId);if(!doc)throw Error('That saved reading could not be found.');await showDocument(doc,{tabId:activeTab?.id??null});say('');})().catch(fail);});
 $('allow-source').addEventListener('click',()=>{
   if(!pendingSource)return;const pending=pendingSource;
   // Begin permission recovery in this click's user gesture.

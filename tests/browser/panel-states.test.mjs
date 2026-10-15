@@ -96,6 +96,22 @@ test('J: a connected panel asks before reading, offers Not now, and reads on its
     await panel.locator('#state-reading').waitFor();
     assert.equal(await panel.evaluate(async () => (await chrome.storage.session.get('sharh:read-intent'))['sharh:read-intent'] ?? null), null);
     report.checks.menuReadRequest = true;
+
+    // The panel follows the tab in front of you. Another page asks again instead of showing the old reading,
+    // and coming back to a page that was read offers its saved reading.
+    const other = await context.newPage();
+    await other.goto(server.url + '/corpus/fixtures/html/article-ru.html');
+    await other.bringToFront();
+    await panel.locator('#state-consent').waitFor();
+    assert.equal(await panel.locator('#state-reading').isVisible(), false);
+    assert.equal(await panel.locator('#open-earlier').isVisible(), false);
+    assert.equal(await panel.locator('#read-page').isVisible(), true);
+    await source.bringToFront();
+    await panel.locator('#open-earlier').waitFor();
+    await panel.locator('#open-earlier').click();
+    await panel.locator('#state-reading').waitFor();
+    assert.match(await panel.locator('.convo-title').textContent(), /\S/);
+    report.checks.followsTheTab = true;
     assert.deepEqual(report.errors, []);
     report.passed = true;
   } finally {

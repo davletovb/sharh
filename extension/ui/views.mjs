@@ -37,11 +37,11 @@ export function createAnalysisView(container,{lens='summary',doc,onReference=()=
   function append(entry) {
     records.push(entry);const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;
-    const name=r.title??r.label??r.term??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
+    const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
     title.append(button(name,()=>inspect(entry),'inspect-finding'));card.append(title);
     const text=r.gist??r.gloss??r.text;if(text){const p=element('p',text,'reading-text');p.dir='auto';card.append(p);}
     if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
-    if(r.src)card.append(element('p',r.src,'source-term'));if(r.tr)card.append(element('p',r.tr,'translation'));
+    if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
     if(r.basis)card.append(element('span',r.basis,'basis '+r.basis));
     if(r.t==='edge')card.append(element('p',`${r.from} → ${r.to} · ${readable(r.rel)}`));
     if(r.parent)card.append(element('p',`Part of ${r.parent}`,'note'));
