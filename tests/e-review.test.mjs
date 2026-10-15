@@ -106,7 +106,7 @@ test('the content toolbar keeps extraction/spans together across explicit reader
   const d=dom('<article><h1>Article</h1><p id="article">'+('Public evidence and a lengthy argument. '.repeat(30))+'</p></article><aside><p id="side">A visible sidebar appendix.</p></aside>');let listener;const calls=[],oldChrome=globalThis.chrome;
   // Open shadow roots only in this isolated DOM test so the production buttons can be activated.
   const attach=d.window.Element.prototype.attachShadow;d.window.Element.prototype.attachShadow=function(){return attach.call(this,{mode:'open'});};
-  globalThis.chrome={runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}},async sendMessage(message){calls.push(message);return {result:true};}}};delete globalThis.__sharhReader;
+  globalThis.chrome={storage:{local:{async get(){return {};}},onChanged:{addListener(){}}},runtime:{id:'test',onMessage:{addListener(fn){listener=fn;}},async sendMessage(message){calls.push(message);return {result:true};}}};delete globalThis.__sharhReader;
   const send=message=>new Promise(resolve=>listener(message,{id:'test'},resolve));
   try{
     await import('../extension/content/reader.mjs?review');const article=await send({type:'sharh:reader:extract',mode:'article'});assert.ok(article.result.extraction.blocks.length);

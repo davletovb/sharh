@@ -40,3 +40,13 @@ export async function enablePassages(chrome,address,tabId) {
   const granted=await chrome.permissions.request({origins:[sourceOrigin(address)]});if(!granted)throw Error('Site access was not granted.');
   await chrome.scripting.executeScript({target:{tabId},files:['content/reader.mjs']});return true;
 }
+// A dot on the toolbar button while a chosen passage waits in the side panel.
+export function installPassageBadge(chrome) {
+  const refresh=async()=>{
+    const all=await chrome.storage.session.get(null),waiting=Object.keys(all).some(k=>k.startsWith('sharh:passage:')&&all[k]);
+    await chrome.action.setBadgeText({text:waiting?'•':''});
+    if(waiting)await chrome.action.setBadgeBackgroundColor({color:'#7a5710'});
+  };
+  chrome.storage.onChanged.addListener((changes,area)=>{if(area==='session'&&Object.keys(changes).some(k=>k.startsWith('sharh:passage:')))refresh().catch(()=>{});});
+  refresh().catch(()=>{});
+}

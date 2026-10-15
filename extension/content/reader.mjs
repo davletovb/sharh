@@ -8,7 +8,7 @@ if (!globalThis.__sharhReader) {
   let current;const runtime=chrome.runtime,view=document.defaultView;
   const viewport=new ParagraphViewport((numbers,source)=>Promise.resolve(runtime.sendMessage({type:'sharh:viewport',version:source.version,numbers})).catch(()=>{}),{Observer:view.IntersectionObserver,schedule:fn=>setTimeout(fn,100)});
   const scrolled=()=>viewport.changed();document.addEventListener('scroll',scrolled,{capture:true,passive:true});view.addEventListener('resize',scrolled);
-  const toolbar=installSelectionToolbar({document,shadow:true,
+  const toolbar=installSelectionToolbar({document,shadow:true,theme:'system',
     onPrepare:()=>chrome.runtime.sendMessage({type:'sharh:passage:prepare'}).catch(()=>{}),
     enabled:async()=>{const response=await chrome.runtime.sendMessage({type:'sharh:passage:enabled'});return response?.result===true;},
     // Capturing a DOM range is cheap. Extraction happens only after an action,
@@ -16,6 +16,10 @@ if (!globalThis.__sharhReader) {
     selection:range=>({range,options:{mode:current?.mode??'article',region:current?.region??null}}),
     resolveSelection:async({range,options})=>{const result=await extractSelectedHTML(document,{...options,range});if(!result.selection?.spans?.length)throw Error('Select readable source text again.');return result;},
     onAction:(action,{selection,extraction})=>chrome.runtime.sendMessage({type:'sharh:passage:invoke',action,selection,extraction}).then(response=>{if(response?.error)throw Error(response.error);})});
+  // The bar follows the reader's chosen theme, and "System" follows the page's colour scheme.
+  const applyTheme=value=>toolbar.setTheme(['ink','parchment'].includes(value?.theme)?value.theme:'system');
+  chrome.storage.local.get('sharhReading').then(v=>applyTheme(v.sharhReading)).catch(()=>{});
+  chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&changes.sharhReading)applyTheme(changes.sharhReading.newValue);});
   chrome.runtime.onMessage.addListener((message, sender, reply) => {
     if (sender.id !== chrome.runtime.id || !message?.type?.startsWith('sharh:reader:')) return;
     (async () => {

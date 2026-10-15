@@ -71,3 +71,14 @@ test('a chip group marks exactly one choice as pressed', async () => {
     assert.ok([...group.buttons.values()].every(b => b.getAttribute('aria-pressed') === 'false'));
   } finally { dom.window.close(); }
 });
+
+test('the toolbar button shows a dot while a chosen passage waits in the side panel, and clears it afterwards',async()=> {
+  const {installPassageBadge}=await import('../extension/lib/passages.mjs');
+  const store={},badge=[],listeners=[];
+  const chrome={storage:{session:{async get(){return structuredClone(store);}},onChanged:{addListener:f=>listeners.push(f)}},action:{async setBadgeText(v){badge.push(v.text);},async setBadgeBackgroundColor(){}}};
+  installPassageBadge(chrome);await new Promise(r=>setImmediate(r));
+  store['sharh:passage:1']={id:'a'};listeners[0]({'sharh:passage:1':{newValue:{id:'a'}}},'session');await new Promise(r=>setImmediate(r));
+  delete store['sharh:passage:1'];listeners[0]({'sharh:passage:1':{oldValue:{id:'a'}}},'session');await new Promise(r=>setImmediate(r));
+  listeners[0]({other:{newValue:1}},'session');listeners[0]({'sharh:passage:1':{newValue:1}},'local');await new Promise(r=>setImmediate(r));
+  assert.deepEqual(badge,['','•','']);
+});

@@ -1,6 +1,25 @@
 // Shared selection interaction for source pages and the PDF/local-text reader.
-export function installSelectionToolbar({document,selection,resolveSelection,onAction,enabled=async()=>true,onPrepare=()=>{},shadow=false}) {
-  let host,bar,saved,revision=0,closed=false,allowed=false,shown=null,dismissed=null;
+import {icon} from './icons.mjs';
+// The toolbar lives in a closed shadow root on other people's pages, so it carries its own tokens.
+const LIGHT='--bg:#fffbf2;--text:#272a2b;--muted:#575d61;--line:#d9ccae;--gold:#7a5710;--on-gold:#fffaf0;--chip:#ece2cb;--focus:#0b5cad;--shadow:#2a24124d;';
+const DARK='--bg:#151f2a;--text:#f1e8d6;--muted:#a9b6c2;--line:#2b3b4b;--gold:#e7c27a;--on-gold:#1a1405;--chip:#1d2a38;--focus:#a8dcff;--shadow:#000a;';
+export const TOOLBAR_CSS=`:host{all:initial;position:fixed;z-index:2147483647;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;${LIGHT}}
+:host([data-theme=ink]){${DARK}}
+@media(prefers-color-scheme:dark){:host(:not([data-theme=parchment]):not([data-theme=ink])){${DARK}}}
+[hidden]{display:none!important}
+.passage-toolbar,.passage-toast{display:flex;flex-wrap:wrap;align-items:center;gap:2px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:5px 5px 5px 10px;box-shadow:0 10px 30px var(--shadow);max-width:min(400px,calc(100vw - 24px))}
+.passage-toast{padding:9px 14px;font-weight:550}
+.passage-brand{color:var(--gold);width:18px;height:18px;flex:none;margin-inline-end:4px}
+button{font:inherit;font-size:13px;font-weight:600;color:var(--text);background:transparent;border:1px solid transparent;border-radius:9px;padding:5px 10px;margin:0;cursor:pointer;min-height:34px}
+button:hover{background:var(--chip)}
+button.primary{background:var(--gold);color:var(--on-gold)}
+button.primary:hover{filter:brightness(1.08)}
+button.close{margin-inline-start:auto;padding:5px;min-width:34px;color:var(--muted)}
+button.close svg{width:16px;height:16px;display:block;margin:auto}
+button:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.passage-context{flex-basis:100%;margin:0;padding:0 6px 3px 26px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}`;
+export function installSelectionToolbar({document,selection,resolveSelection,onAction,enabled=async()=>true,onPrepare=()=>{},shadow=false,theme='system'}) {
+  let host,bar,toast,toastTimer,saved,revision=0,closed=false,allowed=false,shown=null,dismissed=null;
   function hide(){bar?.setAttribute('hidden','');}
   function capture() {
     const selected=document.defaultView.getSelection();if(!selected?.rangeCount || selected.isCollapsed || !selected.toString().trim())return null;
@@ -13,21 +32,24 @@ export function installSelectionToolbar({document,selection,resolveSelection,onA
   function create() {
     if(bar)return;host=document.createElement('div');host.dataset.sharhToolbar='true';
     const root=shadow?host.attachShadow({mode:'closed'}):host;
-    if(shadow){const style=document.createElement('style');style.textContent=':host{all:initial;position:fixed;z-index:2147483647;font:14px/1.5 system-ui,sans-serif;color:#252a2e} [hidden]{display:none!important}.passage-toolbar{background:#fffaf0;color:#252a2e;border:1px solid #735414;border-radius:8px;padding:8px;box-shadow:0 8px 28px #0004;max-width:calc(100vw - 24px)}button{font:inherit;background:#735414;color:#fff;border:0;border-radius:5px;padding:7px;margin:3px;cursor:pointer;min-height:36px}button:focus-visible{outline:3px solid #145d99;outline-offset:2px}p{font-size:12px;margin:2px 0} @media(prefers-color-scheme:dark){.passage-toolbar{background:#192630;color:#f1e9da}button{background:#e8c477;color:#16212c}}';root.append(style);}
+    if(shadow){host.dataset.theme=theme;const style=document.createElement('style');style.textContent=TOOLBAR_CSS;root.append(style);}
     bar=document.createElement('div');bar.className='passage-toolbar';bar.setAttribute('role','toolbar');bar.setAttribute('aria-label','Passage actions');
-    const hint=document.createElement('p');hint.className='passage-context';bar.append(hint);
+    const hint=document.createElement('p');hint.className='passage-context';
+    const brand=icon('star',{size:18,className:'passage-brand',doc:document});bar.append(brand);
+    toast=document.createElement('div');toast.className='passage-toast';toast.setAttribute('role','status');toast.hidden=true;
     for(const action of ['Explain','Translate','Logic','Define','Ask about this']) {
-      const b=document.createElement('button');b.type='button';b.textContent=action;
+      const b=document.createElement('button');b.type='button';b.textContent=action;if(action==='Explain')b.className='primary';
       b.addEventListener('pointerdown',e=>e.preventDefault());
-      b.addEventListener('click',()=>{const chosen=saved,snapshot=shown;dismiss();if(chosen)Promise.resolve().then(async()=>{
+      b.addEventListener('click',()=>{const chosen=saved,snapshot=shown;dismiss();if(chosen){toast.textContent='Sent to Sharh. The answer opens in the side panel.';toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2200);}if(chosen)Promise.resolve().then(async()=>{
         if(snapshot?.range.toString()!==snapshot?.text)throw Error('The selected text changed. Select the passage again.');
         const value=resolveSelection?await resolveSelection(chosen):chosen;
         if(snapshot?.range.toString()!==snapshot?.text)throw Error('The selected text changed. Select the passage again.');
         return onAction(action,value);
-      }).catch(error=>{hint.textContent=error.message;shown=snapshot;bar.hidden=false;});});bar.append(b);
+      }).catch(error=>{toast.hidden=true;hint.textContent=error.message;shown=snapshot;bar.hidden=false;});});bar.append(b);
     }
+    const close=document.createElement('button');close.type='button';close.className='close';close.setAttribute('aria-label','Dismiss');close.title='Dismiss';close.append(icon('close',{size:16,doc:document}));close.addEventListener('pointerdown',e=>e.preventDefault());close.addEventListener('click',()=>dismiss());bar.append(close,hint);
     bar.addEventListener('keydown',e=>{const buttons=[...bar.querySelectorAll('button')],at=buttons.indexOf(root.activeElement??document.activeElement);if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){e.preventDefault();buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(at+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length].focus();}if(e.key==='Escape')dismiss();});
-    root.append(bar);document.body.append(host);hide();
+    root.append(bar,toast);document.body.append(host);hide();
   }
   async function update(event) {
     if(closed || event?.composedPath().includes(host))return;
@@ -48,5 +70,5 @@ export function installSelectionToolbar({document,selection,resolveSelection,onA
   // A site grant/navigation may finish injecting after the user has selected text.
   queueMicrotask(()=>update().catch(hide));
   const escape=event=>{if(event.key==='Escape')dismiss();};document.addEventListener('keydown',escape);
-  return {hide(){revision++;allowed=false;shown=null;hide();},dispose(){closed=true;revision++;host?.remove();document.removeEventListener('pointerup',listen);document.removeEventListener('keyup',listen);document.removeEventListener('keydown',escape);}};
+  return {hide(){revision++;allowed=false;shown=null;hide();},setTheme(next){theme=next;if(host)host.dataset.theme=next;},dispose(){closed=true;clearTimeout(toastTimer);revision++;host?.remove();document.removeEventListener('pointerup',listen);document.removeEventListener('keyup',listen);document.removeEventListener('keydown',escape);}};
 }

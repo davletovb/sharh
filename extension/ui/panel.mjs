@@ -1,6 +1,6 @@
 import {watchPanelContext} from './panel-context.mjs';
 import {PathClient} from './client.mjs';
-import {readerURL,isPDFAddress,hasSourceAccess,sourceOrigin,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
+import {READ_INTENT,readerURL,isPDFAddress,hasSourceAccess,sourceOrigin,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
 import {enablePassages,passageKey} from '../lib/passages.mjs';
 import {createDocument} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
@@ -162,6 +162,14 @@ $('check').addEventListener('click',()=>checkConnection({fresh:true}));
 $('open-connection').addEventListener('click',()=>openSettings('connection'));
 export const prepare=(trigger,target)=>client.call('prepare',{trigger,target});
 const stopWatching=watchPanelContext(client);
+// "Read this page" in the right-click menu is itself the request to read.
+async function consumeReadIntent(){
+  const intent=(await chrome.storage.session.get(READ_INTENT))[READ_INTENT];if(!intent)return;
+  await chrome.storage.session.remove(READ_INTENT);
+  if(Date.now()-intent.at>30000)return;
+  await refreshTab();if(activeTab?.id===intent.tabId&&!current)await readTab(activeTab).catch(fail);
+}
+chrome.storage.onChanged.addListener((changes,area)=>{if(area==='session'&&changes[READ_INTENT]?.newValue)consumeReadIntent().catch(fail);});
 chrome.tabs.onActivated.addListener(refreshTab);
 chrome.tabs.onUpdated.addListener((id,change)=>{if(id===activeTab?.id&&(change.status==='complete'||change.url))refreshTab();});
 chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&changes.sharhReading){preferences.load().then(v=>{document.documentElement.dataset.theme=v.theme;maybeAutoRead();});checkConnection();}});
@@ -190,3 +198,4 @@ render();
 await refreshTab();
 checkConnection();
 await consumePassage().catch(fail);
+await consumeReadIntent().catch(fail);

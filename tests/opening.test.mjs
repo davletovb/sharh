@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {sourceURL,sourceOrigin,isPDFAddress,readerURL,installOpening,hasSourceAccess,recoverableAddress} from '../extension/lib/opening.mjs';
+import {createReaderMenus,READ_INTENT,sourceURL,sourceOrigin,isPDFAddress,readerURL,installOpening,hasSourceAccess,recoverableAddress} from '../extension/lib/opening.mjs';
 const event=()=>({listeners:[],addListener(fn){this.listeners.push(fn);}});
 test('PDF addressing is URL-aware and only permits web/file sources',()=> {
   for(const url of ['https://example.org/paper.PDF?q=one#page=2','file:///tmp/my%20book.pdf','https://example.org/a%2Epdf']) assert.equal(isPDFAddress(url),true);
@@ -49,4 +49,18 @@ test('PDF opening honours setting, granted sites, file access, navigation races 
   chrome.contextMenus.onClicked.listeners[0]({menuItemId:'sharh-open-pdf',linkUrl:'https://example.org/download?id=book'},{id:1,url:'https://example.org/'});
   await new Promise(r=>setImmediate(r)); assert.equal(updates.length,3);
   assert.equal(new URL(updates[2].url).searchParams.get('source'),'https://example.org/download?id=book');
+});
+
+test('the right-click menu groups Sharh actions, and "Read this page" opens the panel with a read request instead of a new tab',async()=> {
+  const items=[],session={},opened=[],created=[];
+  const chrome={runtime:{id:'test',getURL:p=>`chrome-extension://test/${p}`,onMessage:event()},
+    storage:{local:{async get(){return {};}},session:{async get(){return session;},async set(v){Object.assign(session,v);},async remove(){}}},
+    extension:{async isAllowedFileSchemeAccess(){return true;}},permissions:{async contains(){return true;}},
+    tabs:{onUpdated:event(),onRemoved:event(),async get(id){return {id};},async update(){},async create(v){created.push(v);}},action:{onClicked:event()},
+    sidePanel:{async open(v){opened.push(v);},async setPanelBehavior(){}},contextMenus:{onClicked:event(),async removeAll(){},create(v){items.push(v);}}};
+  await createReaderMenus(chrome);installOpening(chrome);
+  assert.deepEqual(items.map(i=>[i.id,i.parentId??null,i.title]),[['sharh',null,'Sharh'],['sharh-read-page','sharh','Read this page'],['sharh-open-pdf','sharh','Open this PDF in Sharh']]);
+  chrome.contextMenus.onClicked.listeners[0]({menuItemId:'sharh-read-page'},{id:7,url:'https://example.org/a'});
+  await new Promise(r=>setImmediate(r));
+  assert.deepEqual(opened,[{tabId:7}]);assert.equal(created.length,0);assert.equal(session[READ_INTENT].tabId,7);
 });

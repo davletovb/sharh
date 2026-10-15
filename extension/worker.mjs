@@ -5,7 +5,7 @@ import {installOpening,createReaderMenus} from './lib/opening.mjs';
 import {openDocumentStore} from '../src/documents/store.mjs';
 import {MaintenanceDispatcher} from '../src/analysis/maintenance.mjs';
 import {SESSION_HANDLE} from '../src/paths/limits.mjs';
-import {installPassages} from './lib/passages.mjs';
+import {installPassages,installPassageBadge} from './lib/passages.mjs';
 installOpening(chrome);
 const preferences = new SeatlinePreferences(chrome.storage);
 const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), {
@@ -13,6 +13,7 @@ const client = new NativeSeatline((host) => chrome.runtime.connectNative(host), 
 });
 const path = new SeatlinePath({client, policy: () => preferences.value});
 installPassages(chrome,{prepare:async()=>{const {sharhReading}=await chrome.storage.local.get('sharhReading');await path.prepareFor('passage-toolbar',sharhReading?.tiers?.quick??{path:'seatline',provider:'claude'});}});
+installPassageBadge(chrome);
 const databases=new Map();
 function documentServices(name='sharh') {
   if(typeof name!=='string' || !name || name.length>128)throw Error('INVALID_DATABASE');

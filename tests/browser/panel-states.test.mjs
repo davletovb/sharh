@@ -85,6 +85,17 @@ test('J: a connected panel asks before reading, offers Not now, and reads on its
     await panel.locator('#read-page').click();
     await panel.locator('#state-reading').waitFor();
     report.checks.readsOnRequest = true;
+
+    // "Read this page" in the right-click menu is itself the request, so it reads without a second question.
+    await panel.getByRole('button', {name: 'Sharh menu'}).click();
+    await panel.getByRole('menuitem', {name: 'Close this reading'}).click();
+    await panel.locator('#state-consent').waitFor();
+    await source.bringToFront();
+    const tabId = await panel.evaluate(async origin => (await chrome.tabs.query({url: origin + '/*'}))[0].id, server.url);
+    await panel.evaluate(tabId => chrome.storage.session.set({'sharh:read-intent': {tabId, at: Date.now()}}), tabId);
+    await panel.locator('#state-reading').waitFor();
+    assert.equal(await panel.evaluate(async () => (await chrome.storage.session.get('sharh:read-intent'))['sharh:read-intent'] ?? null), null);
+    report.checks.menuReadRequest = true;
     assert.deepEqual(report.errors, []);
     report.passed = true;
   } finally {

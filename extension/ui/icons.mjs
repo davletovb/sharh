@@ -22,8 +22,8 @@ const PATHS = {
   stop: ['M7 7h10v10H7Z'],
   open: ['M4 4h7', 'M4 4v7', 'M4 4l7 7', 'M20 20h-7', 'M20 20v-7', 'M20 20l-7-7']
 };
-export function icon(name, {size = 18, className = ''} = {}) {
-  const svg = document.createElementNS(NS, 'svg');
+export function icon(name, {size = 18, className = '', doc = globalThis.document} = {}) {
+  const svg = doc.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('width', String(size));
   svg.setAttribute('height', String(size));
@@ -36,7 +36,7 @@ export function icon(name, {size = 18, className = ''} = {}) {
   svg.setAttribute('stroke-linejoin', 'round');
   if (className) svg.setAttribute('class', className);
   for (const d of PATHS[name] ?? []) {
-    const path = document.createElementNS(NS, 'path');
+    const path = doc.createElementNS(NS, 'path');
     path.setAttribute('d', d);
     svg.append(path);
   }

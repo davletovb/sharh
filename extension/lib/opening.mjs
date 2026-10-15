@@ -37,6 +37,7 @@ export async function openCurrentPDF(chrome, tab, source = tab?.url) {
   sourceURL(source); // Explicit opening also supports PDF endpoints without a .pdf suffix.
   return chrome.tabs.update(tab.id, {url:readerURL(chrome.runtime,{source,tabId:tab.id})});
 }
+export const READ_INTENT = 'sharh:read-intent';
 export function installOpening(chrome) {
   const pending = new Set(), bypass = new Map(), navigation=new Map(), queues=new Map();
   const key=tabId=>`sharh:reader-navigation:${tabId}`;
@@ -93,7 +94,11 @@ export function installOpening(chrome) {
   });
   chrome.contextMenus.onClicked.addListener((info,tab) => {
     if (info.menuItemId === 'sharh-open-pdf') openCurrentPDF(chrome,tab,info.linkUrl || info.pageUrl || tab.url).catch(() => {});
-    if (info.menuItemId === 'sharh-read-page') chrome.tabs.create({url:readerURL(chrome.runtime,{tabId:tab.id})}).catch(() => {});
+    if (info.menuItemId === 'sharh-read-page' && Number.isInteger(tab?.id)) {
+      // Choosing this menu item is the request to read, so the panel does not ask again.
+      chrome.sidePanel.open({tabId:tab.id}).catch(() => {});
+      chrome.storage.session?.set({[READ_INTENT]:{tabId:tab.id,at:Date.now()}}).catch(() => {});
+    }
   });
   chrome.runtime.onMessage.addListener((message,sender,reply) => {
     if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL('')) || message?.type !== 'sharh:chrome-viewer') return;
@@ -111,6 +116,8 @@ export function installOpening(chrome) {
 export async function createReaderMenus(chrome) {
   await chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:false});
   await chrome.contextMenus.removeAll();
-  chrome.contextMenus.create({id:'sharh-open-pdf',title:'Open PDF in Sharh',contexts:['page','link'],documentUrlPatterns:['http://*/*','https://*/*','file:///*']});
-  chrome.contextMenus.create({id:'sharh-read-page',title:'Read page in Sharh',contexts:['page','selection'],documentUrlPatterns:['http://*/*','https://*/*','file:///*']});
+  const documentUrlPatterns=['http://*/*','https://*/*','file:///*'];
+  chrome.contextMenus.create({id:'sharh',title:'Sharh',contexts:['page','selection','link'],documentUrlPatterns});
+  chrome.contextMenus.create({id:'sharh-read-page',parentId:'sharh',title:'Read this page',contexts:['page','selection'],documentUrlPatterns});
+  chrome.contextMenus.create({id:'sharh-open-pdf',parentId:'sharh',title:'Open this PDF in Sharh',contexts:['page','link'],documentUrlPatterns});
 }

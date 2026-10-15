@@ -258,9 +258,15 @@ bdi { unicode-bidi: isolate; }
 .analysis-view[data-lens='compare'], .analysis-view[data-lens='meta-synthesis'] { overflow-x: auto; }
 
 /* ───────────────────────── Compatibility with the page toolbar rendered in the reader ───────────────────────── */
-.passage-toolbar { position: fixed; z-index: 100; background: var(--surface); color: var(--text); border: 1px solid var(--gold); box-shadow: var(--shadow); border-radius: 12px; padding: 8px; max-width: calc(100vw - 24px); }
-.passage-toolbar p { font-size: 12px; margin: 2px 0; }
-.passage-toolbar button { font-size: 13px; min-height: 34px; }
+.passage-toolbar { position: fixed; z-index: 100; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; background: var(--surface); color: var(--text); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 14px; padding: 5px 5px 5px 10px; max-width: min(400px, calc(100vw - 24px)); }
+.passage-toolbar[hidden], .passage-toast[hidden] { display: none; }
+.passage-toolbar .passage-brand { color: var(--gold); flex: none; margin-inline-end: 4px; }
+.passage-toolbar button { font-size: 13px; min-height: 34px; padding: 5px 10px; border-color: transparent; background: transparent; }
+.passage-toolbar button:hover { background: var(--surface-2); }
+.passage-toolbar button.primary { background: var(--gold); color: var(--on-gold); }
+.passage-toolbar button.close { margin-inline-start: auto; padding: 5px; min-width: 34px; color: var(--muted); }
+.passage-toolbar .passage-context { flex-basis: 100%; margin: 0; padding: 0 6px 3px 26px; font-size: 12px; color: var(--muted); }
+.passage-toast { position: fixed; z-index: 100; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 9px 14px; box-shadow: var(--shadow); }
 
 /* ───────────────────────── Settings ───────────────────────── */
 .settings-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
