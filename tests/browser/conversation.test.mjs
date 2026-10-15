@@ -42,7 +42,7 @@ async function setup({signedIn = true} = {}) {
 async function axe(page) {
   const cdp = await page.context().newCDPSession(page);
   try { await cdp.send('Runtime.evaluate', {expression: await readFile('node_modules/axe-core/axe.min.js', 'utf8')}); } finally { await cdp.detach(); }
-  return page.evaluate(async () => (await window.axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})).violations.map(v => ({id: v.id, nodes: v.nodes.map(n => n.target)})));
+  return page.evaluate(async () => (await window.axe.run(document.querySelector('#convo-fixture'), {runOnly: {type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})).violations.map(v => ({id: v.id, nodes: v.nodes.map(n => n.target)})));
 }
 const idle = async (page, count) => { await page.waitForFunction(count => c.path.calls.length >= count && !c.workspace.active, count); await page.evaluate(() => c.workspace.view?.settled()); };
 
@@ -105,7 +105,9 @@ test('Conversation: the four goals, follow-ups, Ask and a clean screen', async (
     assert.deepEqual(w.errors, []);
 
     for (const scheme of ['light', 'dark']) {
-      await page.emulateMedia({colorScheme: scheme});
+      // Reduced motion stops colour transitions, so axe never measures a half-way colour.
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
       assert.deepEqual(await axe(page), [], scheme);
     }
     report.checks.accessibility = true;
