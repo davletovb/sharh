@@ -7,6 +7,7 @@ export async function deepRead(engine,config,options={}){const saved=[];for(cons
 export async function secondReader(engine,config,otherTarget,options={}){
   if(!['themes','logic'].includes(config.lens))throw Error('Choose Themes or Logic for Second reader.');
   if(['path','provider','model','effort','serviceTier'].every(k=>(config.target[k]??null)===(otherTarget[k]??null)))throw Error('Choose two different reader targets.');
+  for(const target of [config.target,otherTarget]){const info=(await engine.path(target).discover()).find(p=>p.provider===target.provider);if(!info?.available || !info.signedIn || !info.accepted || !info.capabilities?.toolIsolation)throw Error('Choose two available, signed-in, accepted readers before starting.');}
   const outputs=[];for(const target of [config.target,otherTarget]){if(options.signal?.aborted)throw Error('Second reader stopped. Completed readings are saved.');await options.onLens?.(config.lens);outputs.push(await engine.start({...config,target,persistent:false,followRunId:null},options));}
   if(outputs.some(s=>s.run.status!=='completed'))throw Error('A reader returned a partial/invalid response. Both readings remain in history; retry before alignment.');
   const alignment=config.lens==='themes'?alignThemes(outputs[0].records,outputs[1].records,config.scope.blocks.map(b=>b.n)):alignLogic(outputs[0].records,outputs[1].records),id=crypto.randomUUID();

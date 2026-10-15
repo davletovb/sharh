@@ -24,6 +24,7 @@ export function promptIdentity(scope,config,{rules=rulesFor(config),instructions
   return hash({promptVersion:PROMPT_VERSION,scope:scopeDescriptor(scope),config,rules,instructions,contract});
 }
 export function assemblePrompt(doc,scope,{lens,action=null,language='en',budget=24,focus='',frame='',session={mode:'none'},priority='interactive',tier='analysis',cleanupGroup=`doc-${doc.id.slice(0,16)}`,customLens=null,operation=null,question='',history=[]}={}) {
+  if(customLens && !lens.startsWith('custom:'))throw Error('INVALID_CUSTOM_LENS');
   if(customLens)customLens=customDefinition(customLens);allowedTypes(lens,customLens);
   if(typeof language!=='string' || !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8}){0,3}$/.test(language))throw Error('INVALID_LANGUAGE');
   if(!Number.isSafeInteger(budget) || budget<1 || budget>200 || typeof focus!=='string' || typeof frame!=='string' || focus.length>4000 || frame.length>4000)throw Error('INVALID_TASK');
