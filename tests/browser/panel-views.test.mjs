@@ -11,6 +11,36 @@ async function start(){const profile=await mkdtemp(join(tmpdir(),'sharh-e-')),ex
 async function waitForValue(page,read){const deadline=Date.now()+20000;do{const value=await page.evaluate(read);if(value)return value;await new Promise(r=>setTimeout(r,50));}while(Date.now()<deadline);throw Error('Timed out waiting for stored passage context.');}
 async function axe(page){const cdp=await page.context().newCDPSession(page);try{await cdp.send('Runtime.evaluate',{expression:await readFile('node_modules/axe-core/axe.min.js','utf8')});}finally{await cdp.detach();}return page.evaluate(async()=>{const result=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}});return {violations:result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,html:n.html,summary:n.failureSummary}))})),incomplete:result.incomplete.map(v=>({id:v.id,nodes:v.nodes.length})),passes:result.passes.length};});}
 
+test('passage clicks use the contract and saved selection; invalid Quick responses explain failure and retry with the selected model',async()=>{
+ const {profile,context}=await start(),report={checks:{},errors:[]};
+ try{
+  const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));await page.goto(base+'/ui/reader.html');await page.locator('.workspace-nav').waitFor();await installBrowserTestAPI(page);
+  await page.evaluate(async()=>{
+   const {openDocumentStore,exampleDocument,AnalysisEngine,FakePath,createWorkspace,installSelectionToolbar}=SharhTest,store=await openDocumentStore({name:'passage-recovery'}),doc=await exampleDocument();await store.saveDocument(doc);
+   const host=document.createElement('main');host.id='passage-fixture';const source=document.createElement('p');source.id='passage-source';source.textContent=doc.blocks[4].text;document.body.append(source,host);
+   const info={path:'seatline',provider:'claude',available:true,signedIn:true,accepted:true,models:[],capabilities:{streaming:true,sessions:false,toolIsolation:true,effort:['low','medium']}},data={sharhReading:{language:'uz-Latn',tiers:{analysis:{path:'seatline',provider:'claude',model:'sonnet',effort:'medium'}}}},storage={async get(k){return {[k]:structuredClone(data[k])};},async set(v){Object.assign(data,structuredClone(v));}};
+   const path=new FakePath({sessions:false,wait:async()=>{},scriptFor:({target,request})=>{
+    if(window.p.fail && target.model==='haiku')return {text:'{"text":"Missing record tag","refs":[5]}\n{"t":"end"}\n'};
+    const task=JSON.parse(request.task.split('\n')[1]),contract=JSON.parse(request.task.split('SHARH_OUTPUT_CONTRACT\n')[1]),scope=JSON.parse(request.document),block=scope.blocks.find(b=>b.selected),type=task.lens==='logic'?'node':'note',values={id:'n1',kind:'claim',text:block.selected.map(s=>s.text).join(' / '),refs:[block.n],basis:'inferred'};
+    const record=Object.fromEntries(Object.entries(contract.types[type]).filter(([,s])=>!s.type.endsWith('?')).map(([k,s])=>[k,s.type==='literal'?s.value:values[k]]));record.refs=[block.n];return {text:JSON.stringify(record)+'\n'+JSON.stringify({t:contract.types.end.t.value})+'\n'};
+   }});path.discover=async()=>[info];const engine=new AnalysisEngine({store,paths:{seatline:path}}),workspace=await createWorkspace(host,{store,engine,client:{call:async m=>m==='discover'?[info]:null},storage,changes:{addListener(){},removeListener(){}}});await workspace.ready;await workspace.setDocument(doc);
+   const toolbar=installSelectionToolbar({document,selection:range=>({spans:[{n:5,start:range.startOffset,end:range.endOffset}]}),onAction:(...args)=>workspace.passage(...args)});window.p={store,doc,path,engine,workspace,toolbar,fail:false};
+  });
+  const fixture=page.locator('#passage-fixture'),toolbar=page.getByRole('toolbar',{name:'Passage actions'});
+  async function select(start,end){await page.evaluate(({start,end})=>{const r=document.createRange(),node=document.getElementById('passage-source').firstChild;r.setStart(node,start);r.setEnd(node,end);getSelection().removeAllRanges();getSelection().addRange(r);document.dispatchEvent(new MouseEvent('pointerup',{bubbles:true}));},{start,end});await toolbar.waitFor();}
+  for(const [i,action]of ['Explain','Translate','Logic','Define'].entries()){
+   await select(i,i+8);await toolbar.getByRole('button',{name:action,exact:true}).click();await page.waitForFunction(count=>p.path.calls.length===count && !p.workspace.active,i+1);await page.evaluate(()=>p.workspace.view.settled());
+   assert.match(await fixture.locator('.run-state').textContent(),/Completed/);const task=await page.evaluate(()=>JSON.parse(p.path.calls.at(-1).request.task.split('\n')[1]));assert.equal(task.action,action);
+  }report.checks.fourClickedActions=true;
+  await page.evaluate(()=>p.fail=true);await select(0,7);await toolbar.getByRole('button',{name:'Translate',exact:true}).click();await page.waitForFunction(()=>p.path.calls.length===6 && !p.workspace.active);
+  assert.match(await fixture.locator('.run-state').textContent(),/Response format failed/);await fixture.locator('.run-diagnostics summary').click();assert.match(await fixture.locator('.run-diagnostics').textContent(),/missing or unsupported record type/);
+  report.checks.failureExplained=true;await fixture.getByRole('button',{name:'Retry with selected model',exact:true}).click();await page.waitForFunction(()=>p.path.calls.length===7 && !p.workspace.active);await page.evaluate(()=>p.workspace.view.settled());
+  const recovered=await page.evaluate(async()=>{const call=p.path.calls.at(-1),rows=await p.engine.list(p.doc.id),scope=JSON.parse(call.request.document);return {target:call.target,action:JSON.parse(call.request.task.split('\n')[1]).action,selected:scope.blocks.find(b=>b.selected).selected,latest:rows[0].status,failed:rows[1].status};});
+  assert.equal(recovered.target.model,'sonnet');assert.equal(recovered.action,'Translate');assert.deepEqual(recovered.selected,[{start:0,end:7,text:'Selecte'}]);assert.equal(recovered.latest,'completed');assert.equal(recovered.failed,'invalid');assert.equal(await fixture.getByRole('button',{name:'Retry with selected model',exact:true}).isVisible(),false);
+  report.checks.manualRetryPreservesSelection=true;assert.deepEqual(report.errors,[]);report.passed=true;
+ }finally{await context.close();await rm(profile,{recursive:true,force:true});await mkdir('test-results',{recursive:true});await writeFile('test-results/passage-recovery.json',JSON.stringify(report,null,2)+'\n');}
+});
+
 test('E: packaged panel/settings themes, all streaming views, keyboard inspection, versions, RTL/fonts and accessibility',async()=>{
  const {profile,context}=await start(),report={checks:{},a11y:{},errors:[]};
  try{

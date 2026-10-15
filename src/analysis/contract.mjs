@@ -1,6 +1,6 @@
 import {cleanText} from '../documents/model.mjs';
 
-export const PROMPT_VERSION = 'analysis-3';
+export const PROMPT_VERSION = 'analysis-4';
 export const ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/;
 export const ENUMS = Object.freeze({
   level: ['line','abstract','section','brief'],
@@ -96,7 +96,7 @@ export function validateFields(input,lens) {
   return {record,flags:[...new Set(flags)]};
 }
 export function outputContract(lens) {
-  return JSON.stringify({format:'JSON Lines',types:Object.fromEntries(allowedTypes(lens).map(t=>[t,Object.fromEntries(Object.entries(FIELDS[t]).map(([k,s])=>[k,{type:s,values:enumeration(s.replace(/\?$/,''),lens)??undefined}]))])),
+  return JSON.stringify({format:'JSON Lines',recordTag:'t',types:Object.fromEntries(allowedTypes(lens).map(t=>[t,{t:{type:'literal',value:t},...Object.fromEntries(Object.entries(FIELDS[t]).map(([k,s])=>[k,{type:s,values:enumeration(s.replace(/\?$/,''),lens)??undefined}]))}])),
     limits:{text:1200,quote:400,id:64},end:{t:'end'}});
 }
 // Stored records are already normalized. Check their canonical shape at trust boundaries,
