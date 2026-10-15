@@ -16,7 +16,7 @@ export function installSelectionToolbar({document,selection,resolveSelection,onA
     if(shadow){const style=document.createElement('style');style.textContent=':host{all:initial;position:fixed;z-index:2147483647;font:14px/1.5 system-ui,sans-serif;color:#252a2e} [hidden]{display:none!important}.passage-toolbar{background:#fffaf0;color:#252a2e;border:1px solid #735414;border-radius:8px;padding:8px;box-shadow:0 8px 28px #0004;max-width:calc(100vw - 24px)}button{font:inherit;background:#735414;color:#fff;border:0;border-radius:5px;padding:7px;margin:3px;cursor:pointer;min-height:36px}button:focus-visible{outline:3px solid #145d99;outline-offset:2px}p{font-size:12px;margin:2px 0} @media(prefers-color-scheme:dark){.passage-toolbar{background:#192630;color:#f1e9da}button{background:#e8c477;color:#16212c}}';root.append(style);}
     bar=document.createElement('div');bar.className='passage-toolbar';bar.setAttribute('role','toolbar');bar.setAttribute('aria-label','Passage actions');
     const hint=document.createElement('p');hint.className='passage-context';bar.append(hint);
-    for(const action of ['Explain','Translate','Logic','Define']) {
+    for(const action of ['Explain','Translate','Logic','Define','Ask about this']) {
       const b=document.createElement('button');b.type='button';b.textContent=action;
       b.addEventListener('pointerdown',e=>e.preventDefault());
       b.addEventListener('click',()=>{const chosen=saved,snapshot=shown;dismiss();if(chosen)Promise.resolve().then(async()=>{

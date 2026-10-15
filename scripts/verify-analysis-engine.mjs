@@ -67,7 +67,7 @@ try {
   await page.locator('#open-file').setInputFiles('corpus/fixtures/html/article-en.html');
   await page.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
   await page.locator('.analysis-controls select').selectOption('logic');
-  await page.locator('.analysis-controls textarea').fill('fixture:truncate');
+  await page.locator('.analysis-controls').getByLabel('Focus (optional)',{exact:true}).fill('fixture:truncate');
   await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Partial result saved'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();

@@ -68,7 +68,7 @@ test('invalid Quick output explains rejection, survives reopening, and retries t
     for(let i=0;i<100 && w.path.calls.length<3;i++)await tick();for(let i=0;i<100 && workspace.active;i++)await tick();
     assert.equal(w.path.calls.length,3);const call=w.path.calls[2],task=JSON.parse(call.request.task.split('\n')[1]),data=JSON.parse(call.request.document),rows=await w.engine.list(w.doc.id),recovered=await w.engine.repository.get(rows[0].id);
     assert.equal(call.target.model,'sonnet');assert.equal(call.target.effort,'medium');assert.equal(call.request.tier,'analysis');assert.equal(task.action,'Translate');assert.equal(task.outputLanguage,'uz-Latn');assert.equal(data.blocks.find(b=>b.n===5).selected[0].text,w.doc.blocks[4].text.slice(2,12));
-    assert.equal(recovered.run.status,'completed');assert.equal(recovered.run.promptVersion,'analysis-4');assert.equal(recovered.run.extractionVersion,w.doc.version);assert.equal(recovered.run.stale,true);assert.equal((await w.engine.repository.get(failed.run.id)).run.status,'invalid');assert.equal(rows.length,2);
+    assert.equal(recovered.run.status,'completed');assert.equal(recovered.run.promptVersion,'analysis-5');assert.equal(recovered.run.extractionVersion,w.doc.version);assert.equal(recovered.run.stale,true);assert.equal((await w.engine.repository.get(failed.run.id)).run.status,'invalid');assert.equal(rows.length,2);
     assert.equal(retry.hidden,true);assert.equal(document.querySelector('.run-diagnostics').hidden,true);assert.equal(workspace.selectionScope.kind,'document');
   }finally{workspace.dispose();w.close();}
 });

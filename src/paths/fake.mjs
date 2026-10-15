@@ -23,6 +23,7 @@ export class FakePath {
     if(mode!=='none' && !this.sessions)throw new PathError('OPTION_UNSUPPORTED','PERSISTENT_SESSION_UNSUPPORTED');
     const script=this.scriptFor?await this.scriptFor({target,request}):this.scripts.shift();if(!script)throw Error('FAKE_SCRIPT_EXHAUSTED');
     onEvent({type:'started'});
+    for(const source of script.sources??[])onEvent({type:'source',source});
     let session=null;
     if(mode!=='none') {session=request.session?.handle??`fake_session_${++this.nextHandle}`;this.handles.add(session);onEvent({type:'session',handle:session});}
     let text='',used=0,truncated=script.truncated===true;
@@ -38,7 +39,7 @@ export class FakePath {
     if(script.error)throw Object.assign(Error(script.error.code),script.error);
     const usage=script.usage??null;if(usage)onEvent({type:'usage',usage});
     onEvent({type:'completed'});
-    return {text,truncated,usage,session,target:structuredClone(target),sources:[]};
+    return {text,truncated,usage,session,target:structuredClone(target),sources:structuredClone(script.sources??[])};
   }
   async forget(target,handles) {this.maintenance.push({method:'forget',target,handles});for(const h of handles)this.handles.delete(h);}
   async cleanup(target,group) {this.maintenance.push({method:'cleanup',target,group});}

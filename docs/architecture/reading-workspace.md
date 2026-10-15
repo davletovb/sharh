@@ -2,13 +2,15 @@
 
 Slice E connects the side panel and full-tab reader to the D engine. Both mount the same `createWorkspace` controller, model picker, theme controls and streaming views. The worker remains responsible for native messaging and provider pacing; it never parses model output.
 
+G adds [Scholar's toolkit](scholars-toolkit.md): Ask, Deep read, six further lenses, explicit Situate search, independent Second reader and saved reconciliation, custom lenses, exports, viewport highlighting and full-tab studio restoration.
+
 ## Controls and model choices
 
 The workspace identifies the document, current scope, full D request size, estimated tokens, output language and target. Four tier defaults live in `chrome.storage.local.sharhReading`: Quick (Haiku/low), Analysis (Opus/high), Book pass (Sonnet/medium) and Synthesis (Opus/high). These retain A's provisional status until live-provider measurements. Book pass uses the Analysis output-cap class.
 
 Discovery groups options by path and provider, reports sign-in/policy and capability badges, and shows effort/speed only when advertised. Providers without model suggestions get a free model ID and provider-default choice. Workspace choices override the saved defaults; “Save as tier default” persists that tier. Provider-default effort and speed are saved as explicit nulls. Passage actions resolve a separate Quick target and preserve the workspace's tier, model override and scope. Provider readiness and sign-in policy are still enforced on every send by B. No provider is silently substituted after a failure.
 
-Analyze runs Summary, Structure, Logic or Thinking through `AnalysisEngine`. Stop preserves partial output; Continue offers session reuse or fresh scope context. Full production-frame sizing runs before sending. Ask has its own area but grounded chat remains G-01. Library opens stored documents; collection management remains H-01.
+Analyze runs the standard or custom lenses through `AnalysisEngine`. Stop preserves partial output; Continue offers session reuse or fresh scope context. Full production-frame sizing runs before sending. Ask supplies grounded saved conversations; its Send action is explicit. Library opens stored documents; collection management remains H-01.
 
 ## Views and source inspection
 

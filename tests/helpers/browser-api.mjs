@@ -12,3 +12,7 @@ export {createWorkspace} from '../../extension/ui/workspace.mjs';
 export {createAnalysisView} from '../../extension/ui/views.mjs';
 export {createModelPicker} from '../../extension/ui/model-picker.mjs';
 export {installSelectionToolbar} from '../../extension/ui/passage-toolbar.mjs';
+export {phaseOneOutput} from '../../scripts/lib/phase-one-fixtures.mjs';
+export {phaseTwoOutput} from '../../scripts/lib/phase-two-fixtures.mjs';
+export {Conversations} from '../../src/toolkit/conversations.mjs';
+export {runArchive} from '../../src/toolkit/exports.mjs';

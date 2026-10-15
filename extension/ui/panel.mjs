@@ -13,6 +13,7 @@ import {acceptPassage} from './passage-handoff.mjs';
 const $=id=>document.getElementById(id),client=new PathClient(),store=await openDocumentStore(),{engine}=createAnalysisEngine(store);
 const {id:windowId}=await chrome.windows.getCurrent();const contextKey=`sharh:panel-context:${windowId}`;
 let sourceTab=null,current=null,workspace,lastSelection=null,pendingSource=null;
+chrome.runtime.onMessage.addListener((message,sender)=>{if(message?.type==='sharh:viewport'&&sender.id===chrome.runtime.id&&sender.tab?.id===sourceTab&&sender.frameId===0&&message.version===current?.version&&Array.isArray(message.numbers)&&message.numbers.every(n=>Number.isSafeInteger(n)&&n>0&&n<=current.blocks.length))workspace?.visibleParagraphs(message.numbers,{docId:current.id,version:current.version});});
 const fail=error=>{$('read-state').textContent=error.hint??error.message;};
 async function sourceMessage(operation,params={}) {
   if(sourceTab===null)throw Error('Open the saved document in the reader to inspect its paragraphs.');
@@ -70,7 +71,7 @@ async function consumePassage(){
   return navigator.locks.request(key,async()=>{
     try{await acceptPassage({key,storage:chrome.storage.session,store,engine,isActive:()=>workspace.active,
       show:async(doc,value)=>{await showDocument(doc,{tabId:value.sourceTab,selection:value.selection});$('scope-kind').value='selection';await picker.refresh();},
-      onPassage:(...args)=>workspace.passage(...args),onSaved:id=>workspace.openSaved(id)});
+      onPassage:(...args)=>workspace.passage(...args),onSaved:id=>workspace.openSaved(id),onAsk:id=>workspace.openChat(id)});
       $('retry-passage').hidden=$('dismiss-passage').hidden=true;
     }catch(error){const pending=(await chrome.storage.session.get(key))[key];$('retry-passage').hidden=$('dismiss-passage').hidden=!pending;throw error;}
   });

@@ -3,6 +3,7 @@ import {openPDF, extractPDF} from '../../src/readers/pdf.mjs';
 import {createDocument,contentHash} from '../../src/documents/model.mjs';
 import {openDocumentStore} from '../../src/documents/store.mjs';
 import {bindScopePicker} from './scope-picker.mjs';
+import {ParagraphViewport} from './paragraph-viewport.mjs';
 import {PDFView} from './pdf-view.mjs';
 import {sourceURL,sourceOrigin,hasSourceAccess,recoverableAddress,SOURCE_ACCESS_HINT,SOURCE_STILL_BLOCKED} from '../lib/opening.mjs';
 import {createAnalysisEngine} from './analysis.mjs';
@@ -14,9 +15,24 @@ const $=id=>document.getElementById(id), store=await openDocumentStore(), params
 export const {engine:analysisEngine}=createAnalysisEngine(store);
 const maintenanceClient=new PathClient();
 const initialTab=params.has('tab')?Number(params.get('tab')):null;
+const studioKey=params.get('studio'),studioIntent=studioKey?(await chrome.storage.session.get('sharh:studio:'+studioKey))['sharh:studio:'+studioKey]:null;
+if(studioIntent){params.set('doc',studioIntent.docId);params.set('version',studioIntent.version);}
 let doc, pdf, sourceTab=null, localHTML, pendingSource, viewerSource=null, lastSelection=null;
 let busy=false,workspace,workspaceReady;
 let pdfView=new PDFView($('pdf-pages'));
+const sourceViewport=new ParagraphViewport((numbers,source)=>workspace?.visibleParagraphs(numbers,source));
+let itemParagraphs=new Map(),observedPages=new Map();
+function observePDFPage(page){
+  for(const el of observedPages.get(page)??[])sourceViewport.unobserve(el);observedPages.delete(page);
+  const state=pdfView.pages.get(page);if(!pdf||!state?.items)return;
+  const observed=[];for(const [item,numbers]of itemParagraphs.get(page)??[]){const el=state.items[item];if(el){sourceViewport.observe(el,numbers);observed.push(el);}}observedPages.set(page,observed);
+}
+new MutationObserver(changes=>{for(const page of new Set(changes.map(c=>Number(c.target.dataset.page))))observePDFPage(page);}).observe($('pdf-pages'),{subtree:true,attributes:true,attributeFilter:['data-rendered']});
+function bindSourceViewport(){
+  sourceViewport.reset({docId:doc.id,version:doc.version});observedPages.clear();itemParagraphs=new Map();
+  if(pdf){for(const block of doc.blocks){if(!itemParagraphs.has(block.page))itemParagraphs.set(block.page,new Map());const items=itemParagraphs.get(block.page);for(const item of block.anchor.items??[]){if(!items.has(item))items.set(item,[]);items.get(item).push(block.n);}}for(const [page,state]of pdfView.pages)if(state.items)observePDFPage(page);}
+  else for(const row of $('text-blocks').children)sourceViewport.observe(row,[Number(row.dataset.n)]);
+}
 const picker=bindScopePicker($('scope-picker'),{selection:async()=> {
   if (pdf) return pdfView.selection() || lastSelection;
   if (sourceTab !== null) return readerMessage('selection',{version:doc.version});
@@ -106,6 +122,7 @@ async function showDocument(value) {
   $('text-blocks').hidden=doc.kind==='pdf';
   $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
   await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
+  bindSourceViewport();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
 async function readTab(tabId,{recovering=false}={}) {
@@ -260,3 +277,4 @@ await operate(async()=> {
 });
 // The initial open releases operate()'s busy guard before following a deep link.
 if(params.has('doc') && params.has('paragraph') && doc){const block=doc.blocks[Number(params.get('paragraph'))-1];if(block)await jump(block).catch(fail);else state('This paragraph is not in the saved extraction.');}
+if(studioIntent){if(studioIntent.scope?.version===doc?.version)await picker.restore(studioIntent.scope).catch(fail);await workspace.restoreStudio(studioIntent).catch(fail);}

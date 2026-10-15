@@ -5,6 +5,8 @@ import {assemblePrompt,repairRequest,continuationTask,PROMPT_VERSION} from './pr
 import {preflightRequest,requestPreview} from './requests.mjs';
 import {SESSION_HANDLE} from '../paths/limits.mjs';
 import {cancelled,PathError} from '../paths/errors.mjs';
+import {scopeKey} from './prompts.mjs';
+import {safeURL} from './contract.mjs';
 
 const notify=(observer,event)=>{try{observer?.(event);}catch{/* UI observers are isolated. */}};
 const acceptable = metrics => metrics.validRate>=0.8 && (metrics.newValidRecords>0 || metrics.emptyCompletion);
@@ -24,17 +26,18 @@ export class AnalysisEngine {
     const prompt=assemblePrompt(doc,scope,{...config,session:{mode:persistent?'start':'none'}});
     return {...prompt,...requestPreview(target,prompt.request)};
   }
-  async launch({doc,scope,target,prompt,path,retained=[],previousId=null,signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction=false}) {
+  async launch({doc,scope,target,prompt,path,retained=[],initialSources=[],previousId=null,signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction=false}) {
     preflightRequest(target,prompt.request);
     const id=this.repository.id();
     return this.ownership.hold(id,async()=> {
       if(signal?.aborted)throw cancelled();
       const run=await this.repository.begin(doc,scope,prompt,target,{id,previousId,allowStale:!!previousId || allowSavedExtraction});
       try{await onBegin?.(run);}catch(error){await this.repository.interrupt(run.id,{code:'SETUP_FAILED',reason:error.message}).catch(()=>{});throw Object.assign(error,{runId:run.id});}
-      return this.execute({run,doc,scope,prompt,path,retained,signal,onEvent,onAttemptOutput});
+      return this.execute({run,doc,scope,prompt,path,retained,initialSources,signal,onEvent,onAttemptOutput});
     });
   }
-  async start({doc,scope,target,persistent=false,...config},{signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction=false}={}) {
+  async start({doc,scope,target,persistent=false,followRunId=null,...config},{signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction=false}={}) {
+    if(config.operation==='situate')persistent=false;
     await this.ready;if(signal?.aborted)throw cancelled();
     doc=structuredClone(doc);scope=structuredClone(scope);target=structuredClone(target);
     const path=this.path(target);
@@ -43,6 +46,10 @@ export class AnalysisEngine {
     if(persistent) {
       const info=(await path.discover()).find(p=>p.provider===target.provider);
       if(!info?.capabilities.sessions)prompt=assemblePrompt(doc,scope,config);
+      else if(followRunId){const prior=(await this.repository.get(followRunId))?.run;
+        if(!prior || prior.docId!==doc.id || prior.extractionVersion!==doc.version || prior.scopeKey!==scopeKey(scope) || prior.promptVersion!==PROMPT_VERSION || ['path','provider','model','effort','serviceTier'].some(k=>(prior.target[k]??null)!==(target[k]??null)))throw Error('SESSION_CONTEXT_CHANGED');
+        if(prior.status==='completed' && prior.session?.reusable!==false && SESSION_HANDLE.test(prior.session?.handle??''))prompt=assemblePrompt(doc,scope,{...config,session:{mode:'continue',handle:prior.session.handle}});
+      }
     }
     return this.launch({doc,scope,target,prompt,path,signal,onEvent,onBegin,onAttemptOutput,allowSavedExtraction});
   }
@@ -67,7 +74,7 @@ export class AnalysisEngine {
     const prompt=assemblePrompt(doc,scope,{...previous.config,session});
     if(prompt.promptKey!==previous.promptKey)throw Error('CONTINUATION_CONFIG_CHANGED');
     prompt.request.task=continuationTask(prompt.request.task,saved.records,{session:session.mode==='continue'});
-    return {doc,scope,target:previous.target,prompt,path,retained:saved.records,previousId:id};
+    return {doc,scope,target:previous.target,prompt,path,retained:saved.records,initialSources:previous.sources??[],previousId:id};
   }
   async previewContinuation(id,options) {
     const prepared=await this.prepareContinuation(id,options);
@@ -78,7 +85,7 @@ export class AnalysisEngine {
     return this.launch({...prepared,signal,onEvent});
   }
   cancel(id) {this.active.get(id)?.abort();}
-  async execute({run,doc,scope,prompt,path,retained=[],signal,onEvent,onAttemptOutput}) {
+  async execute({run,doc,scope,prompt,path,retained=[],initialSources=[],signal,onEvent,onAttemptOutput}) {
     const controller=new AbortController(),combined=signal?AbortSignal.any([signal,controller.signal]):controller.signal;
     this.active.set(run.id,controller);
     const started=this.now();let firstRecordMs=null,terminalSent=false;
@@ -101,18 +108,21 @@ export class AnalysisEngine {
     const terminal=(status,details={})=> {
       if(!terminalSent){terminalSent=true;notify(onEvent,{type:'run',runId:run.id,status,...details});}
     };
-    const attempts=[];
+    const attempts=[],sources=new Map();
+    const rememberSource=source=>{const url=safeURL(source?.url);if(url && sources.size<200 && typeof source.title==='string')sources.set(url,{id:String(source.id??''),title:source.title.slice(0,1200),url,snippet:String(source.snippet??'').slice(0,4000)});};
+    for(const source of initialSources)rememberSource(source);
     const attempt=async(request,index)=> {
       preflightRequest(run.target,request);
       let raw='',streamed='',result=null,error=null,contextLost=false,lostBeforeOutput=false;
       const turnController=new AbortController(),turnSignal=AbortSignal.any([combined,turnController.signal]);
-      const createParser=()=>new RecordParser({lens:run.lens,blocks:scope.blocks,sections:doc.sections,now:this.now,onRecord:entry=> {
+      const createParser=()=>new RecordParser({lens:run.lens,blocks:scope.blocks,sections:doc.sections,now:this.now,customLens:run.config.customLens,sources,onRecord:entry=> {
         if(!entry.retained)firstRecordMs??=this.now()-started;
         if(index===0){enqueue({},[entry]);notify(onEvent,{type:'record',runId:run.id,attempt:index,entry});}
       }});
       let parser=createParser();if(retained.length)parser.seed(retained);
       try {
         result=await path.run(run.target,request,{signal:turnSignal,runId:run.id,databaseName:this.store.db.name,onEvent:event=> {
+          if(event.type==='source' && request.kind==='search')rememberSource(event.source);
           if(event.type==='delta'){raw+=event.text;streamed+=event.text;if(!contextLost)parser.push(event.text);}
           if(event.type==='session' && request.session.mode!=='none' && typeof event.handle==='string' && SESSION_HANDLE.test(event.handle)) {
             session={handle:event.handle,...(contextLost?{reusable:false}:{})};remember(event.handle);enqueue({session});
@@ -127,6 +137,7 @@ export class AnalysisEngine {
           }
           notify(onEvent,{...event,runId:run.id,attempt:index});
         }});
+        if(request.kind==='search')for(const source of result.sources??[])rememberSource(source);
         if(!streamed && result.text){raw=result.text;if(!contextLost)parser.push(result.text);}
         else if(result.text!==undefined && result.text!==streamed)throw Error('PATH_TEXT_MISMATCH');
         if(request.session.mode!=='none' && typeof result.session==='string' && SESSION_HANDLE.test(result.session) && !contextLost) {
@@ -163,7 +174,7 @@ export class AnalysisEngine {
         const capped=final.result?.truncated===true;
         notify(onEvent,{type:'repairing',runId:run.id});
         let repaired;
-        try{repaired=await attempt(repairRequest(run.lens,run.config.language,final.raw,run.cleanupGroup),1);}
+        try{repaired=await attempt(repairRequest(run.lens,run.config.language,final.raw,run.cleanupGroup,run.config.customLens),1);}
         catch(error){
           if(writeError)throw writeError;
           repaired={error};attempts.push({kind:'repair',accepted:false,metrics:{usage:null,blocked:true},error:{code:error.code??'PROVIDER_FAILED',reason:error.reason??error.message}});
@@ -186,7 +197,7 @@ export class AnalysisEngine {
       final.metrics.timeToFirstRecordMs=firstRecordMs;final.metrics.totalMs=this.now()-started;
       const usages=attempts.map(a=>a.metrics.usage).filter(Boolean);
       final.metrics.usage=usages.length?Object.fromEntries([...new Set(usages.flatMap(u=>Object.keys(u)))].map(k=>[k,usages.reduce((n,u)=>n+(Number.isFinite(u[k])?u[k]:0),0)])):null;
-      const patch={status,metrics:final.metrics,attempts,target:final.result?.target??run.target,session,sessionHandles:[...handles],
+      const patch={status,metrics:final.metrics,attempts,...(run.config.operation==='situate'?{sources:[...sources.values()]}:{}),target:final.result?.target??run.target,session,sessionHandles:[...handles],
         canContinue:final.metrics.truncated && final.error?.code!=='TOO_LARGE',completedAt:Date.now(),
         ...(final.error?{error:{code:final.error.code??'PROVIDER_FAILED',reason:final.error.reason??final.error.message}}:{})};
       await writes;if(writeError)throw writeError;

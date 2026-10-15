@@ -556,3 +556,16 @@ bdi {
     scroll-behavior:auto!important
   }
 }
+
+.reading-table {width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.reading-table th,.reading-table td {border-bottom:1px solid var(--border,#888);padding:8px;text-align:start;vertical-align:top;overflow-wrap:anywhere}
+.reading-table caption {text-align:start;font-weight:bold;padding:8px}
+.toolkit-controls,.custom-lenses,.chat-turn,.run-diagnostics {border:1px solid var(--border,#888);border-radius:8px;padding:12px;margin:12px 0}
+.custom-lenses fieldset {display:flex;flex-wrap:wrap;gap:8px}
+.custom-lenses fieldset label {display:inline-flex;align-items:center;gap:4px}
+.custom-lenses input[type=checkbox],.second-reader-results input[type=checkbox] {width:auto}
+.chat-transcript {max-height:65vh;overflow:auto}
+.chat-turn h4 {white-space:pre-wrap;overflow-wrap:anywhere}
+.in-source-view {outline:3px solid var(--accent,#956c15);outline-offset:2px}
+.map-node.in-source-view rect {stroke:var(--accent,#956c15);stroke-width:5px}
+.analysis-view[data-lens=critique] .text-outline {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}

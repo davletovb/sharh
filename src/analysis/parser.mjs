@@ -4,9 +4,9 @@ import {bytes} from '../paths/limits.mjs';
 
 const deferred = r => ['edge','gap','code','excerpt','tension'].includes(r.t) || r.parent!==undefined || r.sec!==undefined;
 export class RecordParser {
-  constructor({lens,blocks,sections=[],onRecord=()=>{},now=()=>performance.now(),maxBytes=524288,maxLineBytes=65536}) {
-    allowedTypes(lens);
-    Object.assign(this,{lens,blocks,sections,onRecord,now,maxBytes,maxLineBytes});
+  constructor({lens,blocks,sections=[],onRecord=()=>{},now=()=>performance.now(),maxBytes=524288,maxLineBytes=65536,customLens=null,sources=new Map()}) {
+    allowedTypes(lens,customLens);
+    Object.assign(this,{lens,blocks,sections,onRecord,now,maxBytes,maxLineBytes,customLens,sources});
     this.started=now(); this.buffer=''; this.entries=[]; this.ids=new Map(); this.pending=[];
     this.scope=new Set(blocks.map(b=>b.n)); this.numbers=[...this.scope].sort((a,b)=>a-b);
     this.quotes=new QuotationIndex(blocks); this.endReceived=false; this.afterEnd=false; this.finished=false;
@@ -17,7 +17,7 @@ export class RecordParser {
   count(group,reason,n=1) { this.metrics[group][reason]=(this.metrics[group][reason]??0)+n; }
   seed(entries) {
     if(this.metrics.lines || this.buffer)throw Error('SEED_MUST_BE_FIRST');
-    assertCanonicalRecords(entries,this.lens,{scope:this.scope,sections:this.sections});
+    assertCanonicalRecords(entries,this.lens,{scope:this.scope,sections:this.sections,customLens:this.customLens});
     const retained=entries.map((entry,i)=>({sequence:i+1,record:structuredClone(entry.record),flags:[...(entry.flags??[])],retained:true}));
     for(const entry of retained)if(entry.record.id)this.ids.set(entry.record.id,entry);
     for(const entry of retained)this.emit(entry);
@@ -47,7 +47,7 @@ export class RecordParser {
     if(!line.startsWith('{')) {this.count('skipped','prose');this.count('dropped','framing');return;}
     let input;
     try {input=JSON.parse(line);} catch {this.count('dropped','parse');return;}
-    const {record:r,flags,error}=validateFields(input,this.lens);
+    const {record:r,flags,error}=validateFields(input,this.lens,this.customLens);
     if(error) {this.count('dropped',error);return;}
     if(r.t==='meta') {
       if(this.meta || this.metrics.recordLines!==1) {this.count('dropped','meta_order');return;}
@@ -126,6 +126,7 @@ export class RecordParser {
     if(this.discarding && !this.buffer)this.line('');
     else if(this.buffer.trim())this.line(this.buffer);
     this.buffer='';this.resolve();this.finished=true;
+    for(const entry of this.entries)if(entry.record.url){entry.flags=entry.flags.filter(f=>!['source_verified','source_not_returned'].includes(f));entry.flags.push(this.sources.has(entry.record.url)?'source_verified':'source_not_returned');}
     this.metrics.truncated=truncated || this.capped===true || !this.endReceived;
     this.metrics.totalMs=this.now()-this.started;this.metrics.usage=usage;
     this.metrics.emptyCompletion=this.metrics.recordLines===0 && this.endReceived && !this.metrics.truncated;

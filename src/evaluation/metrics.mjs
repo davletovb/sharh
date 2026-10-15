@@ -14,13 +14,13 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
     try{raw=JSON.parse(line);}catch{fail('parse');continue;}
     const checked=validateFields(raw,lens);if(checked.error){fail(checked.error);continue;}
     // Production sanitization is safe for display; it must not improve a quality score.
-    const tooLong=Object.entries(raw).some(([k,v])=>typeof v==='string' && [...v].length>(k==='quote'?400:k==='id' || k==='parent' || k==='from' || k==='to'?64:1200));
+    const tooLong=Object.entries(raw).some(([k,v])=>typeof v==='string' && [...v].length>(k==='quote'?400:k==='url'?2048:k==='id' || k==='parent' || k==='from' || k==='to'?64:1200));
     if(tooLong){fail('text_limit');continue;}
     if(raw.t==='meta'){if(lines!==1 || meta || raw.lens!==lens || !languageCompatible(language,raw.lang)){fail('meta');continue;}meta=raw;valid++;continue;}
     valid++;if(raw.t==='end'){end=true;continue;}rows.push(raw);
     const cited=raw.span?[raw.span[0],raw.span[1]]:raw.refs??(raw.ref===undefined?[]:[raw.ref]);refs+=cited.length;validRefs+=cited.filter(n=>numbers.has(n)).length;
     selectedRefs+=cited.filter(n=>selected.has(n)).length;
-    if(['sum','arc','sec','node','step','gap','facet','concept','term','note'].includes(raw.t) && !cited.some(n=>numbers.has(n)))unanchored++;
+    if(['sum','arc','sec','node','step','gap','facet','concept','term','note','theme','cite','q'].includes(raw.t) && !cited.some(n=>numbers.has(n)))unanchored++;
     if(raw.quote){quotations++;if(quotes.verify(raw.quote,cited)){verified++;if(raw.t==='node' && raw.basis==='stated')statedVerified++;}else fail('quotation');}
   }
   const ids=new Map(),duplicates=[];for(const r of rows)if(r.id){if(ids.has(r.id))duplicates.push(r.id);else ids.set(r.id,r);}
@@ -43,6 +43,11 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
   if(lens==='thinking'){if(!byType('concept').length)missing.push('concept');if(!byType('facet').length)missing.push('facet');}
   if(action==='Translate' || action==='Define'){if(!byType('term').some(r=>r.src && r.tr))missing.push('source/translated term');}
   if(action==='Explain' || action==='Translate'){if(!byType('note').length)missing.push('note');}
+  if(!action && lens==='themes')for(const type of ['theme','code','excerpt','memo'])if(!byType(type).length)missing.push(type);
+  if(!action && ['meta-reading','critique'].includes(lens) && !byType('facet').length)missing.push('facet');
+  if(!action && lens==='literature' && !byType('cite').length)missing.push('cite');
+  if(!action && lens==='terms' && !byType('term').length)missing.push('term');
+  if(!action && lens==='questions')for(const level of ENUMS.question)if(!byType('q').some(r=>r.level===level))missing.push('q:'+level);
   if(!rows.length)missing.push('findings');
   return {lines,validLines:valid,parseRate:lines?valid/lines:0,references:refs,validReferences:validRefs,referenceValidity:refs?validRefs/refs:null,
     selectedReferences:selectedRefs,selectionRequired:action!==null,findingRecords:rows.length,recordBudget:budget,overBudget:rows.length>budget,

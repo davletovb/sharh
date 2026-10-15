@@ -1,7 +1,7 @@
 import {createDocument} from '../documents/model.mjs';
 import {buildScope} from '../documents/scopes.mjs';
 import {PROMPT_VERSION} from '../analysis/prompts.mjs';
-import {PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../analysis/lenses.mjs';
+import {PHASE_ONE_LENSES,PHASE_TWO_LENSES,PASSAGE_ACTIONS} from '../analysis/lenses.mjs';
 import {portableRow} from '../documents/archive.mjs';
 import {measureOutput,metricsPass,AUTOMATIC_TARGETS} from './metrics.mjs';
 export function evaluationScope(doc,action=null){
@@ -11,9 +11,9 @@ export function evaluationScope(doc,action=null){
   const start=term?.index??0,end=term?start+term[0].length:[...block.text].slice(0,160).join('').length;
   return buildScope(doc,{kind:'selection',spans:[{n:block.n,start,end}]});
 }
-export async function runEvaluation({engine,store,items,providers,extract,kind,sourceCommit,lenses=PHASE_ONE_LENSES,actions=Object.keys(PASSAGE_ACTIONS),targets={},language=null,beforeRun=()=>{},checkpoint=()=>{}}){
-  if(!['scripted','real-broker-stand-ins','live'].includes(kind) || !items.length || !providers.length || new Set(providers).size!==providers.length || new Set(items.map(i=>i.id)).size!==items.length || lenses.some(l=>!PHASE_ONE_LENSES.includes(l)) || actions.some(a=>!Object.hasOwn(PASSAGE_ACTIONS,a)) || new Set(lenses).size!==lenses.length || new Set(actions).size!==actions.length || !lenses.length && !actions.length)throw Error('INVALID_EVALUATION_MATRIX');
-  const report={schemaVersion:1,id:crypto.randomUUID(),kind,liveProviderClaim:kind==='live',sourceCommit,promptVersion:PROMPT_VERSION,createdAt:new Date().toISOString(),targets:AUTOMATIC_TARGETS,
+export async function runEvaluation({engine,store,items,providers,extract,kind,sourceCommit,lenses=PHASE_ONE_LENSES,actions=Object.keys(PASSAGE_ACTIONS),targets={},language=null,phase='one',beforeRun=()=>{},checkpoint=()=>{}}){
+  if(!['one','two'].includes(phase) || !['scripted','real-broker-stand-ins','live'].includes(kind) || !items.length || !providers.length || new Set(providers).size!==providers.length || new Set(items.map(i=>i.id)).size!==items.length || lenses.some(l=>!(phase==='two'?PHASE_TWO_LENSES:PHASE_ONE_LENSES).includes(l)) || actions.some(a=>!Object.hasOwn(PASSAGE_ACTIONS,a)) || new Set(lenses).size!==lenses.length || new Set(actions).size!==actions.length || !lenses.length && !actions.length)throw Error('INVALID_EVALUATION_MATRIX');
+  const report={schemaVersion:1,id:crypto.randomUUID(),kind,phase,phaseTwoAccepted:false,liveProviderClaim:kind==='live',sourceCommit,promptVersion:PROMPT_VERSION,createdAt:new Date().toISOString(),targets:AUTOMATIC_TARGETS,
     matrix:{items:items.map(i=>i.id),providers,lenses,actions,expectedRuns:items.length*providers.length*(lenses.length+actions.length)},runs:[],automaticPassed:false,phaseOneAccepted:false,
     limitations:['Automatic checks cannot establish semantic faithfulness, actual output language, insight, translation quality or term-introduction accuracy.','Stand-ins do not establish live prompt-injection resistance.','Phase 1 also requires natural licensed corpus texts and the A/B/E owner gates.']};
   const cases=[...lenses.map(lens=>({lens,action:null})),...actions.map(action=>({action,lens:action==='Logic'?'logic':'passage'}))];

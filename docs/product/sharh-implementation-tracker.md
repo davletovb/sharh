@@ -1,18 +1,18 @@
 # Sharh — Implementation Tracker
 
 Established: 2026-10-14  
-Status: A–E implemented. F-01–F-06 are IMPLEMENTED — VERIFY for real-provider output quality; F-07 is DONE with scripted/pinned-broker matrices and review-form validation. F-08 is BLOCKED by live/expert and owner-machine gates. A-02/A-03/B-05/E-07 remain IMPLEMENTED — VERIFY. No live-provider behaviour is claimed.
+Status: A–E implemented. G toolkit implemented; G-03–G-06 retain recorded-output verification and G-13 is BLOCKED. F-01–F-06 are IMPLEMENTED — VERIFY for real-provider output quality; F-07 is DONE with scripted/pinned-broker matrices and review-form validation. F-08 is BLOCKED by live/expert and owner-machine gates. A-02/A-03/B-05/E-07 remain IMPLEMENTED — VERIFY. The owner reported one successful Sonnet selection smoke; no corpus-level quality or acceptance is claimed.
 
 This is the authoritative progress record. Requirements are defined in the [product framework](sharh-product-framework.md), the [analysis pipeline](../architecture/analysis-pipeline.md), [model paths](../architecture/model-paths.md) and [Seatline integration](../architecture/seatline-integration.md). When this tracker and those documents disagree, fix the disagreement in the same change.
 
 ## Progress
 
 - Planned implementation items: **72**
-- DONE: **28**
-- IMPLEMENTED — VERIFY: **10**
+- DONE: **36**
+- IMPLEMENTED — VERIFY: **14**
 - IN PROGRESS: **0**
-- BLOCKED: **1**
-- TODO: **33**
+- BLOCKED: **2**
+- TODO: **20**
 
 Upstream Seatline dependencies (S-items) and the repository setup record are not counted.
 
@@ -150,19 +150,19 @@ flowchart LR
 
 | ID | Item | Depends on | Acceptance criterion | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| G-01 | Build Ask | B-03, D-02, E-01, E-05 | Chat is grounded in the scope, with `[¶n]` links. Claude and Codex receive the scope once per session; other providers resend it. A lost session restarts and says so. *Ask about this* opens from the toolbar | TODO | — | — |
-| G-02 | Build Deep read | F-03, F-04, F-05, G-01 | Structure, Logic and Thinking run in one session where the provider supports sessions, and as separate runs elsewhere. Each lens is saved as its own run | TODO | — | — |
-| G-03 | Build the Themes lens | E-03, F-01 | The codebook shows excerpts, tensions and memos. An optional frame labels the reading. Recorded outputs pass validation at the automatic targets | TODO | — | — |
-| G-04 | Build the Meta-reading and Critique lenses | E-03, F-01 | Facet cards cover every facet kind of both lenses. Recorded outputs pass validation at the automatic targets | TODO | — | — |
-| G-05 | Build the Literature lens | C-03, E-03, F-01 | `cite` records carry roles and draw on footnotes. The citation table links each citation to its ¶ | TODO | — | — |
-| G-06 | Build the Terms and Questions lenses | E-03, F-01 | Glossary entries keep the source term. Questions span the four levels, each tied to ¶ | TODO | — | — |
-| G-07 | Build Situate | B-03, E-03 | It runs only on request, and only on providers with web search. Every link comes from a `source` event; links without a matching source are flagged | TODO | — | — |
-| G-08 | Build Second reader | E-02, F-04, G-03 | Two targets run independently. Themes are aligned by the Jaccard similarity of the paragraphs they cite. Agreement is shown per theme, with kappa when the scope has at least 20 paragraphs, and Logic outputs are compared. Reconciled runs are saved. Alignment matches hand-coded fixtures | TODO | — | — |
-| G-09 | Build You-are-here | E-04, F-03 | While the reader scrolls, the structure map highlights the section and the argument nodes for the paragraphs in view | TODO | — | — |
-| G-10 | Build custom lenses | D-02, E-03 | A reader defines a lens's name, instructions, allowed record types and tier. Custom lenses validate like built-in ones and can be exported and imported as files | TODO | — | — |
-| G-11 | Build exports | D-05, E-03 | Exports are Markdown with ¶ references and a source link; SVG and PNG maps; and JSON that survives a round trip | TODO | — | — |
-| G-12 | Build the studio | E-03 | Every view opens in a full tab with the same data and interactions | TODO | — | — |
-| G-13 | Accept Phase 2 | G-01 – G-12 | **Live:** the framework's Phase 2 acceptance holds. The report is under `docs/evidence/` | TODO | — | — |
+| G-01 | Build Ask | B-03, D-02, E-01, E-05 | Chat is grounded in the scope, with `[¶n]` links. Claude and Codex receive the scope once per session; other providers resend it. A lost session restarts and says so. *Ask about this* opens from the toolbar | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-02 | Build Deep read | F-03, F-04, F-05, G-01 | Structure, Logic and Thinking run in one session where the provider supports sessions, and as separate runs elsewhere. Each lens is saved as its own run | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-03 | Build the Themes lens | E-03, F-01 | The codebook shows excerpts, tensions and memos. An optional frame labels the reading. Recorded outputs pass validation at the automatic targets | IMPLEMENTED — VERIFY | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); real recorded output quality remains open |
+| G-04 | Build the Meta-reading and Critique lenses | E-03, F-01 | Facet cards cover every facet kind of both lenses. Recorded outputs pass validation at the automatic targets | IMPLEMENTED — VERIFY | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); real recorded output quality remains open |
+| G-05 | Build the Literature lens | C-03, E-03, F-01 | `cite` records carry roles and draw on footnotes. The citation table links each citation to its ¶ | IMPLEMENTED — VERIFY | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); real recorded output quality remains open |
+| G-06 | Build the Terms and Questions lenses | E-03, F-01 | Glossary entries keep the source term. Questions span the four levels, each tied to ¶ | IMPLEMENTED — VERIFY | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); real recorded output quality remains open |
+| G-07 | Build Situate | B-03, E-03 | It runs only on request, and only on providers with web search. Every link comes from a `source` event; links without a matching source are flagged | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-08 | Build Second reader | E-02, F-04, G-03 | Two targets run independently. Themes are aligned by the Jaccard similarity of the paragraphs they cite. Agreement is shown per theme, with kappa when the scope has at least 20 paragraphs, and Logic outputs are compared. Reconciled runs are saved. Alignment matches hand-coded fixtures | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-09 | Build You-are-here | E-04, F-03 | While the reader scrolls, the structure map highlights the section and the argument nodes for the paragraphs in view | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-10 | Build custom lenses | D-02, E-03 | A reader defines a lens's name, instructions, allowed record types and tier. Custom lenses validate like built-in ones and can be exported and imported as files | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-11 | Build exports | D-05, E-03 | Exports are Markdown with ¶ references and a source link; SVG and PNG maps; and JSON that survives a round trip | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-12 | Build the studio | E-03 | Every view opens in a full tab with the same data and interactions | DONE | Codex | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); deterministic regressions and packaged workflow checks; final CI linked on PR |
+| G-13 | Accept Phase 2 | G-01 – G-12 | **Live:** the framework's Phase 2 acceptance holds. The report is under `docs/evidence/` | BLOCKED | Owner | [G evidence](../evidence/2026-10-15-g-scholars-toolkit.md); live/expert and prior owner acceptance gates remain open |
 
 ### H — Across texts (Phase 3)
 
@@ -253,6 +253,7 @@ Completed 2026-10-14:
 | 2026-10-13 | Adopt the proposed plan as the planning baseline | Owner approved the plan |
 | 2026-10-13 | Use several model paths: Seatline first, API keys later | Owner instruction |
 | 2026-10-13 | Name the product Sharh, with the repository `davletovb/sharh` | Owner created the repository |
+| 2026-10-15 | Proceed with G-01–G-12 while keeping Phase 1/2 owner acceptance open | Owner reported Sonnet selections working and requested the next slice; [G decision](../decisions/g-scholars-toolkit.md) |
 | 2026-10-14 | Accept the E-01–E-07 workspace slice against pinned B/C/D; keep E-07 and existing owner live gates open | Owner requested all of slice E; [decision](../decisions/e-reading-workspace.md) |
 | 2026-10-14 | Track implementation in this document with stable IDs | Owner asked for a tracker plan |
 | 2026-10-14 | Accept A-02 through A-06 as one foundation slice: build the probes, corpus and extraction prototype together; A-05 may name unresolved live gates instead of assuming a final provider/default freeze. Allow B/C/D implementation against the pinned contract while those live gates remain visible; do not bypass dependent release acceptance | Owner requested the entire A slice; LIVE criteria retain IMPLEMENTED — VERIFY until recorded on the owner’s machine |
