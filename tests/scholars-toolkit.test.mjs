@@ -17,6 +17,7 @@ import {CustomLenses} from '../src/toolkit/custom-lenses.mjs';
 import {markdown,runArchive} from '../src/toolkit/exports.mjs';
 import {createWorkspace} from '../extension/ui/workspace.mjs';
 import {createAnalysisView} from '../extension/ui/views.mjs';
+import {acceptPassage} from '../extension/ui/passage-handoff.mjs';
 import {runEvaluation} from '../src/evaluation/run.mjs';
 import {measureOutput,metricsPass} from '../src/evaluation/metrics.mjs';
 import {phaseOneOutput} from '../scripts/lib/phase-one-fixtures.mjs';
@@ -37,7 +38,7 @@ test('Ask session loss before output rebuilds with scope/history and reports the
  const w=await world(),chat=new Conversations(w.engine);try{const first=await chat.ask(w.config,'First question');w.path.handles.clear();const events=[],next=await chat.ask(w.config,'Second question',{chatId:first.chatId,onEvent:e=>events.push(e)});assert.equal(next.run.status,'completed');assert.equal(w.path.calls.length,3);assert.equal(w.path.calls[1].request.document,null);assert.ok(w.path.calls[2].request.document);assert.equal(JSON.parse(w.path.calls[2].request.task.split('\n')[1]).question,'Second question');assert.equal(w.path.calls[2].request.history.length,2);assert.ok(events.some(e=>e.type==='session_reset'));}finally{w.close();}
 });
 
-test('Ask drafts send nothing, acknowledge durably, and deletion during a turn cannot resurrect chat rows',async()=>{
+test('Ask drafts send nothing, retain their intent, and deleted drafts cannot be replayed',async()=>{
  const w=await world(),chat=new Conversations(w.engine);try{const draft=await chat.create(w.config,{passageIntentId:'intent'});assert.equal(w.path.calls.length,0);assert.equal((await chat.open(draft.id)).passageIntentId,'intent');await w.store.deleteDocument(w.doc.id);await assert.rejects(chat.ask(w.config,'Question',{chatId:draft.id}),/CHAT_REMOVED/);assert.equal((await w.store.all('chats')).length,0);assert.equal(w.path.calls.length,0);}finally{w.close();}
 });
 
@@ -97,6 +98,10 @@ test('views render codebooks/citations/glossaries, reject recalled hyperlinks, a
  }finally{view?.dispose();w.close();d.window.close();}
 });
 
-test('workspace Ask-from-toolbar creates a saved draft without generation and restores studio state without replay',async()=>{
- const d=dom(),w=await world(),storage=memory();let workspace;try{workspace=await createWorkspace(document.getElementById('host'),{store:w.store,engine:w.engine,client:{call:async m=>m==='discover'?w.path.discover():null},storage,changes});await workspace.ready;await workspace.setDocument(w.doc);const result=await workspace.passage('Ask about this',{spans:[{n:5,start:0,end:8}]});assert.ok(result.chatId);assert.equal(w.path.calls.length,0);const chat=(await w.store.all('chats'))[0];assert.equal(chat.scope.kind,'selection');assert.equal(document.querySelector('.chat-transcript').closest('.workspace-area').hidden,false);await workspace.restoreStudio({docId:w.doc.id,version:w.doc.version,chatId:chat.id,scope:chat.scope,area:'ask'});assert.equal(w.path.calls.length,0);}finally{workspace?.dispose();w.close();d.window.close();}
+test('workspace Ask-from-toolbar acknowledges one draft, restores a repeated handoff, and opens studio state without replay',async()=>{
+ const d=dom(),w=await world(),storage=memory(),session=memory();session.remove=async key=>session.set({[key]:undefined});let workspace;
+ try{workspace=await createWorkspace(document.getElementById('host'),{store:w.store,engine:w.engine,client:{call:async m=>m==='discover'?w.path.discover():null},storage,changes});await workspace.ready;await workspace.setDocument(w.doc);const key='pending',intent={id:'ask-intent',docId:w.doc.id,version:w.doc.version,action:'Ask about this',selection:{spans:[{n:5,start:0,end:8}]}};await session.set({[key]:intent});
+ const handoff=()=>acceptPassage({key,storage:session,store:w.store,engine:w.engine,show:()=>workspace.setDocument(w.doc),onPassage:(...args)=>workspace.passage(...args),onAsk:id=>workspace.openChat(id)}),result=await handoff();assert.ok(result.chatId);assert.equal((await session.get(key))[key],undefined);assert.equal(w.path.calls.length,0);const chat=(await w.store.all('chats'))[0];assert.equal(chat.scope.kind,'selection');assert.equal(document.querySelector('.chat-transcript').closest('.workspace-area').hidden,false);
+ await session.set({[key]:intent});assert.equal((await handoff()).restored,true);assert.equal((await w.store.all('chats')).length,1);assert.equal((await session.get(key))[key],undefined);await workspace.restoreStudio({docId:w.doc.id,version:w.doc.version,chatId:chat.id,scope:chat.scope,area:'ask'});assert.equal(w.path.calls.length,0);
+ }finally{workspace?.dispose();w.close();d.window.close();}
 });
