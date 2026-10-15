@@ -1,6 +1,6 @@
 // Observe source elements once; scrolling never scans the document's block list.
 export class ParagraphViewport {
-  constructor(onChange,{Observer=globalThis.IntersectionObserver,schedule=queueMicrotask}={}) {
+  constructor(onChange,{Observer=globalThis.IntersectionObserver,schedule=fn=>globalThis.queueMicrotask(fn)}={}) {
     this.onChange=onChange;this.schedule=schedule;this.targets=new Map();this.visible=new Set();this.pending=false;
     this.observer=Observer?new Observer(entries=>{for(const e of entries)if(this.targets.has(e.target)){if(e.isIntersecting)this.visible.add(e.target);else this.visible.delete(e.target);}this.changed();}):null;
   }
