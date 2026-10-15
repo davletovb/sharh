@@ -178,7 +178,7 @@ export class AnalysisEngine {
         const capped=final.result?.truncated===true;
         notify(onEvent,{type:'repairing',runId:run.id});
         let repaired;
-        try{repaired=await attempt(repairRequest(run.lens,run.config.language,final.raw,run.cleanupGroup,run.config.customLens),1);}
+        try{repaired=await attempt(repairRequest(run.lens,run.config.language,final.raw,run.cleanupGroup,run.config.customLens,run.config.priority),1);}
         catch(error){
           if(writeError)throw writeError;
           repaired={error};attempts.push({kind:'repair',accepted:false,metrics:{usage:null,blocked:true},error:{code:error.code??'PROVIDER_FAILED',reason:error.reason??error.message}});

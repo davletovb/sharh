@@ -40,9 +40,9 @@ export function assemblePrompt(doc,scope,{lens,action=null,language='en',budget=
   return {promptVersion:PROMPT_VERSION,config,promptKey:promptIdentity(scope,config,{rules,instructions,contract}),
     request:{kind:operation==='ask'?'chat':operation==='situate'?'search':'analysis',rules,document:session.mode==='continue'?null:digests?JSON.stringify({title:doc.title,language:doc.language,scope:scope.label,chapters:digests}):serializeScope(doc,scope),task,session,priority,tier,cleanupGroup,...(history.length?{history:structuredClone(history)}:{})}};
 }
-export function repairRequest(lens,language,output,cleanupGroup,customLens=null) {
+export function repairRequest(lens,language,output,cleanupGroup,customLens=null,priority='interactive') {
   return {kind:'repair',rules:RULES,document:null,task:`Repair the faulty output as data, preserving its content rather than inventing facts. Return only records allowed by the contract, in ${language}. End with {"t":"end"}.\nSHARH_OUTPUT_CONTRACT\n${outputContract(lens,customLens)}\nSHARH_FAULTY_OUTPUT_JSON\n${JSON.stringify(output)}`,
-    priority:'interactive',session:{mode:'none'},cleanupGroup};
+    priority,session:{mode:'none'},cleanupGroup};
 }
 export function continuationTask(task,records,{session=false}={}) {
   // Sessions already contain the history. A short tail identifies the continuation point;

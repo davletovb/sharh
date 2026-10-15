@@ -89,3 +89,7 @@ test('an oversized chapter is refused before provider launch and remains resumab
 test('invalid cross-text selections allocate no digest jobs, and glossary language choices do not leak into another output language',async()=>{
  const w=await world(),lib=new Library(w.store),across=new AcrossTexts(w.engine);try{const item=await lib.save(w.doc);for(const items of [[],[item],[item,item]])await assert.rejects(across.prepare(items,{kind:'literature-review',target}),/distinct/);assert.equal((await w.store.all('jobs')).length,0);assert.equal(w.path.calls.length,0);await new Glossary(w.store).save({bookId:w.doc.id,term:'dalil',translation:'evidence',aliases:['далил'],language:'en'});const saved=await w.engine.start({...w.config,lens:'digest',language:'ar'});assert.equal(saved.run.status,'completed');assert.equal(JSON.parse(w.path.calls.at(-1).request.task.split('\n')[1]).glossary,undefined);}finally{w.close();}
 });
+
+test('a chapter format repair remains background work and cannot acquire interactive scheduling',async()=>{
+ const w=await world({scriptFor:null,scripts:[{text:'not JSON\n'},{text:lines({t:'sum',level:'section',text:'Repaired digest',refs:[2]},end)}]});try{const saved=await w.engine.start({...w.config,lens:'digest',priority:'background'});assert.equal(saved.run.status,'completed');assert.deepEqual(w.path.calls.map(c=>c.request.kind),['analysis','repair']);assert.ok(w.path.calls.every(c=>c.request.priority==='background'));}finally{w.close();}
+});
