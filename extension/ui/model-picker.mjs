@@ -1,13 +1,13 @@
 import {ReadingPreferences,TIERS,DEFAULTS,targetFor,validateTarget,providerBadges,usable} from '../../src/ui/preferences.mjs';
 import {element,field,options,button} from './dom.mjs';
-export async function createModelPicker(container,{client,storage=chrome.storage.local,onChange=()=>{}}) {
+export async function createModelPicker(container,{client,storage=chrome.storage.local,onChange=()=>{},tierControls=true,initialTarget=null,discovery=null}) {
   const preferences=new ReadingPreferences(storage);await preferences.load();
   const tier=element('select'),target=element('select'),model=element('input'),effort=element('select'),speed=element('select'),status=element('p','','note');
   const modelField=field('Model ID (empty uses provider default)',model),effortField=field('Effort',effort),speedField=field('Speed',speed);
   model.maxLength=128;options(tier,Object.entries(TIERS));tier.value='analysis';target.setAttribute('aria-describedby',status.id='model-status-'+crypto.randomUUID());
-  container.append(field('Task tier',tier),field('Model target',target),modelField,effortField,speedField);
+  if(tierControls)container.append(field('Task tier',tier));container.append(field('Model target',target),modelField,effortField,speedField);
   const save=button('Save as tier default',async()=>{const value=getTarget();await preferences.save({tiers:{[tier.value]:value}});status.textContent=`Default saved for ${TIERS[tier.value]}.`;});
-  const reset=button('Use tier default',()=>loadDefault());const refresh=button('Refresh providers',()=>discover(true));container.append(save,reset,refresh,status);
+  const reset=button('Use tier default',()=>loadDefault());const refresh=button('Refresh providers',()=>discover(true));if(tierControls)container.append(save,reset);container.append(refresh,status);
   let providers=[],choices=[],selected=null,revision=0;
   function info(){return selected;}
   function getTarget() {return validateTarget({path:selected?.path,provider:selected?.provider,model:modelField.hidden?choices[Number(target.value)]?.model:model.value.trim(),
@@ -31,7 +31,7 @@ export async function createModelPicker(container,{client,storage=chrome.storage
     const ticket=++revision;refresh.disabled=true;status.textContent='Checking providers…';
     let desired;try{desired=getTarget();}catch{}
     try {
-      const result=await client.call('discover',{fresh});if(ticket!==revision)return;providers=result;choices=[];target.replaceChildren();
+      const result=await (!fresh&&discovery?discovery:client.call('discover',{fresh}));if(ticket!==revision)return;providers=result;choices=[];target.replaceChildren();
       for(const p of providers) {
         const group=element('optgroup');group.label=`${p.path==='seatline'?'Seatline':p.path} / ${p.label??p.provider}`;
         for(const m of [{id:null,label:'Provider default'},...(p.models??[])]) {
@@ -39,7 +39,7 @@ export async function createModelPicker(container,{client,storage=chrome.storage
         }
         target.append(group);
       }
-      choose(desired??preferences.value.tiers[tier.value]);
+      choose(desired??initialTarget??preferences.value.tiers[tier.value]);
     }catch(error){status.textContent=error.hint??error.message;onChange(null,null,tier.value);}
     finally{if(ticket===revision)refresh.disabled=false;}
   }
@@ -56,6 +56,6 @@ export async function createModelPicker(container,{client,storage=chrome.storage
     const saved=sameProvider?{...desired,model:choice.info.models?.length?choice.model:desired.model}:{};
     return {target:validateTarget(targetFor(choice.info,saved),choice.info),info:choice.info};
   }
-  return {ready,forTier,get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTarget(value){choose(value);},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
+  return {ready,forTier,get providers(){return providers;},get target(){return getTarget();},get info(){return info();},get tier(){return tier.value;},setTarget(value){choose(value);},setTier(value){if(Object.hasOwn(TIERS,value)){tier.value=value;return loadDefault();}},discover,
     setDisabled(value){for(const control of container.querySelectorAll('input,select,button'))control.disabled=value;},dispose(){revision++;}};
 }

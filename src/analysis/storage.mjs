@@ -13,8 +13,11 @@ export class RunRepository {
     const tx=this.store.db.transaction('runs'),done=complete(tx),rows=await request(tx.objectStore('runs').index('docId').getAll(docId));
     await done;return rows.sort((a,b)=>b.createdAt-a.createdAt || b.version-a.version);
   }
-  async begin(doc,scope,prompt,target,{previousId=null,allowStale=false,id=this.id()}={}) {
-    const tx=this.store.db.transaction(['docs','extractions','runs'],'readwrite'),done=complete(tx);
+  async saveCompleted(doc,scope,prompt,target,entries,metadata={}) {
+    return this.begin(doc,scope,prompt,target,{allowStale:true,completed:{entries,metadata}});
+  }
+  async begin(doc,scope,prompt,target,{previousId=null,allowStale=false,id=this.id(),completed=null}={}) {
+    const tx=this.store.db.transaction(['docs','extractions','runs','records'],'readwrite'),done=complete(tx);
     const [current,extraction,rows,previous]=await Promise.all([
       request(tx.objectStore('docs').get(doc.id)),request(tx.objectStore('extractions').get([doc.id,doc.version])),
       request(tx.objectStore('runs').index('docId').getAll(doc.id)),previousId?request(tx.objectStore('runs').get(previousId)):Promise.resolve(null)
@@ -28,7 +31,9 @@ export class RunRepository {
     const run={schemaVersion:1,id,docId:doc.id,extractionVersion:doc.version,lens:prompt.config.lens,scope:scopeDescriptor(scope),scopeKey:key,
       version,promptVersion:prompt.promptVersion,promptKey:prompt.promptKey,config:prompt.config,target:structuredClone(target),cleanupGroup:prompt.request.cleanupGroup,
       status:'running',createdAt:this.now(),updatedAt:this.now(),stale:current.version!==doc.version,previousId,metrics:{truncated:true},attempts:[]};
+    if(completed)Object.assign(run,completed.metadata,{status:'completed',canContinue:false,completedAt:this.now(),metrics:{truncated:false,validRecords:completed.entries.length,newValidRecords:completed.entries.length,validRate:1}});
     tx.objectStore('runs').add(run);
+    if(completed)for(const entry of completed.entries)tx.objectStore('records').add({...entry,runId:run.id});
     if(previous)tx.objectStore('runs').put({...previous,continuedBy:run.id});
     await done;return run;
   }

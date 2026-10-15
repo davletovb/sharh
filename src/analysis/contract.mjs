@@ -12,6 +12,7 @@ export const ENUMS = Object.freeze({
   gap: ['unstated_premise','leap','circularity','equivocation','overgeneralization','false_dichotomy','missing_evidence','other'],
   thinkingFacet: ['question','evidence_standard','reasoning_mode','assumption','worldview','lineage','normative','blind_spot','falsifier'],
   metaFacet: ['genre','audience','purpose','position','context','framing','silence'],
+  literatureFacet: ['genre','audience','purpose','position','context','framing','silence','debate','contribution','other'],
   critiqueFacet: ['strength','weakness','evidence_quality','counterargument'],
   digestFacet: ['question','reasoning_mode'],
   citation: ['foundation','foil','method','evidence','context','ally'],
@@ -61,7 +62,7 @@ export function allowedTypes(lens,definition=null) {
 export function enumeration(spec,lens) {
   if (spec.startsWith('enum:')) return ENUMS[spec.slice(5)];
   if (spec==='relation') return lens.startsWith('custom:')?[...new Set([...ENUMS.thinking,...ENUMS.logic])]:lens==='thinking' ? ENUMS.thinking : ENUMS.logic;
-  if (spec==='facet') return lens.startsWith('custom:')?[...new Set([...ENUMS.thinkingFacet,...ENUMS.metaFacet,...ENUMS.critiqueFacet])]:({thinking:ENUMS.thinkingFacet,'meta-reading':ENUMS.metaFacet,literature:ENUMS.metaFacet,critique:ENUMS.critiqueFacet,digest:ENUMS.digestFacet})[lens] ?? null;
+  if (spec==='facet') return lens.startsWith('custom:')?[...new Set([...ENUMS.thinkingFacet,...ENUMS.metaFacet,...ENUMS.critiqueFacet,...ENUMS.literatureFacet])]:({thinking:ENUMS.thinkingFacet,'meta-reading':ENUMS.metaFacet,literature:ENUMS.literatureFacet,critique:ENUMS.critiqueFacet,digest:ENUMS.digestFacet})[lens] ?? null;
   return null;
 }
 export const textValue = (value,cap=1200) => [...cleanText(value).normalize('NFC')].slice(0,cap).join('').trim();
@@ -71,10 +72,10 @@ export function validateFields(input,lens,definition=null) {
   const record={t:input.t},flags=[];
   for (const [key,raw] of Object.entries(FIELDS[input.t])) {
     const optional=raw.endsWith('?'),spec=optional?raw.slice(0,-1):raw,value=input[key];
-    const stringField=['text','quote','short','facet','id','relation'].includes(spec) || spec.startsWith('enum:');
+    const stringField=['text','quote','short','facet','id','relation','url'].includes(spec) || spec.startsWith('enum:');
     if (optional && (value==null || stringField && typeof value==='string' && !textValue(value))) continue;
     const values=enumeration(spec,lens);
-    if(spec==='url') {const url=typeof value==='string'?safeURL(value):null;if(!url)return {error:'url'};record[key]=url;}
+    if(spec==='url') {const url=typeof value==='string'?safeURL(value):null;if(url)record[key]=url;else flags.push('url_omitted');}
     else if (values) {
       if (values.includes(value)) record[key]=value;
       else if (typeof value==='string' && values.includes('other')) {record[key]='other';flags.push('enum_other');}

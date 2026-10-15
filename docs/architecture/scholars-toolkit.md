@@ -42,3 +42,5 @@ npm run evaluate -- --phase-two --companion /path/to/seatline-companion --fake-p
 ```
 
 Each runs 14 items × 2 providers × 6 lenses = 168 turns. Reports preserve raw first-attempt scoring and expert forms, and never mark Phase 2 accepted. Live evaluation omits the fixture/fake-provider flags; it requires the real companion, licensed natural texts, completed expert review and owner-machine G-13 acceptance. CI's fixtures measure mechanics only.
+
+Review boundaries: Terms/Questions/custom tiers are resolved per analysis run; they do not change the shared picker used by Ask and Deep read. The partner picker shares initial discovery, opens without waiting for it, and has no tier/default-writing controls. Ask preserves the Analyze view/export selection and resends only completed answer pairs. Human reconciliation creates its completed run and records in one IndexedDB transaction. Source viewport observers cache paragraph/item bindings and publish only changed visible sets; re-extraction refreshes the initial report. Exported Markdown preserves the source URL fragment and labels paragraph numbers without promising a nonexistent source anchor.

@@ -13,7 +13,7 @@ export class Conversations {
       const instructionKey=identity(config);
       let chat=chatId?await this.open(id):{schemaVersion:1,id,docId:doc.id,extractionVersion:doc.version,scope:scopeDescriptor(scope),scopeKey:scopeKey(scope),target:structuredClone(target),language:config.language??'en',promptVersion:PROMPT_VERSION,instructionKey,turns:[],createdAt:Date.now()};
       if(chat.docId!==doc.id || chat.extractionVersion!==doc.version || chat.scopeKey!==scopeKey(scope) || targetKey(chat.target)!==targetKey(target) || chat.language!==(config.language??'en') || chat.promptVersion!==PROMPT_VERSION || chat.instructionKey!==instructionKey)throw Error('The scope, model or instructions changed. Start a new conversation.');
-      const answers=chat.answers??[],history=chat.turns.flatMap((t,i)=>[{role:'user',text:t.question},{role:'assistant',text:(answers[i]?.records??[]).map(e=>JSON.stringify(e.record)).join('\n')}]);
+      const answers=chat.answers??[],history=chat.turns.flatMap((t,i)=>{const answer=answers[i],text=(answer?.records??[]).map(e=>JSON.stringify(e.record)).join('\n');return answer?.run.status==='completed'&&text?[{role:'user',text:t.question},{role:'assistant',text}]:[];});
       delete chat.answers;const last=answers.at(-1)?.run;
       if(history.length>100)throw Error('This conversation is full. Start a new conversation.');
       // A new turn is explicit. Opening/restoring history never retries a turn.

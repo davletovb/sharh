@@ -3,7 +3,7 @@ import {safeURL} from '../analysis/contract.mjs';
 import {STORE_KEYS,validateArchive} from '../documents/store.mjs';
 const md=value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replace(/([\\`*_[\]#|])/g,'\\$1');
 export function markdown(saved,doc){
-  const source=safeURL(doc.address),link=n=>{if(!source)return `¶${n}`;const url=new URL(source);url.hash='sharh-paragraph='+n;return `[¶${n}](${url.href.replaceAll('(','%28').replaceAll(')','%29')})`;};
+  const source=safeURL(doc.address),link=n=>source?`[¶${n}](${source.replaceAll('(','%28').replaceAll(')','%29')})`:`¶${n}`;
   const blocks=saved.records.map(({record:r,flags=[]})=>[
     `## ${md(r.title??r.label??r.term??r.who??r.kind??r.level??r.t)}`,md(r.gist??r.gloss??r.text??''),
     r.src?`Original: ${md(r.src)}`:'',r.tr?`Translation: ${md(r.tr)}`:'',r.quote?`> ${md(r.quote)}`:'',r.basis?`Basis: ${r.basis}`:'',
