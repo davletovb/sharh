@@ -32,7 +32,11 @@ test('failed opens preserve the current reader, pending PDF grants resume the re
     await reader.locator('#open-file').setInputFiles(blankFile);await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.includes('no extractable text'));
     assert.ok((await reader.locator('#text-blocks').textContent()).includes('Second source content.'));
     await reader.locator('#text-blocks .paragraph').last().click();assert.equal(await reader.locator('#text-blocks .selected').count(),1);report.checks.failedPDFOverHTML=true;
-    await reader.locator('#open-file').setInputFiles('corpus/fixtures/pdf/outlined-book.pdf');await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]'));
+    await reader.locator('#open-file').setInputFiles('corpus/fixtures/pdf/outlined-book.pdf');
+    // PDFView renders before commitDocument finishes the workspace/history and
+    // releases operate()'s busy guard. setInputFiles can dispatch on a disabled
+    // input, so a canvas alone is not readiness for the next file selection.
+    await reader.waitForFunction(()=>document.querySelector('.pdf-page[data-rendered="true"]')&&!document.querySelector('#open-file').disabled&&document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
     const previousTitle=await reader.locator('#document-title').textContent();
     await reader.locator('#open-file').setInputFiles(blankFile);await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.includes('no extractable text'));
     assert.equal(await reader.locator('#document-title').textContent(),previousTitle);assert.equal(await reader.locator('.pdf-page').count(),2);
