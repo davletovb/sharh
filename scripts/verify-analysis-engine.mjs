@@ -18,7 +18,7 @@ try {
   await cp(join(world.env.XDG_CONFIG_HOME,'google-chrome/NativeMessagingHosts/com.seatline.host.json'),join(profile,'NativeMessagingHosts/com.seatline.host.json'));
   const extension=resolve('dist/sharh');
   context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',env:world.env,args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
-  const page=await context.newPage();await page.goto(`${world.origin}ui/reader.html`);await installBrowserTestAPI(page);
+  const page=await context.newPage();await page.goto(`${world.origin}ui/reader.html`);await page.locator('.workspace-nav').waitFor();await installBrowserTestAPI(page);
   const result=await page.evaluate(async()=> {
     const {openDocumentStore,exampleDocument,buildScope,createAnalysisEngine}=SharhTest;
     const store=await openDocumentStore({name:'d-real-broker'}),doc=await exampleDocument();await store.saveDocument(doc);
@@ -66,7 +66,8 @@ try {
   // E uses the same engine through its actual packaged controls and worker RPC.
   await page.locator('#open-file').setInputFiles('corpus/fixtures/html/article-en.html');
   await page.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
-  await page.locator('.analysis-controls select').selectOption('logic');
+  await page.locator('.lens-bar').getByRole('button',{name:'Logic',exact:true}).click();
+  await page.locator('.adjust summary').click();
   await page.locator('.analysis-controls').getByLabel('Focus (optional)',{exact:true}).fill('fixture:truncate');
   await page.locator('.analysis-controls').getByRole('button',{name:'Analyze',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.run-state').textContent.startsWith('Partial result saved'));
@@ -81,6 +82,7 @@ try {
   await page.waitForFunction(()=>document.querySelectorAll('.analysis-results .finding').length===6);
   const restoredIds=await page.locator('.run-history select').first().locator('option').evaluateAll(rows=>rows.map(r=>r.value).filter(Boolean));
   assert.deepEqual(restoredIds,savedIds);
+  await page.locator('.workspace-nav').getByRole('button',{name:'History',exact:true}).click();
   await page.locator('.run-history select').nth(1).selectOption(savedIds[1]);await page.getByRole('button',{name:'Compare versions',exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('.compare-columns>section').length===2);
   report.checks.packagedWorkspaceAnalyzeContinueReloadCompare=true;report.passed=true;

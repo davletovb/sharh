@@ -15,7 +15,7 @@ test('packaged reader: local HTML/PDF, selectable text, scopes, highlights, stor
     context=await chromium.launchPersistentContext(profile,{...browserOptions(),channel:'chromium',args:['--no-sandbox',`--disable-extensions-except=${extension}`,`--load-extension=${extension}`],ignoreDefaultArgs:['--disable-extensions']});
     context.setDefaultTimeout(15000);
     const reader=await context.newPage(); reader.on('pageerror',error=>report.errors.push(error.message));
-    await reader.goto(`${base}/ui/reader.html`);
+    await reader.goto(`${base}/ui/reader.html`);await reader.locator('.workspace-nav').waitFor();
     await reader.locator('#open-file').setInputFiles('corpus/fixtures/html/article-en.html');
     await reader.waitForFunction(()=>document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
     assert.ok(await reader.locator('#text-blocks .block').count()>4);
