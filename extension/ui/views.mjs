@@ -29,7 +29,7 @@ export function referenceButtons(doc,record,onReference) {
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
 }
-export function createAnalysisView(container,{lens='summary',gist=false,compact=false,flat=false,keep=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
+export function createAnalysisView(container,{lens='summary',gist=false,compact=false,flat=false,keep=null,ask=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
   const records=[],groups=new Map(),cards=new Map(),collapsed=new Set(),queue=[];let frame=null,disposed=false,ticket=0,layoutTimer=null,worker,mapBusy=false,layoutPending=false,pan={x:0,y:0,zoom:1},lastLayout=null,maxRenderMs=0,visible=new Set();
   const root=element('div','','analysis-view'),mapLens=!flat&&['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
@@ -85,6 +85,17 @@ title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t!==
     if(entry.flags?.length)card.append(element('p',entry.flags.map(readable).join(' · '),'validation-flags'));
     if(onlyOutline){const [first,last]=r.span,block=doc?.blocks.find(b=>b.n===first),original=(block?.source?.refs??[block?.source?.n??null])[0],row=element('div','','references'),range=button(first===last?`¶${first}`:`¶${first}–${last}`,()=>onReference(first,original),'reference');range.dataset.ref=first;row.append(range);card.append(row);}
     else card.append(referenceButtons(doc,r,onReference));
+    // A question can be tried or answered in place, and any other finding can be asked about. The turn is tied to this reading.
+    if(compact&&ask&&r.t==='q'){
+      const form=element('div','','answer-form'),area=element('textarea'),send=button('Check my answer',async()=>{const answer=area.value;area.value='';send.disabled=true;form.hidden=true;tryIt.setAttribute('aria-expanded','false');await ask.question(entry,{mode:'try',answer});},'primary');
+      area.rows=3;area.maxLength=4000;area.setAttribute('aria-label',`Your answer to: ${r.text}`);form.hidden=true;send.disabled=true;area.addEventListener('input',()=>{send.disabled=!area.value.trim();});form.append(area,send);
+      const tryIt=button('Try an answer',()=>{form.hidden=!form.hidden;tryIt.setAttribute('aria-expanded',String(!form.hidden));if(!form.hidden)area.focus();},'ghost'),show=button('Show a suggested answer',()=>ask.question(entry,{mode:'suggest'}),'ghost');
+      tryIt.setAttribute('aria-expanded','false');tryIt.setAttribute('aria-label',`Try an answer to: ${r.text}`);show.setAttribute('aria-label',`Show a suggested answer to: ${r.text}`);
+      const row=element('div','','question-actions');row.append(tryIt,show);card.append(row,form);
+    } else if(compact&&ask&&!['sum','term'].includes(r.t)&&(r.text||r.gist||r.gloss)) {
+      const about=button('Ask about this',()=>ask.finding(entry,{title:r.t==='chk'?CHECK_NAME[r.part]??CHECK_HEADING[r.part]:plain??name}),'ghost ask-about');
+      about.setAttribute('aria-label',`Ask about this: ${[...(r.text??r.gist??r.gloss)].slice(0,60).join('')}`);card.append(about);
+    }
     // A term on a card can be kept in the book's glossary. Until it is kept it is only a suggestion.
     if(compact&&keep&&r.t==='term'){
       const mark=()=>{kept.textContent='In your glossary';kept.disabled=true;kept.classList.add('kept');kept.setAttribute('aria-label',`${r.src} is in your glossary`);};

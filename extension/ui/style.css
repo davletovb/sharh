@@ -478,6 +478,12 @@ button.recent span { font-weight: 400; }
 .convo-card .finding .inspect-finding:hover { color: var(--text); background: none; }
 .convo-card .finding .reading-text { margin: 0 0 6px; }
 .convo-card .map-toggle { margin: 0 0 8px; }
+.convo-card .question-actions { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; }
+.convo-card .question-actions button, .convo-card .ask-about { min-height: 28px; padding-block: 2px; font-size: 13px; }
+.convo-card .ask-about { margin: 4px 0 0; }
+.convo-card .answer-form { display: grid; gap: 6px; margin: 8px 0 0; }
+.convo-card .answer-form textarea { width: 100%; }
+.convo-card .answer-form[hidden] { display: none; }
 .menu-heading { padding: 8px 12px 2px; font: 600 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .menu-group { display: block; }
 .analysis-view[data-lens='check'] .check-part { margin: 0 0 14px; padding: 0; }

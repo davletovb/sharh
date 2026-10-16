@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
-import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,QUIZ_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
 import {markdown} from '../src/toolkit/exports.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
@@ -67,4 +67,13 @@ test('the outline is a Structure operation and Main ideas is a lens of theme rec
  const entries=[],parser=new RecordParser({lens:'ideas',blocks:scope.blocks,onRecord:e=>entries.push(e)}),theme=i=>JSON.stringify({t:'theme',id:'t'+i,label:'Idea '+i,text:'Why it matters.',refs:[3]})+'\n';
  parser.push(Array.from({length:7},(_,i)=>theme(i)).join('')+JSON.stringify({t:'code',id:'c',theme:'t0',label:'x',text:'x'})+'\n');parser.finish();
  assert.equal(entries.length,5);assert.equal(parser.metrics.dropped.limit,2);assert.ok(parser.metrics.dropped.type,'a code is not a Main ideas record');
+});
+
+test('the questions ask for three to five, with no answers, and only on the Questions lens',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ const quiz=assemblePrompt(doc,scope,{lens:'questions',operation:'quiz',budget:5}),plain=assemblePrompt(doc,scope,{lens:'questions'}),task=taskOf(quiz);
+ assert.equal(task.instructions,QUIZ_INSTRUCTIONS);assert.equal(task.maxRecords,5);assert.notEqual(quiz.promptKey,plain.promptKey);
+ for(const phrase of [/three to five questions/,/at least one question that tests what the text says/,/do not force every level/,/no answers and no hints/])assert.match(task.instructions,phrase);
+ assert.equal(taskOf(plain).instructions,LENS_INSTRUCTIONS.questions,'the Questions lens keeps its own instructions');
+ for(const lens of ['summary','terms','check'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'quiz'}),/INVALID_TASK/);
 });

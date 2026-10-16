@@ -1,7 +1,7 @@
 import {serializeScope} from '../documents/scopes.mjs';
 import {contentHash} from '../documents/model.mjs';
 import {PROMPT_VERSION,outputContract,allowedTypes,textValue,customDefinition,assertCanonicalRecords} from './contract.mjs';
-import {taskInstructions,ASK_INSTRUCTIONS,SITUATE_INSTRUCTIONS,GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS} from './lenses.mjs';
+import {taskInstructions,ASK_INSTRUCTIONS,SITUATE_INSTRUCTIONS,GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,QUIZ_INSTRUCTIONS} from './lenses.mjs';
 import {scopedGlossary} from '../across/glossary.mjs';
 export {PROMPT_VERSION};
 const groundingRules='context explains selected spans but is not itself the selected passage. Each selected[].text is the exact selected source text; start/end are UTF-16 offsets into the containing paragraph. Read selected[].text as the object of a passage action, not the entire paragraph. Passage actions must cite at least one selected paragraph; context references may supplement it. Cite only supplied paragraph numbers (n means ¶n), including the original numbering across gaps; never invent or renumber references.';
@@ -21,7 +21,7 @@ export function scopeDescriptor(scope) {
 }
 export const scopeKey = scope => hash(scopeDescriptor(scope));
 const rulesFor=config=>config.operation==='situate'?SEARCH_RULES:RULES;
-const instructionsFor=config=>config.customLens?customDefinition(config.customLens).instructions:config.operation==='ask'?ASK_INSTRUCTIONS:config.operation==='situate'?SITUATE_INSTRUCTIONS:config.operation==='gist'?GIST_INSTRUCTIONS:config.operation==='learn'?LEARN_INSTRUCTIONS:config.operation==='outline'?OUTLINE_INSTRUCTIONS:taskInstructions(config.lens,config.action);
+const instructionsFor=config=>config.customLens?customDefinition(config.customLens).instructions:config.operation==='ask'?ASK_INSTRUCTIONS:config.operation==='situate'?SITUATE_INSTRUCTIONS:config.operation==='gist'?GIST_INSTRUCTIONS:config.operation==='learn'?LEARN_INSTRUCTIONS:config.operation==='outline'?OUTLINE_INSTRUCTIONS:config.operation==='quiz'?QUIZ_INSTRUCTIONS:taskInstructions(config.lens,config.action);
 export function promptIdentity(scope,config,{rules=rulesFor(config),instructions=instructionsFor(config),contract=outputContract(config.lens,config.customLens)}={}) {
   return hash({promptVersion:PROMPT_VERSION,scope:scopeDescriptor(scope),config,rules,instructions,contract});
 }
@@ -31,7 +31,7 @@ export function assemblePrompt(doc,scope,{lens,action=null,language='en',budget=
   if(customLens)customLens=customDefinition(customLens);allowedTypes(lens,customLens);
   if(typeof language!=='string' || !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8}){0,3}$/.test(language))throw Error('INVALID_LANGUAGE');
   if(!Number.isSafeInteger(budget) || budget<1 || budget>200 || typeof focus!=='string' || typeof frame!=='string' || focus.length>4000 || frame.length>4000)throw Error('INVALID_TASK');
-  if(![null,'ask','situate','gist','learn','outline'].includes(operation) || operation==='ask' && lens!=='passage' || operation==='situate' && lens!=='literature' || operation==='gist' && lens!=='summary' || operation==='learn' && lens!=='terms' || operation==='outline' && lens!=='structure' || typeof question!=='string' || question.length>12000 || !Array.isArray(history) || history.length>100 || history.some(m=>!['user','assistant'].includes(m?.role) || typeof m.text!=='string' || m.text.length>262144))throw Error('INVALID_TASK');
+  if(![null,'ask','situate','gist','learn','outline','quiz'].includes(operation) || operation==='ask' && lens!=='passage' || operation==='situate' && lens!=='literature' || operation==='gist' && lens!=='summary' || operation==='learn' && lens!=='terms' || operation==='outline' && lens!=='structure' || operation==='quiz' && lens!=='questions' || typeof question!=='string' || question.length>12000 || !Array.isArray(history) || history.length>100 || history.some(m=>!['user','assistant'].includes(m?.role) || typeof m.text!=='string' || m.text.length>262144))throw Error('INVALID_TASK');
   glossary=scopedGlossary(glossary,scope);
   if(digests){if(!Array.isArray(digests)||!digests.length||digests.length>1000)throw Error('INVALID_DIGEST_CONTEXT');for(const d of digests){if(typeof d.title!=='string'||d.title.length>1200||!Array.isArray(d.span)||d.span.length!==2||!d.span.every(Number.isSafeInteger)||d.span[0]<1||d.span[1]<d.span[0]||d.span[1]>doc.blocks.length)throw Error('INVALID_DIGEST_CONTEXT');assertCanonicalRecords(d.records,'digest',{scope:new Set(scope.blocks.filter(b=>b.n>=d.span[0]&&b.n<=d.span[1]).map(b=>b.n)),sections:doc.sections});}}
   const config={lens,action,language,budget,focus:textValue(focus,4000),frame:textValue(frame,4000),tier,priority,...(glossary.length?{glossary:structuredClone(glossary)}:{}),...(digests?{digests:structuredClone(digests)}:{}),...(customLens?{customLens}:{}),...(operation?{operation,question:textValue(question,12000),history:structuredClone(history)}:{})};

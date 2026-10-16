@@ -216,3 +216,92 @@ test('Understand and place: a flat outline with paragraph ranges, and Main ideas
     await writeFile('test-results/readings-understand.json', JSON.stringify(report, null, 2) + '\n');
   }
 });
+
+test('Questions connect to Ask: try an answer, a suggested answer, and asking about a finding', async () => {
+  const w = await setup(), {page, root} = w, report = {checks: {}};
+  const settle = async count => { await page.waitForFunction(n => document.querySelectorAll('#convo-fixture .convo-card').length >= n && !c.workspace.active, count); await page.evaluate(() => c.workspace.view?.settled()); };
+  const lastAsk = () => page.evaluate(() => JSON.parse(c.path.calls.at(-1).request.task.split('\n')[1]));
+  const chats = () => page.evaluate(async () => (await c.store.all('chats')).map(chat => ({id: chat.id, docId: chat.docId, version: chat.extractionVersion, scopeKey: chat.scopeKey, turns: chat.turns})));
+  const runIdOf = lens => page.evaluate(async lens => (await c.store.all('runs')).find(run => run.lens === lens)?.id, lens);
+  try {
+    // Three to five questions, with no answers given away.
+    const quiz = await runWay(w, 'Questions to check yourself');
+    const asked = await lastAsk();
+    assert.equal(asked.operation, 'quiz');
+    assert.equal(asked.lens, 'questions');
+    assert.equal(asked.maxRecords, 5);
+    assert.match(asked.instructions, /no answers and no hints/);
+    const questions = await quiz.locator('.finding.q').count();
+    assert.ok(questions >= 3 && questions <= 5);
+    assert.equal(await quiz.getByRole('button', {name: /^Show a suggested answer to: /}).count(), questions);
+    const quizRun = await runIdOf('questions');
+    report.checks.quiz = true;
+
+    // A suggested answer is an Ask turn tied to that question, its reading, text version and scope.
+    const second = quiz.locator('.finding.q').nth(1), secondText = await second.locator('.reading-text').textContent();
+    await second.getByRole('button', {name: /^Show a suggested answer to: /}).click();
+    await settle(2);
+    let ask = await lastAsk();
+    assert.equal(ask.operation, 'ask');
+    assert.ok(ask.question.includes(secondText) && ask.question.includes('suggested answer'));
+    assert.match(ask.question, /more than one defensible answer/, 'a question that asks for analysis may have several answers');
+    assert.equal(await root.locator('.convo-me').last().textContent(), `Suggested answer to “${secondText.length > 50 ? secondText.slice(0, 49) + '…' : secondText}”`);
+    let [chat] = await chats();
+    assert.deepEqual(chat.turns[0].about, {runId: quizRun, sequence: chat.turns[0].about.sequence, kind: 'question', text: secondText});
+    assert.ok(Number.isSafeInteger(chat.turns[0].about.sequence));
+    const doc = await page.evaluate(() => ({id: c.doc.id, version: c.doc.version}));
+    assert.equal(chat.docId, doc.id);
+    assert.equal(chat.version, doc.version);
+    report.checks.suggested = true;
+
+    // Try an answer: the box opens, the button waits for words, and the answer goes with the question.
+    const first = quiz.locator('.finding.q').first(), firstText = await first.locator('.reading-text').textContent();
+    await first.getByRole('button', {name: /^Try an answer to: /}).click();
+    const box = first.getByRole('textbox', {name: /^Your answer to: /}), send = first.getByRole('button', {name: 'Check my answer'});
+    assert.equal(await send.isDisabled(), true);
+    await box.fill('It claims something plain.');
+    assert.equal(await send.isEnabled(), true);
+    await send.click();
+    await settle(3);
+    ask = await lastAsk();
+    assert.ok(ask.question.includes(firstText) && ask.question.includes('My answer: It claims something plain.'));
+    assert.doesNotMatch(ask.question, /defensible/, 'a question that tests understanding has one answer');
+    assert.equal(await box.isVisible(), false);
+    [chat] = await chats();
+    assert.equal((await chats()).length, 1, 'the same text and scope continue one conversation');
+    assert.equal(chat.turns.length, 2);
+    assert.equal(chat.turns[1].about.kind, 'question');
+    report.checks.tried = true;
+
+    // Any finding can be asked about: the question box says what about, and the turn records it.
+    const check = await runWay(w, 'Check the argument'), checkRun = await runIdOf('check');
+    await check.getByRole('button', {name: /^Ask about this: The author wants the reader/}).click();
+    assert.match(await root.locator('.convo-quote').textContent(), /Asking about\s*Main claim: The author wants the reader/);
+    const input = root.getByRole('textbox', {name: 'Ask about this text'});
+    await input.fill('Why does the author hold this?');
+    await input.press('Enter');
+    await settle(5);
+    ask = await lastAsk();
+    assert.match(ask.question, /^Here is a finding from an earlier reading \(Main claim\): “The author wants the reader to accept the fixture claim\.” Why does the author hold this\?$/);
+    assert.equal(await root.locator('.convo-me').last().textContent(), 'Why does the author hold this?');
+    await root.locator('.convo-quote').waitFor({state: 'hidden'});
+    [chat] = await chats();
+    const turn = chat.turns.at(-1);
+    assert.equal(turn.about.kind, 'finding');
+    assert.equal(turn.about.runId, checkRun);
+    assert.equal(turn.label, 'Why does the author hold this?');
+    report.checks.finding = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    assert.deepEqual(w.errors, []);
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/readings-ask.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});

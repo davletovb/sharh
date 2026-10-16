@@ -143,12 +143,27 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     if(customLens?.name)return customLens.name;if(lensName?.startsWith('custom:'))return customMap.get(lensName)?.name??'Custom lens';
     if(operation==='situate')return PLAIN.situate;return PLAIN[lensName]??lensNames().get(lensName)??lensName;
   };
+  // A question or finding on a card is asked about through Ask. The turn carries the card's run, so Ask reads that reading's own text and scope.
+  let pendingAbout=null;
+  const clip=(text,n=70)=>{const t=String(text).replace(/\s+/g,' ').trim();return [...t].length>n?[...t].slice(0,n-1).join('')+'…':t;};
+  const askLinks=link=>({
+    question(entry,{mode,answer=''}){
+      const r=entry.record;if(!link.runId)throw Error('Wait for this reading to finish first.');
+      const open=['analysis','evaluation','debate'].includes(r.level)?' This question may have more than one defensible answer: give the strongest answer the text supports and say where reasonable readers could differ.':'';
+      const text=mode==='try'?`Here is a question about the text: “${r.text}” My answer: ${answer.trim()} Tell me what I got right, what I missed, and where the text says so.${open}`:`Here is a question about the text: “${r.text}” Give a suggested answer grounded in the text and cite the paragraphs.${open}`;
+      return toolkit.askInStream(text,{about:{runId:link.runId,sequence:entry.sequence,kind:'question',text:r.text},label:mode==='try'?`My answer to “${clip(r.text,50)}”`:`Suggested answer to “${clip(r.text,50)}”`});
+    },
+    finding(entry,{title}){
+      const r=entry.record,text=r.text??r.gist??r.gloss??'';if(!link.runId)throw Error('Wait for this reading to finish first.');
+      pendingAbout={runId:link.runId,sequence:entry.sequence,kind:'finding',text,title};convo.setQuote(`${title}: ${clip(text,60)}`,()=>{pendingAbout=null;});convo.focusInput();
+    }
+  });
   // Terms on a conversation card are kept in the book's glossary, which is the reader's own list.
   const bookGlossaryStore=new Glossary(store),keeper=source=>source?.derived?null:{state:term=>bookGlossaryStore.state(source.id,term),async save(r){await bookGlossaryStore.keep(source.id,{term:r.src,translation:r.tr,note:r.text,refs:r.refs,aliases:[],language:appearance.value.language});await across?.refreshGlossary();}};
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
-      if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{gist:true,compact:true,flat:info.operation==='outline',keep:keeper(source),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
+      const link={runId:null};if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
+      view=createAnalysisView(results,{gist:true,compact:true,flat:info.operation==='outline',keep:keeper(source),ask:askLinks(link),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});view.link=link;applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }
@@ -184,7 +199,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const source=await store.getDocument(snapshot.id,saved.run.extractionVersion);if(stamp!==epoch || !source)return;
     selectedRun=saved;
     if(layout==='conversation'&&cardsByRun.has(saved.run.id)){const shown=cardsByRun.get(saved.run.id);currentCard=shown;shown.root.scrollIntoView?.({block:'nearest'});resultHead.hidden=false;feedback(saved,{loaded:true});return;}
-    newView(saved.run.lens,source,saved.run.config?.customLens,{action:saved.run.config?.action,scope:saved.run.scope,operation:saved.run.config?.operation});currentCard?.setSub(new Date(saved.run.createdAt).toLocaleDateString());for(const entry of saved.records)view.record(entry);showMeta(saved.run);resultHead.hidden=false;
+    newView(saved.run.lens,source,saved.run.config?.customLens,{action:saved.run.config?.action,scope:saved.run.scope,operation:saved.run.config?.operation});if(view.link)view.link.runId=saved.run.id;currentCard?.setSub(new Date(saved.run.createdAt).toLocaleDateString());for(const entry of saved.records)view.record(entry);showMeta(saved.run);resultHead.hidden=false;
     resume.hidden=freshResume.hidden=!(saved.run.canContinue!==false && saved.run.metrics?.truncated && !saved.run.continuedBy && saved.run.status!=='running');
     feedback(saved,{loaded:true});inspection.hidden=true;comparison.hidden=true;
   }
@@ -196,7 +211,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     for(const control of controls.querySelectorAll('input,select,textarea'))control.disabled=true;modelPicker.setDisabled(true);history.inert=true;analyze.disabled=true;
     try {
       const saved=await operation({signal:abort.signal,onLens:name=>{if(stamp!==epoch||chat)return;if(sink&&name===sinkLens&&sink.metrics.records===0)return;sink=newView(name,source,null,{});sinkLens=name;},onEvent:event=> {
-        if(stamp!==epoch)return;if(event.type==='run' && event.status==='running')runId=event.runId;
+        if(stamp!==epoch)return;if(event.type==='run' && event.status==='running'){runId=event.runId;if(sink?.link)sink.link.runId=event.runId;}
         if(event.type==='record')sink?.record(event.entry);if(event.type==='reset')sink?.reset();
         if(chat)return;
         const state=runState(event);if(state)status.textContent=state;
@@ -256,7 +271,11 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   }
   const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(g.direct||chooseLens(g.lens),run(g.run??{})));
   convo.setGoals(GOALS,goal);
-  convo.onAsk(text=>toolkit.askInStream(text));
+  convo.onAsk(async text=>{
+    const about=pendingAbout;if(!about)return toolkit.askInStream(text);
+    await toolkit.askInStream(`Here is a finding from an earlier reading (${about.title}): “${about.text}” ${text}`,{about,label:text});
+    pendingAbout=null;convo.setQuote(null);
+  });
   // The conversation's other readings, grouped by what the reader wants to do. Studio keeps every detailed lens.
   const searchable=()=>modelPicker.info?.capabilities?.webSearch===true,ready_=()=>canRun();
   const task=(label,job,extra={})=>({label,action:()=>start(label,job),get disabled(){return !ready_();},...extra});
@@ -269,7 +288,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     ...['meta-reading','literature'].map(v=>task(PLAIN[v],()=>{chooseLens(v);return run();})),
     task(searchable()?PLAIN.situate:'Where it sits · needs a model with web search',()=>{chooseLens('situate');return run();},{get disabled(){return !ready_()||!searchable();},title:searchable()?'':'The chosen model does not offer web search. Choose one that does in Settings.'}),
     '-',{heading:'Test yourself'},
-    task(PLAIN.questions,()=>{chooseLens('questions');return run();}),
+    task(PLAIN.questions,()=>run({lens:'questions',operation:'quiz',budget:5})),
     ...(customMap.size?['-',{heading:'Your lenses'}]:[]),
     ...[...customMap].map(([v,d])=>task(d.name,()=>{chooseLens(v);return run();}))
   ]);
@@ -288,7 +307,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   }
   async function switchLayout(next) {
     if(controller)throw Error('Stop the current run before changing the view.');if(next===layout)return;
-    askView=false;view?.dispose();view=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();selectedRun=null;convo.reset();studioResults.replaceChildren();resultHead.hidden=true;setLayout(next);onLayout(next);
+    askView=false;view?.dispose();view=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();selectedRun=null;pendingAbout=null;convo.reset();studioResults.replaceChildren();resultHead.hidden=true;setLayout(next);onLayout(next);
     if(doc)await savedRuns({display:true});
   }
   openArea('analyze');history.hidden=true;updatePreview();
@@ -320,7 +339,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     else items.push({label:'Open in full tab',action:()=>toolkit.studio()});
     return items;
   }
-  return {ready,run,scopeHost,openArea,openAsk,menuItems,get documentsHost(){return across.documentsHost;},setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
+  return {ready,run,scopeHost,openArea,openAsk,menuItems,get documentsHost(){return across.documentsHost;},setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';pendingAbout=null;convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
     setScope(value){scope=value;toolkit.scopeChanged(value);updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
     async passage(action,selection,{intentId,onAccepted}={}){
       if(controller)throw Error('Stop the current run before starting another.');

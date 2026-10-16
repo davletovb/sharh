@@ -16,27 +16,39 @@ export async function createToolkit({analyze,ask,pairs:pairHost=null,root,store,
   const chatChips=element('div','','chat-chips');chatChips.setAttribute('role','group');chatChips.setAttribute('aria-label','Saved conversations');
   ask.replaceChildren(element('h3','Ask about your text'),element('p','Answers use this scope and cite its paragraphs. Changing scope, language or model starts a separate conversation.'),field('Saved conversations',chatHistory),fresh,chatChips,chatLog,field('Question',question),send,stopAnswer,chatStatus);
   chatHistory.addEventListener('change',()=>openChat(chatHistory.value).catch(api.fail));
-  async function chatList(){const {doc}=api.state();if(!doc)return;const chats=await conversations.list(doc.id);options(chatHistory,[['','Choose a conversation'],...chats.map(c=>[c.id,`${c.scope.label} · ${c.target.provider} · ${c.turns[0]?.question.slice(0,60)??'New conversation'}`])]);if(chatId)chatHistory.value=chatId;chatChips.replaceChildren();for(const c of chats){const first=c.turns[0]?.question??'New conversation',chip=button(first.length>42?first.slice(0,42)+'…':first,()=>openChat(c.id),'chip');chip.setAttribute('aria-label',`Open conversation: ${first}`);chip.title=`${c.scope.label} · ${new Date(c.updatedAt).toLocaleString()}`;chip.setAttribute('aria-pressed',String(c.id===chatId));chatChips.append(chip);}}
+  async function chatList(){const {doc}=api.state();if(!doc)return;const chats=await conversations.list(doc.id);options(chatHistory,[['','Choose a conversation'],...chats.map(c=>[c.id,`${c.scope.label} · ${c.target.provider} · ${(c.turns[0]?.label??c.turns[0]?.question)?.slice(0,60)??'New conversation'}`])]);if(chatId)chatHistory.value=chatId;chatChips.replaceChildren();for(const c of chats){const first=c.turns[0]?.label??c.turns[0]?.question??'New conversation',chip=button(first.length>42?first.slice(0,42)+'…':first,()=>openChat(c.id),'chip');chip.setAttribute('aria-label',`Open conversation: ${first}`);chip.title=`${c.scope.label} · ${new Date(c.updatedAt).toLocaleString()}`;chip.setAttribute('aria-pressed',String(c.id===chatId));chatChips.append(chip);}}
   function groundedText(container,text,refs,doc,scope){let start=0;for(const m of text.matchAll(/\[¶(\d+)\]/g)){container.append(document.createTextNode(text.slice(start,m.index)));const n=Number(m[1]);if(refs?.includes(n)&&scope.blocks.some(b=>b.n===n))container.append(button(`¶${n}`,()=>api.reference(n,doc),'reference'));else container.append(document.createTextNode(`[unverified ¶${n}]`));start=m.index+m[0].length;}container.append(document.createTextNode(text.slice(start)));}
   // In the conversation layout answers go into the shared stream instead of this panel's own transcript.
   let stream=null;
   const passageName=scope=>String(scope?.label??'').replace(/^Selection · ?/,'')||'this passage';
   function answerInto(body,answer,doc,scope){for(const {record:r} of answer.records){const p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,doc,scope);body.append(p,referenceButtons(doc,r,n=>api.reference(n,doc)));}}
   function newConversation(){revision++;chatId=null;chatContext=null;chatLog.replaceChildren();}
-  async function askInStream(text){
+  // A question about a finding of an earlier reading is asked of that reading's own text version and scope, and the turn records the link.
+  async function aboutConfig(about){
+    const open=api.configuration().doc,saved=await engine.repository.get(about.runId);
+    if(!saved || saved.run.docId!==open?.id)throw Error('That reading is no longer available. Run it again.');
+    const source=await store.getDocument(saved.run.docId,saved.run.extractionVersion);if(!source)throw Error('The text this reading was made from has been removed.');
+    return {source,scope:restoreScope(source,saved.run.scope)};
+  }
+  async function askInStream(text,{about=null,label=null}={}){
     if(api.active())throw Error('Stop the current run before starting another.');text=text.trim();if(!text)throw Error('Type a question first.');
-    const config={...api.configuration(),...(chatContext??{})};if(!config.doc||!config.scope)throw Error('Open a text first.');
+    let config={...api.configuration(),...(chatContext??{})},askChat=chatId;
+    if(about){
+      const {source,scope}=await aboutConfig(about);config={...api.configuration(),doc:source,scope};
+      askChat=chatContext&&chatContext.doc.version===source.version&&scopeKey(chatContext.scope)===scopeKey(scope)?chatId:null;
+    }
+    if(!config.doc||!config.scope)throw Error('Open a text first.');
     if(!api.canRun())throw Error('Sharh needs a signed-in model to answer. Choose one in Settings.');
-    const ticket=revision,bubble=stream.bubble(text),card=stream.card({title:'Answer'}),body=card.body;card.setBusy(true);let saved;
+    const ticket=revision,bubble=stream.bubble(label??text),card=stream.card({title:'Answer'}),body=card.body;card.setBusy(true);let saved;
     try{
-      await api.work(async opts=>{saved=await conversations.ask(config,text,{...opts,chatId,onEvent:event=>{opts.onEvent(event);if(ticket!==revision)return;if(event.type==='reset')body.replaceChildren();if(event.type==='record'){const r=event.entry.record,p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,config.doc,config.scope);body.append(p);}}});return saved;},'passage',config.doc,{area:'ask'});
+      await api.work(async opts=>{saved=await conversations.ask(config,text,{...opts,chatId:askChat,about,label,onEvent:event=>{opts.onEvent(event);if(ticket!==revision)return;if(event.type==='reset')body.replaceChildren();if(event.type==='record'){const r=event.entry.record,p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,config.doc,config.scope);body.append(p);}}});return saved;},'passage',config.doc,{area:'ask'});
       if(ticket===revision){chatId=saved.chatId;chatContext={doc:config.doc,scope:config.scope};const answer=(await conversations.open(chatId)).answers.at(-1);if(answer){body.replaceChildren();answerInto(body,answer,config.doc,config.scope);card.setDetails(`${answer.run.status}${answer.run.session?.reusable===false?' · the next question starts fresh':''}`);}}
     }catch(error){if(error.chatId&&ticket===revision)chatId=error.chatId;if(!body.childNodes.length){card.root.remove();bubble.remove();}throw error;}
     finally{card.setBusy(false);}
   }
   async function renderChat(id){const ticket=revision,chat=await conversations.open(id),doc=await store.getDocument(chat.docId,chat.extractionVersion);if(disposed||ticket!==revision||!doc)return;const scope=restoreScope(doc,chat.scope);
-    if(stream){chatContext={doc,scope};chatId=id;for(const [i,turn]of chat.turns.entries()){stream.bubble(turn.question);const card=stream.card({title:'Answer'}),answer=chat.answers[i];if(answer)answerInto(card.body,answer,doc,scope);else card.body.append(element('p','This turn was removed.'));}if(!chat.turns.length)stream.setQuote(passageName(scope),newConversation);return;}
-    chatLog.replaceChildren();for(const [i,turn]of chat.turns.entries()){const article=element('article','','chat-turn'),h=element('h4',turn.question),answer=chat.answers[i];article.append(h);if(!answer)article.append(element('p','This turn was removed.'));else{for(const {record:r}of answer.records){const p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,doc,scope);article.append(p,referenceButtons(doc,r,n=>api.reference(n,doc)));}article.append(element('p',`${answer.run.status}${answer.run.session?.reusable===false?' · next question starts fresh':''}`,'note'));}chatLog.append(article);}chatContext={doc,scope};chatId=id;await chatList();}
+    if(stream){chatContext={doc,scope};chatId=id;for(const [i,turn]of chat.turns.entries()){stream.bubble(turn.label??turn.question);const card=stream.card({title:'Answer'}),answer=chat.answers[i];if(answer)answerInto(card.body,answer,doc,scope);else card.body.append(element('p','This turn was removed.'));}if(!chat.turns.length)stream.setQuote(passageName(scope),newConversation);return;}
+    chatLog.replaceChildren();for(const [i,turn]of chat.turns.entries()){const article=element('article','','chat-turn'),h=element('h4',turn.label??turn.question),answer=chat.answers[i];article.append(h);if(!answer)article.append(element('p','This turn was removed.'));else{for(const {record:r}of answer.records){const p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,doc,scope);article.append(p,referenceButtons(doc,r,n=>api.reference(n,doc)));}article.append(element('p',`${answer.run.status}${answer.run.session?.reusable===false?' · next question starts fresh':''}`,'note'));}chatLog.append(article);}chatContext={doc,scope};chatId=id;await chatList();}
   async function openChat(id){if(api.active())throw Error('Stop the current run before changing conversations.');if(!id)return;revision++;await renderChat(id);if(stream){stream.focusInput();return;}api.openArea('ask');question.focus();}
   async function sendQuestion(){
     if(api.active())throw Error('Stop the current run before starting another.');const text=question.value.trim();if(!text)throw Error('Type a question first.');const config={...api.configuration(),...(chatContext??{})};if(!config.doc||!config.scope)throw Error('Open a text and choose its scope first.');

@@ -126,3 +126,19 @@ test('terms a reading suggests are shown but not used until the reader keeps the
   assert.equal(glossarySnapshot([{term:'Older',translation:'saved before suggestions existed'},{term:'New',translation:'x',status:'suggested'}]).length,1,'rows from before suggestions count as the reader\'s own');
  }finally{w.close();}
 });
+
+test('a turn can record which finding it is about and a short label, and refuses a malformed link',async()=>{
+ const w=await world();
+ try{
+  const chat=new Conversations(w.engine),about={runId:'run-1',sequence:3,kind:'question',text:'What is claimed?'};
+  const first=await chat.ask(w.config,'Here is a question about the text: “What is claimed?” Give a suggested answer.',{about,label:'Suggested answer to “What is claimed?”'});
+  const opened=await chat.open(first.chatId);
+  assert.deepEqual(opened.turns[0].about,about);assert.equal(opened.turns[0].label,'Suggested answer to “What is claimed?”');
+  // A plain turn in the same chat carries neither.
+  await chat.ask(w.config,'And the evidence?',{chatId:first.chatId});
+  const again=await chat.open(first.chatId);assert.equal(again.turns.length,2);assert.equal(again.turns[1].about,undefined);assert.equal(again.turns[1].label,undefined);
+  for(const bad of [{runId:'',sequence:1,kind:'question'},{runId:'r',sequence:-1,kind:'question'},{runId:'r',sequence:1,kind:'other'},{runId:'r',sequence:1.5,kind:'finding'},{runId:'r',sequence:1,kind:'finding',text:'x'.repeat(2001)},'run-1'])await assert.rejects(chat.ask(w.config,'Q',{about:bad}),/INVALID_ABOUT/);
+  await assert.rejects(chat.ask(w.config,'Q',{label:'x'.repeat(201)}),/INVALID_LABEL/);
+  assert.equal((await chat.list(w.doc.id)).length,1,'a refused link starts no conversation');
+ }finally{w.close();}
+});
