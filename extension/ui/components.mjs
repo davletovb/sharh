@@ -49,8 +49,15 @@ export function menuButton({label, iconName = null, text = '', className = ''} =
   }
   function render() {
     list.replaceChildren();
+    let target = list;
     for (const item of (typeof items === 'function' ? items() : items).filter(i => i === '-' || !i.hidden)) {
-      if (item === '-') { list.append(element('hr')); continue; }
+      if (item === '-') { list.append(element('hr')); target = list; continue; }
+      // A heading opens a labelled group, which holds the items that follow it until the next separator.
+      if (item.heading) {
+        const group = element('div', '', 'menu-group'), heading = element('div', item.heading, 'menu-heading');
+        group.setAttribute('role', 'group'); group.setAttribute('aria-label', item.heading); heading.setAttribute('aria-hidden', 'true');
+        group.append(heading); list.append(group); target = group; continue;
+      }
       const b = element('button', item.label);
       b.type = 'button';
       b.setAttribute('role', 'menuitem');
@@ -59,7 +66,8 @@ export function menuButton({label, iconName = null, text = '', className = ''} =
         close({focus: true});
         Promise.resolve().then(() => item.action()).catch(error => b.dispatchEvent(new CustomEvent('sharh:error', {detail: error, bubbles: true})));
       });
-      list.append(b);
+      if (item.title) b.title = item.title;
+      target.append(b);
     }
   }
   trigger.addEventListener('click', () => (list.hidden ? open() : close({focus: true})));

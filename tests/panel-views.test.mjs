@@ -165,3 +165,38 @@ test('an argument check reads in a fixed order, folds assumptions, and conversat
  second.dispose();
  }finally{d.window.close();}
 });
+test('a flat outline lists sections with one paragraph range each and says when the outline is inferred',async()=> {
+ const d=dom(),doc=await exampleDocument(),refs=[];
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'structure',compact:true,flat:true,onReference:(n,original)=>refs.push([n,original]),workerFactory:()=>{throw Error('worker unavailable');}});
+ view.record({sequence:1,record:{t:'sec',id:'s1',title:'Opening',role:'context',gist:'It sets the scene.',span:[1,3],refs:[1,2,3]},flags:[]});
+ view.record({sequence:2,record:{t:'sec',id:'s2',parent:'s1',title:'The turn',role:'claim',gist:'It makes the claim.',span:[4,4],refs:[4]},flags:[]});
+ view.record({sequence:3,record:{t:'note',text:'A note that the list does not show.'},flags:[]});
+ await view.settled();
+ assert.equal(document.querySelector('.map-shell'),null);assert.equal(document.querySelector('.map-toggle'),null);
+ assert.deepEqual([...document.querySelectorAll('.finding.sec h5')].map(h=>h.textContent),['Opening','The turn']);
+ assert.deepEqual([...document.querySelectorAll('.finding.sec .reference')].map(b=>b.textContent),['¶1–3','¶4']);
+ assert.equal(document.querySelector('.finding.sec button[aria-expanded]'),null,'nothing to collapse');assert.doesNotMatch(document.body.textContent,/Part of|A note that/);
+ assert.equal(document.querySelector('.inferred-outline'),null,'the example text has headings');
+ document.querySelectorAll('.finding.sec .reference')[0].click();await Promise.resolve();assert.deepEqual(refs,[[1,null]]);
+ view.dispose();
+ // A text without headings says its outline is reconstructed.
+ const plain={...doc,blocks:doc.blocks.map(b=>({...b,kind:'para'}))},second=createAnalysisView(document.getElementById('host'),{doc:plain,lens:'structure',compact:true,flat:true,workerFactory:()=>{throw Error('worker unavailable');}});
+ assert.match(document.querySelector('.inferred-outline').textContent,/^Inferred outline: this text has no headings/);second.dispose();
+ }finally{d.window.close();}
+});
+test('on a conversation card a map waits behind Show map, and relations and basis use plain words',async()=> {
+ const d=dom(),doc=await exampleDocument();
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'thinking',compact:true,workerFactory:()=>{throw Error('worker unavailable');}});
+ view.record({sequence:1,record:{t:'concept',id:'a',term:'Care',gloss:'Taking trouble over something.',refs:[3]},flags:[]});
+ view.record({sequence:2,record:{t:'concept',id:'b',term:'Skill',gloss:'Practised ability.',refs:[3]},flags:[]});
+ view.record({sequence:3,record:{t:'edge',from:'a',to:'b',rel:'enables'},flags:[]});
+ view.record({sequence:4,record:{t:'facet',kind:'worldview',text:'Craft matters.',refs:[3],basis:'stated'},flags:[]});
+ await view.settled();
+ const shell=document.querySelector('.map-shell'),toggle=document.querySelector('.map-toggle');
+ assert.equal(shell.hidden,true);assert.equal(toggle.getAttribute('aria-expanded'),'false');assert.equal(toggle.textContent,'Show map');
+ toggle.click();await Promise.resolve();assert.equal(shell.hidden,false);assert.equal(toggle.getAttribute('aria-expanded'),'true');assert.equal(toggle.textContent,'Hide map');toggle.click();await Promise.resolve();assert.equal(shell.hidden,true);
+ assert.equal(document.querySelector('.finding.edge p').textContent,'Care → Skill · enables');
+ assert.equal(document.querySelector('.finding.facet .basis').textContent,'Stated in the text');assert.equal(document.querySelector('.finding.facet h5').textContent,'Worldview');
+ view.dispose();
+ }finally{d.window.close();}
+});

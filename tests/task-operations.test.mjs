@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
-import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
 import {markdown} from '../src/toolkit/exports.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
@@ -53,4 +53,18 @@ test('the argument check is its own lens with its own record, instruction and li
 test('an argument check exports with plain part names',async()=> {
  const doc=await exampleDocument(),saved={run:{lens:'check',version:1,config:{}},records:[{record:{t:'chk',part:'claim',text:'The claim.',refs:[3]}},{record:{t:'chk',part:'assessment',text:'Established so far.',refs:[3]}}]};
  const text=markdown(saved,doc);assert.match(text,/## Main claim/);assert.match(text,/## What the text establishes/);assert.doesNotMatch(text,/## chk/);
+});
+
+test('the outline is a Structure operation and Main ideas is a lens of theme records, at most five',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ const outline=assemblePrompt(doc,scope,{lens:'structure',operation:'outline',budget:12}),plain=assemblePrompt(doc,scope,{lens:'structure'});
+ assert.equal(taskOf(outline).instructions,OUTLINE_INSTRUCTIONS);assert.equal(taskOf(outline).maxRecords,12);assert.notEqual(outline.promptKey,plain.promptKey);
+ for(const phrase of [/at most twelve and never nested/,/Cover the whole scope without gaps or overlaps/,/no headings, infer a few sections/])assert.match(OUTLINE_INSTRUCTIONS,phrase);
+ assert.equal(taskOf(plain).instructions,LENS_INSTRUCTIONS.structure,'Structure keeps its own instructions');
+ for(const lens of ['summary','logic','terms'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'outline'}),/INVALID_TASK/);
+ const ideas=assemblePrompt(doc,scope,{lens:'ideas',budget:5}),contract=JSON.parse(ideas.request.task.split('\n')[3]);
+ assert.equal(taskOf(ideas).instructions,LENS_INSTRUCTIONS.ideas);assert.deepEqual(Object.keys(contract.types),['meta','theme','end']);assert.notEqual(LENS_INSTRUCTIONS.ideas,LENS_INSTRUCTIONS.themes,'Themes keeps its codebook');
+ const entries=[],parser=new RecordParser({lens:'ideas',blocks:scope.blocks,onRecord:e=>entries.push(e)}),theme=i=>JSON.stringify({t:'theme',id:'t'+i,label:'Idea '+i,text:'Why it matters.',refs:[3]})+'\n';
+ parser.push(Array.from({length:7},(_,i)=>theme(i)).join('')+JSON.stringify({t:'code',id:'c',theme:'t0',label:'x',text:'x'})+'\n');parser.finish();
+ assert.equal(entries.length,5);assert.equal(parser.metrics.dropped.limit,2);assert.ok(parser.metrics.dropped.type,'a code is not a Main ideas record');
 });

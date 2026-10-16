@@ -38,7 +38,7 @@ test('shared contracts cover every advertised record type and lens-specific enum
     thinking:[{t:'facet',kind:'worldview',text:'x',refs:[2],basis:'inferred'},{t:'concept',id:'a',term:'t',gloss:'g',refs:[2]},{t:'edge',from:'a',to:'b',rel:'causes'}],
     themes:[{t:'theme',id:'t',label:'x',text:'x',refs:[2]},{t:'code',id:'c',theme:'t',label:'x',text:'x'},{t:'excerpt',code:'c',ref:2,quote:'x'},{t:'tension',a:'t',b:'c',text:'x',refs:[2]},{t:'memo',text:'x'}],
     'meta-reading':[{t:'facet',kind:'audience',text:'x',refs:[2],basis:'inferred'}],critique:[{t:'facet',kind:'strength',text:'x',refs:[2],basis:'stated'}],
-    literature:[{t:'cite',who:'Author',role:'foil',text:'x',refs:[2]}],terms:[{t:'term',src:'x',tr:'y',text:'x',refs:[2]}],questions:[{t:'q',level:'analysis',text:'x',refs:[2]}],check:[{t:'chk',part:'claim',text:'x',refs:[2],basis:'stated'},{t:'chk',part:'assessment',text:'x',refs:[2]}],
+    literature:[{t:'cite',who:'Author',role:'foil',text:'x',refs:[2]}],terms:[{t:'term',src:'x',tr:'y',text:'x',refs:[2]}],questions:[{t:'q',level:'analysis',text:'x',refs:[2]}],ideas:[{t:'theme',id:'t',label:'x',text:'x',refs:[2]}],check:[{t:'chk',part:'claim',text:'x',refs:[2],basis:'stated'},{t:'chk',part:'assessment',text:'x',refs:[2]}],
     'literature-review':[{t:'finding',kind:'theme',text:'x',support:'One text',refs:[2]}],'meta-synthesis':[{t:'cell',item:'i1',criterion:'method',text:'x',refs:[2]}],compare:[{t:'finding',kind:'concept_usage',text:'x',support:'Both texts',refs:[2]}],
     passage:[{t:'note',text:'x'}],digest:[{t:'sum',level:'section',text:'x',refs:[2]},{t:'facet',kind:'question',text:'x',refs:[2],basis:'stated'}]
   };

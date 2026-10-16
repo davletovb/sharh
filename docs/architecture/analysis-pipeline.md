@@ -197,6 +197,8 @@ An unknown value becomes `other` where the field allows it. Otherwise the record
 | Logic | `node`, `edge`, `step`, `gap`, `note` |
 | Thinking | `facet`, `concept`, `edge`, `node` (for the causal chain), `note` |
 | Themes | `theme`, `code`, `excerpt`, `tension`, `memo` |
+| Main ideas | `theme` only, at most five; the parser drops the rest |
+| Outline (Structure run as the `outline` operation) | `sec`, `note` |
 | Meta-reading, Critique | `facet`, `note` |
 | Literature | `cite`, `facet`, `note` |
 | Terms | `term` |

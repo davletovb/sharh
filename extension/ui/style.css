@@ -478,6 +478,8 @@ button.recent span { font-weight: 400; }
 .convo-card .finding .inspect-finding:hover { color: var(--text); background: none; }
 .convo-card .finding .reading-text { margin: 0 0 6px; }
 .convo-card .map-toggle { margin: 0 0 8px; }
+.menu-heading { padding: 8px 12px 2px; font: 600 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.menu-group { display: block; }
 .analysis-view[data-lens='check'] .check-part { margin: 0 0 14px; padding: 0; }
 .analysis-view[data-lens='check'] .check-part > h4 { display: block; margin: 0 0 4px; font: 600 12px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .analysis-view[data-lens='check'] .check-part[data-part='claim'] .reading-text { font: 600 17px/1.45 var(--serif); }

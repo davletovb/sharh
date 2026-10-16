@@ -29,9 +29,9 @@ export function referenceButtons(doc,record,onReference) {
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
 }
-export function createAnalysisView(container,{lens='summary',gist=false,compact=false,keep=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
+export function createAnalysisView(container,{lens='summary',gist=false,compact=false,flat=false,keep=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
   const records=[],groups=new Map(),cards=new Map(),collapsed=new Set(),queue=[];let frame=null,disposed=false,ticket=0,layoutTimer=null,worker,mapBusy=false,layoutPending=false,pan={x:0,y:0,zoom:1},lastLayout=null,maxRenderMs=0,visible=new Set();
-  const root=element('div','','analysis-view'),mapLens=['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
+  const root=element('div','','analysis-view'),mapLens=!flat&&['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
   root.append(outlineTitle,outline);container.append(root);
   root.dataset.lens=lens;
@@ -64,8 +64,11 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
   function inspect(entry){onInspect(entry);}
   // In the conversation the summary lens is the gist: the point and the abstract, nothing more. The other lenses hold the detail.
   const onlyGist=gist&&lens==='summary';
+  // A flat outline is a scannable list of sections with their paragraph ranges. The text without headings says so.
+  const onlyOutline=flat&&lens==='structure';
+  if(onlyOutline&&doc&&!doc.blocks.some(b=>b.kind==='heading'))outline.before(element('p','Inferred outline: this text has no headings, so these sections are reconstructed from how it moves. Each range points to the paragraphs it covers.','hint inferred-outline'));
   function append(entry) {
-    records.push(entry);if(onlyGist&&!(entry.record.t==='sum'&&['line','abstract'].includes(entry.record.level)))return;const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
+    records.push(entry);if(onlyGist&&!(entry.record.t==='sum'&&['line','abstract'].includes(entry.record.level)))return;if(onlyOutline&&entry.record.t!=='sec')return;const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;if(r.level)card.dataset.level=r.level;
     const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:r.part?CHECK_NAME[r.part]??readable(r.part):labels[r.t]??readable(r.t));
     const plain=compact?(r.t==='q'?PLAIN_LEVEL[r.level]:r.t==='facet'?PLAIN_KIND[r.kind]:null):null;
@@ -75,19 +78,20 @@ title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t!==
     if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
     if(r.basis)card.append(element('span',compact||lens==='check'?PLAIN_BASIS[r.basis]??r.basis:r.basis,'basis '+r.basis));
     if(r.t==='edge'){const named=id=>{const found=records.find(e=>e.record.id===id)?.record,label=found?.label??found?.term??found?.text??id;return [...label].length>60?[...label].slice(0,57).join('')+'…':label;};card.append(element('p',compact?`${named(r.from)} → ${named(r.to)} · ${readable(r.rel)}`:`${r.from} → ${r.to} · ${readable(r.rel)}`));}
-    if(r.parent)card.append(element('p',`Part of ${r.parent}`,'note'));
+    if(r.parent&&!onlyOutline)card.append(element('p',`Part of ${r.parent}`,'note'));
     if(r.theme || r.code)card.append(element('p',`Linked to ${r.theme??r.code}`,'note'));if(r.a)card.append(element('p',`${r.a} ↔ ${r.b}`));if(r.work)card.append(element('p',r.work));
     if(r.url){if(entry.flags?.includes('source_verified')){const a=element('a','Open verified search source');a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}else card.append(element('p','Unverified external link · no matching search source','validation-flags'));}
     if(r.quote){const quote=element('blockquote',r.quote);quote.dir='auto';card.append(quote);}
     if(entry.flags?.length)card.append(element('p',entry.flags.map(readable).join(' · '),'validation-flags'));
-    card.append(referenceButtons(doc,r,onReference));
+    if(onlyOutline){const [first,last]=r.span,block=doc?.blocks.find(b=>b.n===first),original=(block?.source?.refs??[block?.source?.n??null])[0],row=element('div','','references'),range=button(first===last?`¶${first}`:`¶${first}–${last}`,()=>onReference(first,original),'reference');range.dataset.ref=first;row.append(range);card.append(row);}
+    else card.append(referenceButtons(doc,r,onReference));
     // A term on a card can be kept in the book's glossary. Until it is kept it is only a suggestion.
     if(compact&&keep&&r.t==='term'){
       const mark=()=>{kept.textContent='In your glossary';kept.disabled=true;kept.classList.add('kept');kept.setAttribute('aria-label',`${r.src} is in your glossary`);};
       const kept=button('Keep in glossary',async()=>{await keep.save(r);mark();},'ghost keep-term');kept.setAttribute('aria-label',`Keep in glossary: ${r.src}`);
       Promise.resolve(keep.state(r.src)).then(state=>{if(state==='kept')mark();}).catch(()=>{});card.append(kept);
     }
-    if(r.t==='sec') {
+    if(r.t==='sec'&&!onlyOutline) {
       const fold=button('Collapse branch',()=>{if(collapsed.has(r.id))collapsed.delete(r.id);else collapsed.add(r.id);fold.setAttribute('aria-expanded',String(!collapsed.has(r.id)));fold.textContent=collapsed.has(r.id)?'Expand branch':'Collapse branch';updateVisibility();scheduleLayout();});fold.setAttribute('aria-expanded','true');card.append(fold);
     }
     const list=group(r.t,r);if(ordered && r.n){const before=[...list.children].find(el=>Number(el.dataset.order)>r.n);card.dataset.order=r.n;list.insertBefore(card,before??null);}else list.append(card);

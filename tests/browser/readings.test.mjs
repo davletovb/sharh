@@ -13,27 +13,13 @@ async function runWay(w, name) {
   return root.locator('.convo-card').nth(before);
 }
 
-test('Conversation cards stand alone: plain labels, no repeated table, the map on request', async () => {
+test('Conversation cards stand alone: plain labels and no repeated table', async () => {
   const w = await setup(), report = {checks: {}}, {page, root} = w;
   try {
-    // A map opens only when asked for, and a relation names the two findings it joins.
-    const thinking = await runWay(w, 'How it thinks'), toggle = thinking.getByRole('button', {name: 'Show map'});
-    assert.equal(await thinking.locator('.map-shell').isVisible(), false);
-    assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
-    assert.equal(await thinking.getByRole('button', {name: 'Zoom in'}).count(), 0, 'no map controls until the map is shown');
-    assert.match(await thinking.locator('.finding.edge p').first().textContent(), /Deterministic fixture.*→.*Deterministic fixture/);
-    assert.match(await thinking.locator('.basis').first().textContent(), /^(Stated in the text|Inferred)$/);
-    await toggle.click();
-    assert.equal(await thinking.locator('.map-shell').isVisible(), true);
-    assert.equal(await thinking.getByRole('button', {name: 'Hide map'}).getAttribute('aria-expanded'), 'true');
-    await thinking.getByRole('button', {name: 'Hide map'}).click();
-    assert.equal(await thinking.locator('.map-shell').isVisible(), false);
-    report.checks.mapOnRequest = true;
-
     // Themes and citations are cards, not a table plus the same cards again.
-    const themes = await runWay(w, 'Themes');
-    assert.equal(await themes.locator('table').count(), 0);
-    assert.ok(await themes.locator('.finding.theme').count());
+    const ideas = await runWay(w, 'Main ideas');
+    assert.equal(await ideas.locator('table').count(), 0);
+    assert.deepEqual(await ideas.locator('.finding.theme h5').allTextContents(), ['First idea', 'Second idea', 'Third idea']);
     const cites = await runWay(w, 'Who it cites');
     assert.equal(await cites.locator('table').count(), 0);
     assert.ok(await cites.locator('.finding.cite').count());
@@ -181,5 +167,52 @@ test('Check the argument: claim, reasons, strongest and weakest point, and what 
     await w.close();
     await mkdir('test-results', {recursive: true});
     await writeFile('test-results/readings-check.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});
+
+test('Understand and place: a flat outline with paragraph ranges, and Main ideas as a short list', async () => {
+  const w = await setup(), {page, root} = w, report = {checks: {}};
+  const lastCall = () => page.evaluate(() => { const call = c.path.calls.at(-1); return {tier: call.request.tier, task: JSON.parse(call.request.task.split('\n')[1])}; });
+  try {
+    // The outline is a list, not a map: one range chip a section, nothing to collapse.
+    const outline = await runWay(w, 'How it is built');
+    assert.equal(await outline.locator('.map-shell').count(), 0);
+    assert.equal(await outline.getByRole('button', {name: 'Show map'}).count(), 0);
+    assert.equal(await outline.getByRole('button', {name: /Collapse branch|Expand branch/}).count(), 0);
+    const sections = await outline.locator('.finding.sec').count();
+    assert.ok(sections >= 1);
+    assert.equal(await outline.locator('.finding.sec .reference').count(), sections);
+    assert.match(await outline.locator('.finding.sec .reference').first().textContent(), /^¶\d+(–\d+)?$/);
+    assert.equal(await outline.locator('.inferred-outline').count(), 0, 'this text has headings');
+    const asked = await lastCall();
+    assert.equal(asked.task.operation, 'outline');
+    assert.equal(asked.task.lens, 'structure');
+    assert.equal(asked.task.maxRecords, 12);
+    assert.match(asked.task.instructions, /at most twelve and never nested/);
+    assert.equal(asked.tier, 'quick', 'descriptive help runs on the quick tier');
+    report.checks.outline = true;
+
+    // Main ideas are three to five theme records and nothing else.
+    const ideas = await runWay(w, 'Main ideas');
+    const idea = await lastCall();
+    assert.equal(idea.task.lens, 'ideas');
+    assert.equal(idea.task.maxRecords, 5);
+    assert.match(idea.task.instructions, /three to five ideas/);
+    assert.match(idea.task.instructions, /no codes, excerpts, tensions or memos/);
+    assert.equal(idea.tier, 'analysis');
+    assert.equal(await ideas.locator('.finding.code, .finding.excerpt, .finding.memo').count(), 0);
+    report.checks.ideas = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    assert.deepEqual(w.errors, []);
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/readings-understand.json', JSON.stringify(report, null, 2) + '\n');
   }
 });

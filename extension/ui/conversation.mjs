@@ -11,7 +11,7 @@ export const GOALS = [
 ];
 // Plain names for the lenses that are not one of the four goals.
 export const PLAIN = {
-  summary: 'The gist', structure: 'How it is built', logic: 'The argument', check: 'The argument', thinking: 'How it thinks', themes: 'Themes',
+  summary: 'The gist', structure: 'How it is built', ideas: 'Main ideas', logic: 'The argument', check: 'The argument', thinking: 'How it thinks', themes: 'Themes',
   'meta-reading': 'What kind of text this is', critique: 'Strengths and weak points', literature: 'Who it cites',
   terms: 'Terms to learn', questions: 'Questions to check yourself', situate: 'Where it sits (web search)'
 };

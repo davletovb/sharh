@@ -97,7 +97,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       tier:outputTier(modelPicker.tier),persistent:modelPicker.info?.capabilities?.sessions===true,...extra};
   }
   async function runConfiguration(extra={}) {
-    const config=configuration(extra),tier=extra.tier===undefined?(config.customLens?.tier??(['terms','questions'].includes(config.lens)?'quick':null)):null;
+    const config=configuration(extra),tier=extra.tier===undefined?(config.customLens?.tier??(['terms','questions'].includes(config.lens)||config.operation==='outline'?'quick':null)):null;
     if(!tier)return config;
     const picked=await modelPicker.forTier(tier);return {...config,target:picked.target,tier:outputTier(tier),persistent:picked.info.capabilities?.sessions===true};
   }
@@ -148,7 +148,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
       if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{gist:true,compact:true,keep:keeper(source),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
+      view=createAnalysisView(results,{gist:true,compact:true,flat:info.operation==='outline',keep:keeper(source),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }
@@ -254,14 +254,24 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const cards=()=>convo.stream.querySelectorAll('.convo-card').length,before=cards(),bubble=convo.bubble(label);
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
-  const lensGoal=(v,label)=>start(label,()=>{chooseLens(v);return run();});
   const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(g.direct||chooseLens(g.lens),run(g.run??{})));
   convo.setGoals(GOALS,goal);
   convo.onAsk(text=>toolkit.askInStream(text));
+  // The conversation's other readings, grouped by what the reader wants to do. Studio keeps every detailed lens.
+  const searchable=()=>modelPicker.info?.capabilities?.webSearch===true,ready_=()=>canRun();
+  const task=(label,job,extra={})=>({label,action:()=>start(label,job),get disabled(){return !ready_();},...extra});
   convo.ways.setItems(()=>[
-    ...GOALS.map(g=>({label:g.label,action:()=>goal(g),get disabled(){return !canRun();}})),'-',
-    ...['structure','thinking','themes','meta-reading','literature','questions','situate'].map(v=>({label:PLAIN[v],action:()=>lensGoal(v,PLAIN[v]),get disabled(){return !canRun();}})),
-    ...[...customMap].map(([v,d])=>({label:d.name,action:()=>lensGoal(v,d.name),get disabled(){return !canRun();}}))
+    ...GOALS.map(g=>({label:g.label,action:()=>goal(g),get disabled(){return !canRun();}})),
+    '-',{heading:'Understand'},
+    task(PLAIN.structure,()=>run({lens:'structure',operation:'outline',budget:12})),
+    task(PLAIN.ideas,()=>run({lens:'ideas',budget:5})),
+    '-',{heading:'Place it'},
+    ...['meta-reading','literature'].map(v=>task(PLAIN[v],()=>{chooseLens(v);return run();})),
+    task(searchable()?PLAIN.situate:'Where it sits · needs a model with web search',()=>{chooseLens('situate');return run();},{get disabled(){return !ready_()||!searchable();},title:searchable()?'':'The chosen model does not offer web search. Choose one that does in Settings.'}),
+    '-',{heading:'Test yourself'},
+    task(PLAIN.questions,()=>{chooseLens('questions');return run();}),
+    ...(customMap.size?['-',{heading:'Your lenses'}]:[]),
+    ...[...customMap].map(([v,d])=>task(d.name,()=>{chooseLens(v);return run();}))
   ]);
   function setLayout(next) {
     layout=next;root.dataset.layout=next;toolkit?.useStream(next==='conversation'?convo:null);across?.pageMode(next==='conversation');

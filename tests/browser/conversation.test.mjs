@@ -63,7 +63,10 @@ test('Conversation: the four goals, follow-ups, Ask and a clean screen', async (
 
     // More ways to read lists the rest in plain words.
     await root.getByRole('button', {name: 'More ways to read'}).click();
-    for (const name of ['How it is built', 'How it thinks', 'Themes', 'What kind of text this is', 'Who it cites', 'Questions to check yourself']) await root.getByRole('menuitem', {name, exact: true}).waitFor();
+    for (const name of ['How it is built', 'Main ideas', 'What kind of text this is', 'Who it cites', 'Questions to check yourself']) await root.getByRole('menuitem', {name, exact: true}).waitFor();
+    assert.deepEqual(await root.getByRole('menu').getByRole('group').evaluateAll(groups => groups.map(g => g.getAttribute('aria-label'))), ['Understand', 'Place it', 'Test yourself']);
+    assert.equal(await root.getByRole('menuitem', {name: 'Where it sits · needs a model with web search', exact: true}).isDisabled(), true, 'search availability is shown before the action starts');
+    for (const gone of ['How it thinks', 'Themes', 'Strengths and weak points']) assert.equal(await root.getByRole('menuitem', {name: gone, exact: true}).count(), 0);
     await page.keyboard.press('Escape');
     report.checks.moreWays = true;
     assert.deepEqual(w.errors, []);

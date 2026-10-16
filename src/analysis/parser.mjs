@@ -56,6 +56,7 @@ export class RecordParser {
       this.meta=r;this.metrics.recordLines--;return;
     }
     if(r.t==='end') {this.endReceived=true;this.metrics.recordLines--;return;}
+    if(this.lens==='ideas'&&r.t==='theme'&&this.entries.filter(e=>e.record.t==='theme').length>=5){this.count('dropped','limit');return;}
     if(r.t==='chk'&&this.entries.filter(e=>e.record.t==='chk'&&e.record.part===r.part).length>=CHK_LIMITS[r.part]){this.count('dropped','limit');return;}
     const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags};
     if(r.refs) {
