@@ -145,7 +145,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
       if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{gist:true,lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
+      view=createAnalysisView(results,{gist:true,compact:true,lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }
@@ -189,10 +189,10 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   async function work(operation,lensName,source,{area='analyze',customLens=null,info={}}={}) {
     if(!source)throw Error('Open a document and choose its scope first.');
     if(controller)throw Error('Stop the current run before starting another.');const stamp=epoch,abort=new AbortController(),chat=area==='ask';controller=abort;runId=null;if(!chat)selectedRun=null;
-    let sink=chat?null:newView(lensName,source,customLens,info);openArea(area);convo.setBusy(true);if(layout==='conversation')stop.hidden=false;if(!chat){resultHead.hidden=false;inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;stop.hidden=false;runMeta.textContent='';status.textContent='Connecting…';}
+    let sink=chat?null:newView(lensName,source,customLens,info),sinkLens=lensName;openArea(area);convo.setBusy(true);if(layout==='conversation')stop.hidden=false;if(!chat){resultHead.hidden=false;inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;stop.hidden=false;runMeta.textContent='';status.textContent='Connecting…';}
     for(const control of controls.querySelectorAll('input,select,textarea'))control.disabled=true;modelPicker.setDisabled(true);history.inert=true;analyze.disabled=true;
     try {
-      const saved=await operation({signal:abort.signal,onLens:name=>{if(stamp===epoch&&!chat)sink=newView(name,source,null,{});},onEvent:event=> {
+      const saved=await operation({signal:abort.signal,onLens:name=>{if(stamp!==epoch||chat)return;if(sink&&name===sinkLens&&sink.metrics.records===0)return;sink=newView(name,source,null,{});sinkLens=name;},onEvent:event=> {
         if(stamp!==epoch)return;if(event.type==='run' && event.status==='running')runId=event.runId;
         if(event.type==='record')sink?.record(event.entry);if(event.type==='reset')sink?.reset();
         if(chat)return;

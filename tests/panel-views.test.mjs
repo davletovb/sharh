@@ -137,3 +137,13 @@ test('paragraph marks inside finding text open their paragraph, and the gist vie
  view.dispose();
  }finally{d.window.close();}
 });
+test('critique keeps strengths, limitations and the quality of the evidence in their own groups',async()=> {
+ const d=dom(),doc=await exampleDocument();
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'critique',workerFactory:()=>{throw Error('worker unavailable');}});
+ ['strength','weakness','evidence_quality','counterargument'].forEach((kind,i)=>view.record({sequence:i+1,record:{t:'facet',kind,text:`A ${kind}.`,refs:[3],basis:'inferred'},flags:[]}));
+ await view.settled();
+ const groups=[...document.querySelectorAll('.record-group')].map(g=>[g.querySelector('h4').textContent,[...g.querySelectorAll('.finding')].length]);
+ assert.deepEqual(groups,[['Strengths',1],['Limitations and counterarguments',2],['Quality of the evidence',1]]);
+ view.dispose();
+ }finally{d.window.close();}
+});

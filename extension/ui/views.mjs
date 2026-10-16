@@ -2,6 +2,10 @@ import {graphRecords} from '../../src/ui/graph-layout.mjs';
 import {element,button,uid} from './dom.mjs';
 const labels={finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
 const readable=s=>String(s??'').replaceAll('_',' ');
+// In the conversation, kinds and levels get plain names, and the cards stand alone: no table repeats them and no map opens uninvited.
+const PLAIN_KIND=Object.freeze({genre:'Genre',audience:'Who it is for',purpose:'What it is for',position:'Where the author stands',context:'Context',framing:'How it is framed',silence:'What is left unsaid',strength:'Strength',weakness:'Weakness',evidence_quality:'Quality of the evidence',counterargument:'A counterargument',debate:'The debate',contribution:'What it adds',question:'The question it asks',evidence_standard:'What counts as evidence',reasoning_mode:'How it reasons',assumption:'An assumption',worldview:'Worldview',lineage:'Influences',normative:'Values',blind_spot:'Blind spot',falsifier:'What could change the conclusion',other:'Other'});
+const PLAIN_LEVEL=Object.freeze({comprehension:'Did you follow it?',analysis:'Look closer',evaluation:'Weigh it',debate:'Argue about it'});
+const PLAIN_BASIS=Object.freeze({stated:'Stated in the text',inferred:'Inferred'});
 // Paragraph marks inside running text (¶8, ¶12–13, [¶17]) open that paragraph, like the chips under a finding. A range opens its first paragraph.
 export function linkReferences(node,text,doc,onReference) {
   const pattern=/¶\s?(\d+)(?:\s?[–-]\s?\d+)?/g;let last=0,match;
@@ -21,13 +25,13 @@ export function referenceButtons(doc,record,onReference) {
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
 }
-export function createAnalysisView(container,{lens='summary',gist=false,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
+export function createAnalysisView(container,{lens='summary',gist=false,compact=false,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
   const records=[],groups=new Map(),cards=new Map(),collapsed=new Set(),queue=[];let frame=null,disposed=false,ticket=0,layoutTimer=null,worker,mapBusy=false,layoutPending=false,pan={x:0,y:0,zoom:1},lastLayout=null,maxRenderMs=0,visible=new Set();
   const root=element('div','','analysis-view'),mapLens=['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
   root.append(outlineTitle,outline);container.append(root);
   root.dataset.lens=lens;
-  const across=['meta-synthesis','compare'].includes(lens),tabular=across||['themes','literature','terms'].includes(lens),table=element('table','','reading-table');
+  const across=['meta-synthesis','compare'].includes(lens),tabular=across||!compact&&['themes','literature','terms'].includes(lens),table=element('table','','reading-table');
   if(tabular){table.append(element('caption',across?'Evidence matrix':lens==='themes'?'Codebook and source excerpts':lens==='terms'?'Contextual glossary':'Citations in the text'));outline.before(table);}
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('role','group');svg.setAttribute('aria-label',`${readable(lens)} map; use the text outline for all details`);svg.setAttribute('viewBox','0 0 500 240');svg.classList.add('analysis-map');
   function move(){if(lastLayout)svg.setAttribute('viewBox',`${pan.x} ${pan.y} ${lastLayout.width/pan.zoom} ${lastLayout.height/pan.zoom}`);}
@@ -36,11 +40,12 @@ export function createAnalysisView(container,{lens='summary',gist=false,doc,onRe
     controls.append(button('Zoom in',()=>{pan.zoom=Math.min(4,pan.zoom*1.25);move();}),button('Zoom out',()=>{pan.zoom=Math.max(.3,pan.zoom/1.25);move();}),button('Reset map',()=>{pan={x:0,y:0,zoom:1};move();}));
     for(const [label,x,y]of [['Pan left',-80,0],['Pan right',80,0],['Pan up',0,-80],['Pan down',0,80]])controls.append(button(label,()=>{pan.x+=x;pan.y+=y;move();}));
     const jump=element('a','Read text outline');jump.href='#'+outline.id;controls.append(jump);map.append(controls,svg,mapStatus);root.prepend(map);
+    if(compact){const toggle=button('Show map',()=>{const open=map.hidden;map.hidden=!open;toggle.textContent=open?'Hide map':'Show map';toggle.setAttribute('aria-expanded',String(open));if(open)scheduleLayout();},'ghost map-toggle');toggle.setAttribute('aria-expanded','false');map.hidden=true;map.before(toggle);toggle.setAttribute('aria-controls',map.id=uid('map'));}
     try{worker=workerFactory();worker.onmessage=({data})=>{mapBusy=false;if(disposed)return;if(data.id===ticket){if(data.error)mapStatus.textContent=data.error;else draw(data.layout);}if(layoutPending){layoutPending=false;scheduleLayout();}};worker.onerror=()=>{mapBusy=false;mapStatus.textContent='Map layout is unavailable. Use the text outline.';};}catch{mapStatus.textContent='Map layout is unavailable. Use the text outline.';}
   }
   function group(type,record) {
-    const key=lens==='critique'&&type==='facet'?(record.kind==='strength'?'strengths':'limitations'):type;
-    if(!groups.has(key)){const section=element('section','','record-group'),heading=element('h4',key==='strengths'?'Strengths':key==='limitations'?'Limitations and counterarguments':type==='edge' && lens==='thinking'?'Causal chain and relations':labels[type]??readable(type)),list=element(type==='arc' || type==='step' || type==='sec'?'ol':'div','','record-list');section.append(heading,list);outline.append(section);groups.set(key,list);}
+    const key=lens==='critique'&&type==='facet'?({strength:'strengths',evidence_quality:'evidence'}[record.kind]??'limitations'):type;
+    if(!groups.has(key)){const section=element('section','','record-group'),heading=element('h4',key==='strengths'?'Strengths':key==='limitations'?'Limitations and counterarguments':key==='evidence'?'Quality of the evidence':type==='edge' && lens==='thinking'?'Causal chain and relations':labels[type]??readable(type)),list=element(type==='arc' || type==='step' || type==='sec'?'ol':'div','','record-list');section.append(heading,list);outline.append(section);groups.set(key,list);}
     return groups.get(key);
   }
   function inspect(entry){onInspect(entry);}
@@ -50,12 +55,13 @@ export function createAnalysisView(container,{lens='summary',gist=false,doc,onRe
     records.push(entry);if(onlyGist&&!(entry.record.t==='sum'&&['line','abstract'].includes(entry.record.level)))return;const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;if(r.level)card.dataset.level=r.level;
     const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
-    title.append(button(name,()=>inspect(entry),'inspect-finding'));card.append(title);
+    const plain=compact?(r.t==='q'?PLAIN_LEVEL[r.level]:r.t==='facet'?PLAIN_KIND[r.kind]:null):null;
+    title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));card.append(title);
     const text=r.gist??r.gloss??r.text;if(text){const p=element('p','','reading-text');p.dir='auto';linkReferences(p,text,doc,onReference);card.append(p);}
     if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
     if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
-    if(r.basis)card.append(element('span',r.basis,'basis '+r.basis));
-    if(r.t==='edge')card.append(element('p',`${r.from} → ${r.to} · ${readable(r.rel)}`));
+    if(r.basis)card.append(element('span',compact?PLAIN_BASIS[r.basis]??r.basis:r.basis,'basis '+r.basis));
+    if(r.t==='edge'){const named=id=>{const found=records.find(e=>e.record.id===id)?.record,label=found?.label??found?.term??found?.text??id;return [...label].length>60?[...label].slice(0,57).join('')+'…':label;};card.append(element('p',compact?`${named(r.from)} → ${named(r.to)} · ${readable(r.rel)}`:`${r.from} → ${r.to} · ${readable(r.rel)}`));}
     if(r.parent)card.append(element('p',`Part of ${r.parent}`,'note'));
     if(r.theme || r.code)card.append(element('p',`Linked to ${r.theme??r.code}`,'note'));if(r.a)card.append(element('p',`${r.a} ↔ ${r.b}`));if(r.work)card.append(element('p',r.work));
     if(r.url){if(entry.flags?.includes('source_verified')){const a=element('a','Open verified search source');a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}else card.append(element('p','Unverified external link · no matching search source','validation-flags'));}
