@@ -203,6 +203,7 @@ An unknown value becomes `other` where the field allows it. Otherwise the record
 | Literature | `cite`, `facet`, `note` |
 | Terms | `term` |
 | Questions | `q` |
+| Deep reading | `sum` (one, level `brief`), `sec` (at most eight), `chk` (as for the argument check), `q` (at most three) |
 | Argument check | `chk` (at most one `claim`, three `reason`, one `strength`, one `weakness`, two `assumption`, one `objection` and one `assessment`; the parser drops the rest) |
 | Passage actions | `note`, `term`, `node` |
 | Chapter digest (internal) | `sum` (section level), `node` (key claims), `concept`, `cite`, `facet` (`question`, `reasoning_mode`) |

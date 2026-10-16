@@ -38,7 +38,7 @@ test('shared contracts cover every advertised record type and lens-specific enum
     thinking:[{t:'facet',kind:'worldview',text:'x',refs:[2],basis:'inferred'},{t:'concept',id:'a',term:'t',gloss:'g',refs:[2]},{t:'edge',from:'a',to:'b',rel:'causes'}],
     themes:[{t:'theme',id:'t',label:'x',text:'x',refs:[2]},{t:'code',id:'c',theme:'t',label:'x',text:'x'},{t:'excerpt',code:'c',ref:2,quote:'x'},{t:'tension',a:'t',b:'c',text:'x',refs:[2]},{t:'memo',text:'x'}],
     'meta-reading':[{t:'facet',kind:'audience',text:'x',refs:[2],basis:'inferred'}],critique:[{t:'facet',kind:'strength',text:'x',refs:[2],basis:'stated'}],
-    literature:[{t:'cite',who:'Author',role:'foil',text:'x',refs:[2]}],terms:[{t:'term',src:'x',tr:'y',text:'x',refs:[2]}],questions:[{t:'q',level:'analysis',text:'x',refs:[2]}],ideas:[{t:'theme',id:'t',label:'x',text:'x',refs:[2]}],check:[{t:'chk',part:'claim',text:'x',refs:[2],basis:'stated'},{t:'chk',part:'assessment',text:'x',refs:[2]}],
+    literature:[{t:'cite',who:'Author',role:'foil',text:'x',refs:[2]}],terms:[{t:'term',src:'x',tr:'y',text:'x',refs:[2]}],questions:[{t:'q',level:'analysis',text:'x',refs:[2]}],ideas:[{t:'theme',id:'t',label:'x',text:'x',refs:[2]}],deep:[{t:'sum',level:'brief',text:'x',refs:[2]},{t:'sec',id:'s',title:'x',role:'context',gist:'x',span:[1,3]},{t:'chk',part:'claim',text:'x',refs:[2],basis:'stated'},{t:'q',level:'debate',text:'x',refs:[2]}],check:[{t:'chk',part:'claim',text:'x',refs:[2],basis:'stated'},{t:'chk',part:'assessment',text:'x',refs:[2]}],
     'literature-review':[{t:'finding',kind:'theme',text:'x',support:'One text',refs:[2]}],'meta-synthesis':[{t:'cell',item:'i1',criterion:'method',text:'x',refs:[2]}],compare:[{t:'finding',kind:'concept_usage',text:'x',support:'Both texts',refs:[2]}],
     passage:[{t:'note',text:'x'}],digest:[{t:'sum',level:'section',text:'x',refs:[2]},{t:'facet',kind:'question',text:'x',refs:[2],basis:'stated'}]
   };
@@ -46,6 +46,7 @@ test('shared contracts cover every advertised record type and lens-specific enum
   assert.equal(Object.keys(cases).length,Object.keys(LENSES).length);
   assert.equal(validateFields({t:'edge',from:'a',to:'b',rel:'supports'},'thinking').error,'enum');
   assert.equal(validateFields({t:'chk',part:'verdict',text:'x',refs:[2]},'check').error,'enum');
+  assert.equal(validateFields({t:'sum',level:'abstract',text:'x',refs:[2]},'deep').error,'enum','a deep reading has one brief synthesis');
   assert.equal(validateFields({t:'chk',part:'claim',text:'x',refs:[2]},'logic').error,'type');
   assert.equal(validateFields({t:'gap',kind:'invented',at:['a'],text:'x',refs:[]},'logic').record.kind,'other');
   assert.equal(validateFields(node('x',{kind:'invented'}),'logic').error,'enum');

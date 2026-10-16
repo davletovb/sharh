@@ -7,9 +7,9 @@ const PLAIN_KIND=Object.freeze({genre:'Genre',audience:'Who it is for',purpose:'
 const PLAIN_LEVEL=Object.freeze({comprehension:'Did you follow it?',analysis:'Look closer',evaluation:'Weigh it',debate:'Argue about it'});
 const PLAIN_BASIS=Object.freeze({stated:'Stated in the text',inferred:'Inferred'});
 // An argument check reads top to bottom whatever order the parts arrive in.
-const CHECK_ORDER=Object.freeze(['claim','reason','strength','weakness','assessment','detail']);
+const CHECK_ORDER=Object.freeze(['synthesis','outline','claim','reason','strength','weakness','assessment','detail']);
 const CHECK_NAME=Object.freeze({assumption:'Assumption',objection:'Strongest objection'});
-const CHECK_HEADING=Object.freeze({claim:'Main claim',reason:'Reasons and support',strength:'Strongest point',weakness:'Weakest link',assessment:'What the text establishes',detail:'Assumptions and the strongest objection'});
+const CHECK_HEADING=Object.freeze({synthesis:'In short',outline:'How it is built',claim:'Main claim',reason:'Reasons and support',strength:'Strongest point',weakness:'Weakest link',assessment:'What the text establishes',detail:'Assumptions and the strongest objection'});
 // Paragraph marks inside running text (¶8, ¶12–13, [¶17]) open that paragraph, like the chips under a finding. A range opens its first paragraph.
 export function linkReferences(node,text,doc,onReference) {
   const pattern=/¶\s?(\d+)(?:\s?[–-]\s?\d+)?/g;let last=0,match;
@@ -48,11 +48,12 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
     try{worker=workerFactory();worker.onmessage=({data})=>{mapBusy=false;if(disposed)return;if(data.id===ticket){if(data.error)mapStatus.textContent=data.error;else draw(data.layout);}if(layoutPending){layoutPending=false;scheduleLayout();}};worker.onerror=()=>{mapBusy=false;mapStatus.textContent='Map layout is unavailable. Use the text outline.';};}catch{mapStatus.textContent='Map layout is unavailable. Use the text outline.';}
   }
   function group(type,record) {
-    if(type==='chk') {
-      const key=['assumption','objection'].includes(record.part)?'detail':record.part,rank=CHECK_ORDER.indexOf(key);
+    const deepKey=lens==='deep'?{sum:'synthesis',sec:'outline',q:'detail'}[type]:null;
+    if(type==='chk'||deepKey) {
+      const key=deepKey??(['assumption','objection'].includes(record.part)?'detail':record.part),rank=CHECK_ORDER.indexOf(key);
       if(!groups.has(key)){
-        const fold=key==='detail',section=element(fold?'details':'section','',`record-group check-part${fold?' record-fold':''}`),list=element('div','','record-list');
-        section.dataset.part=key;section.dataset.order=rank;section.append(element(fold?'summary':'h4',CHECK_HEADING[key]),list);
+        const fold=key==='detail',section=element(fold?'details':'section','',`record-group check-part${fold?' record-fold':''}`),list=element(key==='outline'?'ol':'div','','record-list');
+        section.dataset.part=key;section.dataset.order=rank;section.append(element(fold?'summary':'h4',fold&&lens==='deep'?'Assumptions and open questions':CHECK_HEADING[key]),list);
         outline.insertBefore(section,[...outline.children].find(el=>Number(el.dataset.order)>rank)??null);groups.set(key,list);
       }
       return groups.get(key);
@@ -66,24 +67,25 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
   const onlyGist=gist&&lens==='summary';
   // A flat outline is a scannable list of sections with their paragraph ranges. The text without headings says so.
   const onlyOutline=flat&&lens==='structure';
+  const flatSec=onlyOutline||lens==='deep';
   if(onlyOutline&&doc&&!doc.blocks.some(b=>b.kind==='heading'))outline.before(element('p','Inferred outline: this text has no headings, so these sections are reconstructed from how it moves. Each range points to the paragraphs it covers.','hint inferred-outline'));
   function append(entry) {
     records.push(entry);if(onlyGist&&!(entry.record.t==='sum'&&['line','abstract'].includes(entry.record.level)))return;if(onlyOutline&&entry.record.t!=='sec')return;const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;if(r.level)card.dataset.level=r.level;
     const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:r.part?CHECK_NAME[r.part]??readable(r.part):labels[r.t]??readable(r.t));
     const plain=compact?(r.t==='q'?PLAIN_LEVEL[r.level]:r.t==='facet'?PLAIN_KIND[r.kind]:null):null;
-title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t!=='chk'||['assumption','objection'].includes(r.part))card.append(title);else card.dataset.part=r.part;
+title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t==='chk'&&!['assumption','objection'].includes(r.part)||lens==='deep'&&r.t==='sum'){if(r.part)card.dataset.part=r.part;}else card.append(title);
     const text=r.gist??r.gloss??r.text;if(text){const p=element('p','','reading-text');p.dir='auto';linkReferences(p,text,doc,onReference);card.append(p);}
     if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
     if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
     if(r.basis)card.append(element('span',compact||lens==='check'?PLAIN_BASIS[r.basis]??r.basis:r.basis,'basis '+r.basis));
     if(r.t==='edge'){const named=id=>{const found=records.find(e=>e.record.id===id)?.record,label=found?.label??found?.term??found?.text??id;return [...label].length>60?[...label].slice(0,57).join('')+'…':label;};card.append(element('p',compact?`${named(r.from)} → ${named(r.to)} · ${readable(r.rel)}`:`${r.from} → ${r.to} · ${readable(r.rel)}`));}
-    if(r.parent&&!onlyOutline)card.append(element('p',`Part of ${r.parent}`,'note'));
+    if(r.parent&&!flatSec)card.append(element('p',`Part of ${r.parent}`,'note'));
     if(r.theme || r.code)card.append(element('p',`Linked to ${r.theme??r.code}`,'note'));if(r.a)card.append(element('p',`${r.a} ↔ ${r.b}`));if(r.work)card.append(element('p',r.work));
     if(r.url){if(entry.flags?.includes('source_verified')){const a=element('a','Open verified search source');a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a);}else card.append(element('p','Unverified external link · no matching search source','validation-flags'));}
     if(r.quote){const quote=element('blockquote',r.quote);quote.dir='auto';card.append(quote);}
     if(entry.flags?.length)card.append(element('p',entry.flags.map(readable).join(' · '),'validation-flags'));
-    if(onlyOutline){const [first,last]=r.span,block=doc?.blocks.find(b=>b.n===first),original=(block?.source?.refs??[block?.source?.n??null])[0],row=element('div','','references'),range=button(first===last?`¶${first}`:`¶${first}–${last}`,()=>onReference(first,original),'reference');range.dataset.ref=first;row.append(range);card.append(row);}
+    if(flatSec&&r.t==='sec'){const [first,last]=r.span,block=doc?.blocks.find(b=>b.n===first),original=(block?.source?.refs??[block?.source?.n??null])[0],row=element('div','','references'),range=button(first===last?`¶${first}`:`¶${first}–${last}`,()=>onReference(first,original),'reference');range.dataset.ref=first;row.append(range);card.append(row);}
     else card.append(referenceButtons(doc,r,onReference));
     // A question can be tried or answered in place, and any other finding can be asked about. The turn is tied to this reading.
     if(compact&&ask&&r.t==='q'){
@@ -102,7 +104,7 @@ title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t!==
       const kept=button('Keep in glossary',async()=>{await keep.save(r);mark();},'ghost keep-term');kept.setAttribute('aria-label',`Keep in glossary: ${r.src}`);
       Promise.resolve(keep.state(r.src)).then(state=>{if(state==='kept')mark();}).catch(()=>{});card.append(kept);
     }
-    if(r.t==='sec'&&!onlyOutline) {
+    if(r.t==='sec'&&!flatSec) {
       const fold=button('Collapse branch',()=>{if(collapsed.has(r.id))collapsed.delete(r.id);else collapsed.add(r.id);fold.setAttribute('aria-expanded',String(!collapsed.has(r.id)));fold.textContent=collapsed.has(r.id)?'Expand branch':'Collapse branch';updateVisibility();scheduleLayout();});fold.setAttribute('aria-expanded','true');card.append(fold);
     }
     const list=group(r.t,r);if(ordered && r.n){const before=[...list.children].find(el=>Number(el.dataset.order)>r.n);card.dataset.order=r.n;list.insertBefore(card,before??null);}else list.append(card);

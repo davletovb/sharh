@@ -269,7 +269,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const cards=()=>convo.stream.querySelectorAll('.convo-card').length,before=cards(),bubble=convo.bubble(label);
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
-  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(g.direct||chooseLens(g.lens),run(g.run??{})));
+  const goal=g=>start(g.label,()=>{if(!g.direct)chooseLens(g.lens);return run(g.run??{});});
   convo.setGoals(GOALS,goal);
   convo.onAsk(async text=>{
     const about=pendingAbout;if(!about)return toolkit.askInStream(text);

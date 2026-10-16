@@ -77,3 +77,20 @@ test('the questions ask for three to five, with no answers, and only on the Ques
  assert.equal(taskOf(plain).instructions,LENS_INSTRUCTIONS.questions,'the Questions lens keeps its own instructions');
  for(const lens of ['summary','terms','check'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'quiz'}),/INVALID_TASK/);
 });
+
+test('the deep reading is one lens with a synthesis, an outline, an argument check and open questions, within limits',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ const prompt=assemblePrompt(doc,scope,{lens:'deep',budget:22}),task=taskOf(prompt),contract=JSON.parse(prompt.request.task.split('\n')[3]);
+ assert.equal(task.instructions,LENS_INSTRUCTIONS.deep);assert.equal(task.maxRecords,22);assert.deepEqual(Object.keys(contract.types),['meta','sum','sec','chk','q','end']);
+ for(const phrase of [/in one pass/,/at most 120 words/,/at most eight and never nested/,/one claim, two or three reason/,/at most two assumption records/,/at most three q records/,/do not repeat the main claim in every part/,/not a check of the facts/,/do not give a score/])assert.match(task.instructions,phrase);
+ assert.ok(['structure','logic','thinking','critique'].every(lens=>LENS_INSTRUCTIONS[lens]),'the three-lens deep read and Critique stay available for Studio');
+ const entries=[],parser=new RecordParser({lens:'deep',blocks:scope.blocks,onRecord:e=>entries.push(e)}),line=r=>JSON.stringify({refs:[3],...r})+'\n';
+ const sec=i=>line({t:'sec',id:'s'+i,title:'Part '+i,role:'context',gist:'It does something.',span:[1,2]});
+ parser.push(line({t:'sum',level:'brief',text:'The synthesis.'})+line({t:'sum',level:'brief',text:'A second synthesis.'})+line({t:'sum',level:'abstract',text:'The wrong level.'})
+  +Array.from({length:10},(_,i)=>sec(i)).join('')+line({t:'chk',part:'claim',text:'The claim.'})+line({t:'chk',part:'claim',text:'A second claim.'})
+  +['reason','reason','reason','reason','assessment'].map(part=>line({t:'chk',part,text:'Plain.'})).join('')+Array.from({length:5},(_,i)=>line({t:'q',level:'debate',text:'Question '+i})).join(''));
+ parser.finish();
+ const count=(t,part)=>entries.filter(e=>e.record.t===t&&(part===undefined||e.record.part===part)).length;
+ assert.deepEqual([count('sum'),count('sec'),count('chk','claim'),count('chk','reason'),count('chk','assessment'),count('q')],[1,8,1,3,1,3]);
+ assert.equal(parser.metrics.dropped.limit,1+2+1+1+2,'one extra synthesis, two outline sections, one claim, one reason, two questions');assert.ok(parser.metrics.dropped.enum,'only a brief synthesis is accepted');
+});

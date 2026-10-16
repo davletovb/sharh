@@ -47,17 +47,48 @@ test('Conversation cards stand alone: plain labels and no repeated table', async
   }
 });
 
-test('Study it deeply shows three readings and no empty card', async () => {
-  const w = await setup(), {page, root} = w;
+test('Study it deeply is one request and one composed reading', async () => {
+  const w = await setup(), {page, root} = w, report = {checks: {}};
   try {
     await root.locator('.goals').getByRole('button', {name: 'Study it deeply'}).click();
-    await page.waitForFunction(() => document.querySelectorAll('#convo-fixture .convo-card').length >= 3 && !c.workspace.active);
-    await page.evaluate(() => c.workspace.view?.settled());
-    const titles = await root.locator('.convo-card-title').allTextContents();
-    assert.deepEqual(titles, ['How it is built', 'The argument', 'How it thinks']);
-    for (const card of await root.locator('.convo-card').all()) assert.ok(await card.locator('.finding').count(), 'every card has findings');
+    await root.locator('.convo-card').first().waitFor();
+    await idle(page, 1);
+    // One request, one card: not three consecutive lens readings.
+    const calls = await page.evaluate(() => c.path.calls.map(call => { const task = JSON.parse(call.request.task.split('\n')[1]); return {lens: task.lens, operation: task.operation, maxRecords: task.maxRecords, tier: call.request.tier}; }));
+    assert.deepEqual(calls, [{lens: 'deep', operation: undefined, maxRecords: 22, tier: 'analysis'}]);
+    assert.equal(await root.locator('.convo-card').count(), 1);
+    const card = root.locator('.convo-card').first();
+    assert.equal(await card.locator('.convo-card-title').textContent(), 'In depth');
+    report.checks.oneRequest = true;
+
+    // The reading: a synthesis first, then the outline, the argument, and what is assumed or left open.
+    assert.deepEqual(await card.locator('.check-part > h4, .check-part > summary').allTextContents(), ['In short', 'How it is built', 'Main claim', 'Reasons and support', 'Strongest point', 'Weakest link', 'What the text establishes', 'Assumptions and open questions']);
+    assert.match(await card.locator('.check-part[data-part="synthesis"] .reading-text').textContent(), /one plain claim/);
+    assert.equal(await card.locator('.check-part[data-part="outline"] .finding.sec').count(), 2);
+    assert.equal(await card.locator('.check-part[data-part="outline"] .finding.sec .reference').count(), 2);
+    assert.equal(await card.locator('svg.analysis-map').count(), 0);
+    assert.equal(await card.getByRole('button', {name: 'Show map'}).count(), 0);
+    const fold = card.locator('.check-part.record-fold');
+    assert.equal(await fold.evaluate(el => el.open), false);
+    await fold.locator('summary').click();
+    assert.deepEqual(await fold.locator('.finding h5').allTextContents(), ['Assumption', 'Strongest objection', 'Look closer', 'Argue about it']);
+    assert.equal(await fold.getByRole('button', {name: /^Show a suggested answer to: /}).count(), 2, 'open questions connect to Ask like any question');
+    report.checks.composed = true;
+
+    // Nothing is left empty and no other reading was run behind it.
+    assert.deepEqual(await root.locator('.convo-card-title').allTextContents(), ['In depth']);
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
     assert.deepEqual(w.errors, []);
-  } finally { await w.close(); }
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/readings-deep.json', JSON.stringify(report, null, 2) + '\n');
+  }
 });
 
 test('Learn the terms: a short list, each term can be kept, and only kept terms are used', async () => {

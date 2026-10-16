@@ -53,7 +53,7 @@ export const LENSES = Object.freeze({
   thinking:['facet','concept','edge','node','note'], themes:['theme','code','excerpt','tension','memo'],
   'meta-reading':['facet','note'], critique:['facet','note'], literature:['cite','facet','note'],
   'literature-review':['finding','note'], 'meta-synthesis':['cell','finding','note'],compare:['cell','finding','note','concept'],
-  terms:['term'], questions:['q'], check:['chk'], ideas:['theme'], passage:['note','term','node'], digest:['sum','node','concept','cite','facet']
+  terms:['term'], questions:['q'], check:['chk'], ideas:['theme'], deep:['sum','sec','chk','q'], passage:['note','term','node'], digest:['sum','node','concept','cite','facet']
 });
 export function customDefinition(value) {
   if(!value || value.version!==1 || typeof value.id!=='string' || !/^[a-zA-Z0-9_-]{1,48}$/.test(value.id) || typeof value.name!=='string' || !value.name.trim() || value.name.length>80 || typeof value.instructions!=='string' || !value.instructions.trim() || value.instructions.length>8000 || !['quick','analysis','book','synthesis'].includes(value.tier) || !Array.isArray(value.types) || !value.types.length || new Set(value.types).size!==value.types.length || value.types.some(t=>!Object.hasOwn(FIELDS,t) || ['meta','end'].includes(t)))throw Error('INVALID_CUSTOM_LENS');
@@ -109,6 +109,7 @@ export function validateFields(input,lens,definition=null) {
   }
   if (record.t==='meta' && record.lens!==lens) return {error:'meta'};
   if (lens==='digest' && record.t==='sum' && record.level!=='section') return {error:'enum'};
+  if (lens==='deep' && record.t==='sum' && record.level!=='brief') return {error:'enum'};
   return {record,flags:[...new Set(flags)]};
 }
 export function outputContract(lens,definition=null) {

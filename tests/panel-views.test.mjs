@@ -200,3 +200,18 @@ test('on a conversation card a map waits behind Show map, and relations and basi
  view.dispose();
  }finally{d.window.close();}
 });
+test('a deep reading reads in one order whatever order its records arrive in',async()=> {
+ const d=dom(),doc=await exampleDocument(),refs=[];
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'deep',compact:true,onReference:n=>refs.push(n),workerFactory:()=>{throw Error('worker unavailable');}});
+ [{t:'q',level:'debate',text:'Is repetition evidence?',refs:[3]},{t:'chk',part:'assessment',text:'Established so far.',refs:[3],basis:'inferred'},{t:'chk',part:'assumption',text:'That repeating adds support.',refs:[3],basis:'inferred'},{t:'sec',id:'s2',title:'Second part',role:'claim',gist:'It makes the claim.',span:[4,7],refs:[4,5,6,7]},{t:'chk',part:'claim',text:'The claim.',refs:[3],basis:'stated'},{t:'sec',id:'s1',title:'First part',role:'context',gist:'It sets the scene.',span:[1,3],refs:[1,2,3]},{t:'sum',level:'brief',text:'The synthesis (¶3).',refs:[3]},{t:'chk',part:'reason',text:'A ground.',refs:[3],basis:'stated'}].forEach((record,i)=>view.record({sequence:i+1,record,flags:[]}));
+ await view.settled();
+ const parts=[...document.querySelectorAll('.check-part')];assert.deepEqual(parts.map(p=>p.dataset.part),['synthesis','outline','claim','reason','assessment','detail']);
+ assert.deepEqual(parts.map(p=>p.querySelector('h4,summary').textContent),['In short','How it is built','Main claim','Reasons and support','What the text establishes','Assumptions and open questions']);
+ assert.equal(parts.at(-1).tagName,'DETAILS');assert.equal(parts.at(-1).open,false);assert.deepEqual([...parts.at(-1).querySelectorAll('.finding h5')].map(h=>h.textContent),['Argue about it','Assumption']);
+ assert.equal(document.querySelector('.check-part[data-part="synthesis"] .finding h5'),null,'the synthesis carries no card title');
+ assert.deepEqual([...document.querySelectorAll('.check-part[data-part="outline"] .finding .reference')].map(b=>b.textContent),['¶4–7','¶1–3'],'outline sections are flat, with one range each');
+ assert.equal(document.querySelector('.check-part[data-part="outline"] button[aria-expanded]'),null,'nothing to collapse');assert.equal(document.querySelector('.map-shell'),null);
+ document.querySelector('.check-part[data-part="synthesis"] .inline-ref').click();await Promise.resolve();assert.deepEqual(refs,[3]);
+ view.dispose();
+ }finally{d.window.close();}
+});

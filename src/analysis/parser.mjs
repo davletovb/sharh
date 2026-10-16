@@ -3,6 +3,8 @@ import {QuotationIndex} from './quotes.mjs';
 import {bytes} from '../paths/limits.mjs';
 
 // An argument check has one claim and one assessment, and a few of the rest.
+// A deep reading has one synthesis, a short outline and a few open questions beside its argument check.
+const DEEP_LIMITS=Object.freeze({sum:1,sec:8,q:3});
 const CHK_LIMITS=Object.freeze({claim:1,reason:3,strength:1,weakness:1,assumption:2,objection:1,assessment:1});
 const deferred = r => ['edge','gap','code','excerpt','tension'].includes(r.t) || r.parent!==undefined || r.sec!==undefined;
 export class RecordParser {
@@ -56,6 +58,7 @@ export class RecordParser {
       this.meta=r;this.metrics.recordLines--;return;
     }
     if(r.t==='end') {this.endReceived=true;this.metrics.recordLines--;return;}
+    if(this.lens==='deep'&&DEEP_LIMITS[r.t]&&this.entries.filter(e=>e.record.t===r.t).length>=DEEP_LIMITS[r.t]){this.count('dropped','limit');return;}
     if(this.lens==='ideas'&&r.t==='theme'&&this.entries.filter(e=>e.record.t==='theme').length>=5){this.count('dropped','limit');return;}
     if(r.t==='chk'&&this.entries.filter(e=>e.record.t==='chk'&&e.record.part===r.part).length>=CHK_LIMITS[r.part]){this.count('dropped','limit');return;}
     const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags};
