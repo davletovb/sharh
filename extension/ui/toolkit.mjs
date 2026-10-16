@@ -30,7 +30,10 @@ export async function createToolkit({analyze,ask,pairs:pairHost=null,root,store,
     const source=await store.getDocument(saved.run.docId,saved.run.extractionVersion);if(!source)throw Error('The text this reading was made from has been removed.');
     return {source,scope:restoreScope(source,saved.run.scope)};
   }
-  async function askInStream(text,{about=null,label=null}={}){
+  // The Conversations page waits for a question still being filed, so it opens with the conversation just had.
+  let inflight=null;
+  const askInStream=(text,options)=>{const run=askRun(text,options);inflight=run.catch(()=>{});return run;};
+  async function askRun(text,{about=null,label=null}={}){
     if(api.active())throw Error('Stop the current run before starting another.');text=text.trim();if(!text)throw Error('Type a question first.');
     let config={...api.configuration(),...(chatContext??{})},askChat=chatId;
     if(about){
@@ -41,7 +44,7 @@ export async function createToolkit({analyze,ask,pairs:pairHost=null,root,store,
     if(!api.canRun())throw Error('Sharh needs a signed-in model to answer. Choose one in Settings.');
     const ticket=revision,bubble=stream.bubble(label??text),card=stream.card({title:'Answer'}),body=card.body;card.setBusy(true);let saved;
     try{
-      await api.work(async opts=>{saved=await conversations.ask(config,text,{...opts,chatId:askChat,about,label,onEvent:event=>{opts.onEvent(event);if(ticket!==revision)return;if(event.type==='reset')body.replaceChildren();if(event.type==='record'){const r=event.entry.record,p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,config.doc,config.scope);body.append(p);}}});return saved;},'passage',config.doc,{area:'ask'});
+      await api.work(async opts=>{saved=await conversations.ask(config,text,{...opts,chatId:askChat,about,label,onEvent:event=>{opts.onEvent(event);if(ticket!==revision)return;if(event.type==='reset')body.replaceChildren();if(event.type==='record'){const r=event.entry.record,p=element('p');p.dir='auto';groundedText(p,r.text??r.gloss??'',r.refs,config.doc,config.scope);body.append(p);}}});if(ticket===revision){chatId=saved.chatId;chatContext={doc:config.doc,scope:config.scope};}return saved;},'passage',config.doc,{area:'ask'});
       if(ticket===revision){chatId=saved.chatId;chatContext={doc:config.doc,scope:config.scope};const answer=(await conversations.open(chatId)).answers.at(-1);if(answer){body.replaceChildren();answerInto(body,answer,config.doc,config.scope);card.setDetails(`${answer.run.status}${answer.run.session?.reusable===false?' · the next question starts fresh':''}`);}}
     }catch(error){if(error.chatId&&ticket===revision)chatId=error.chatId;if(!body.childNodes.length){card.root.remove();bubble.remove();}throw error;}
     finally{card.setBusy(false);}
@@ -83,7 +86,7 @@ export async function createToolkit({analyze,ask,pairs:pairHost=null,root,store,
   }
   exports.append(field('Export format',format),button('Export this run',()=>exportRun()));analyze.append(exports);
   const studio=()=>api.studio({chatId,area:ask.hidden?'analyze':'ask',chatContext,pairId:pairContext?.pair.id});
-  return {exportRun,studio,deepRead:deepReadAction,refreshChats:chatList,get chatId(){return chatId;},askInStream,newConversation,useStream(value){stream=value;},readTwice,get pairShown(){return !!pairContext;},async setDocument(){revision++;chatId=null;chatContext=null;chatLog.replaceChildren();chatHistory.replaceChildren();pairHistory.replaceChildren();pairContext=null;for(const v of pairViews)v.dispose();pairViews=[];pairResult.replaceChildren();await Promise.all([chatList(),pairList()]);},openChat,openPair,
+  return {exportRun,studio,deepRead:deepReadAction,settled:()=>inflight??Promise.resolve(),refreshChats:chatList,get chatId(){return chatId;},askInStream,newConversation,useStream(value){stream=value;},readTwice,get pairShown(){return !!pairContext;},async setDocument(){revision++;chatId=null;chatContext=null;chatLog.replaceChildren();chatHistory.replaceChildren();pairHistory.replaceChildren();pairContext=null;for(const v of pairViews)v.dispose();pairViews=[];pairResult.replaceChildren();await Promise.all([chatList(),pairList()]);},openChat,openPair,
     visibleParagraphs(numbers,source){sourceViewport={numbers:[...numbers],source};for(const view of pairViews)view.setVisibleParagraphs(source?.docId===view.source.docId&&source?.version===view.source.version?numbers:[]);},
     scopeChanged(scope){if(chatContext&&(!scope || scopeKey(chatContext.scope)!==scopeKey(scope))){revision++;chatId=null;chatContext=null;chatLog.replaceChildren();chatStatus.textContent='Scope changed. The next question starts a separate conversation.';}},
     async askSelection(config,{intentId,onAccepted}={}){const chat=await conversations.create(config,{passageIntentId:intentId});await onAccepted?.(chat);await openChat(chat.id);return {chatId:chat.id};},

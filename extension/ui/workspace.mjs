@@ -303,7 +303,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     if(layout!=='conversation'){openArea('ask');return;}
     if(!doc)throw Error('Open a text first.');
     askView=true;toolkit.useStream(null);root.dataset.view='ask';for(const [name,v]of Object.entries(areas))v.area.hidden=name!=='ask';
-    await toolkit.refreshChats();if(toolkit.chatId)await toolkit.openChat(toolkit.chatId);
+    await toolkit.settled();await toolkit.refreshChats();if(toolkit.chatId)await toolkit.openChat(toolkit.chatId);
   }
   async function switchLayout(next) {
     if(controller)throw Error('Stop the current run before changing the view.');if(next===layout)return;

@@ -107,12 +107,14 @@ test('Ask page: saved conversations, the open one in full, and back to the readi
   try {
     const {root, page} = w;
     const input = root.getByRole('textbox', {name: 'Ask about this text'});
+    // A slow store: the workspace goes idle, and then lists its saved readings before the answer is filed as a conversation.
+    await page.evaluate(() => { const list = c.engine.list.bind(c.engine); c.engine.list = async (...args) => { await new Promise(resolve => setTimeout(resolve, 1200)); return list(...args); }; });
     await input.fill('What is the claim?');
     await input.press('Enter');
     await page.waitForFunction(() => document.querySelector('#convo-fixture').textContent.includes('Grounded answer'));
     await idle(page, 1);
 
-    // The header menu opens the page; the conversation just had is already there.
+    // The header menu opens the page straight away; the conversation just had is already there.
     await page.evaluate(() => c.workspace.menuItems().find(i => i.label === 'Conversations').action());
     await root.getByRole('heading', {name: 'Conversations', level: 2}).waitFor();
     assert.equal(await root.locator('.convo-stream').isVisible(), false);
