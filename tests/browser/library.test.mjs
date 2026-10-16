@@ -64,13 +64,34 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await page.getByLabel('Failover tier').waitFor();
     report.checks.booksAndKeyboard = true;
 
-    // Glossary belongs to the open reading.
+    // Glossary: terms of a book, added, filtered, edited and deleted.
     await page.keyboard.press('ArrowRight');
-    await page.locator('.glossary-note').waitFor();
-    await page.getByLabel('Source term', {exact: true}).fill('dalil');
-    await page.getByLabel('Chosen translation', {exact: true}).fill('evidence');
-    await page.getByRole('button', {name: 'Save glossary entry'}).click();
-    await page.locator('.glossary-item').filter({hasText: 'dalil'}).waitFor();
+    await page.getByLabel('Glossary of').waitFor();
+    assert.match(await page.locator('.terms').textContent(), /No terms yet/);
+    const addTerm = async (term, translation, aliases = '') => {
+      await page.getByLabel('Term in the text').fill(term);
+      await page.getByLabel('Translation to use').fill(translation);
+      await page.getByLabel('Other spellings (comma separated)').fill(aliases);
+      await page.getByRole('button', {name: 'Save term'}).click();
+      await page.locator('.terms .glossary-item').filter({hasText: term}).waitFor();
+    };
+    await addTerm('dalil', 'evidence', 'далил');
+    await addTerm('sharh', 'commentary');
+    assert.equal(await page.locator('.terms .glossary-item').count(), 2);
+    assert.match(await page.locator('.terms .glossary-item').filter({hasText: 'dalil'}).textContent(), /also далил/);
+    await page.getByLabel('Filter terms').fill('comm');
+    await page.waitForFunction(() => document.querySelectorAll('.terms .glossary-item').length === 1);
+    await page.getByLabel('Filter terms').fill('');
+    await page.waitForFunction(() => document.querySelectorAll('.terms .glossary-item').length === 2);
+    await page.getByRole('button', {name: 'Edit dalil'}).click();
+    assert.equal(await page.getByLabel('Term in the text').inputValue(), 'dalil');
+    await page.getByLabel('Term in the text').fill('daleel');
+    await page.getByRole('button', {name: 'Save term'}).click();
+    await page.locator('.terms .glossary-item').filter({hasText: 'daleel'}).waitFor();
+    assert.equal(await page.locator('.terms .glossary-item').count(), 2);
+    await page.getByRole('button', {name: 'Delete sharh'}).click();
+    await page.getByRole('button', {name: 'Delete sharh'}).click();
+    await page.waitForFunction(() => document.querySelectorAll('.terms .glossary-item').length === 1);
     report.checks.glossary = true;
 
     for (const scheme of ['light', 'dark']) {

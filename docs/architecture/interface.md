@@ -40,7 +40,7 @@ The full tab's header has a **Library** button; with nothing open, the Library i
 - **Documents:** everything read so far as cards (title, kind, date, Open, Delete), newest first, with a filter once there are four or more. Opening one returns to the reading.
 - **Collections:** *Saved items* (a document or a chosen chapter saved from the reading), *Collections* (create, reorder, add saved items, reorder or remove members) and *Read together* (literature review, meta-synthesis, compare two saved items).
 - **Books:** whole-book chapter jobs with pause, resume and the book-level lens, and the failover order for when a model is unavailable.
-- **Glossary:** the terms of the open reading, with Edit on each term and a form to add or change one.
+- **Glossary:** pick any book without opening it, see its terms (term → translation, other spellings, note), filter them, and add, edit or delete one in the form beside the list. Deleting asks twice. Terms from the Terms lens arrive on their own. Renaming a term replaces the old one, and if the new name is refused the old one comes back.
 
 Studio view shows the same controls stacked without tabs. Custom lenses are edited in Settings.
 
