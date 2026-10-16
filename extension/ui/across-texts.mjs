@@ -39,7 +39,7 @@ export async function createAcrossTexts({library:host,analyze,modelHost,dialogHo
  jobs.before(startCard,jobCards);
  async function titleOf(job){const key=job.docId+'|'+job.extractionVersion;if(!jobTitles.has(key))jobTitles.set(key,(await store.getDocument(job.docId,job.extractionVersion).catch(()=>null))?.title??'Removed document');return jobTitles.get(key);}
  function renderStart(){
-  const {doc}=api.state(),go=button('Start chapter digests',()=>startDigests());go.classList.add('primary');go.disabled=!doc||!!doc?.derived;
+  const {doc}=api.state?.()??{},go=button('Start chapter digests',()=>startDigests());go.classList.add('primary');go.disabled=!doc||!!doc?.derived;
   startCard.replaceChildren(element('h4','Digest a book'),element('p',doc?`Read “${doc.title}” one chapter at a time. Each chapter is sent once and its digest is saved, so a long job can stop and carry on later.`:'Open a book or a long text first, then start its chapter digests here.','hint'),go);
  }
  async function renderJobs(){
