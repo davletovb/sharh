@@ -477,6 +477,8 @@ button.recent span { font-weight: 400; }
 .convo-card .finding .inspect-finding { font-size: 13px; min-height: 0; padding: 0; border: 0; background: none; color: var(--muted); font-weight: 600; text-align: start; }
 .convo-card .finding .inspect-finding:hover { color: var(--text); background: none; }
 .convo-card .finding .reading-text { margin: 0 0 6px; }
+button.inline-ref { display: inline; min-height: 0; padding: 0 1px; margin: 0; border: 0; border-radius: 3px; background: none; color: var(--link); font: inherit; font-weight: 600; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+button.inline-ref:hover:not(:disabled) { background: var(--surface-2); text-decoration-style: solid; }
 .convo-card .finding.sum:first-child h5 { display: none; }
 .convo-card .finding.sum:first-child .reading-text { font: 600 17px/1.45 var(--serif); }
 .convo-strip[data-idle='true'] .run-state { display: none; }

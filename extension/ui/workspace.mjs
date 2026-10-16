@@ -252,7 +252,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
   const lensGoal=(v,label)=>start(label,()=>{chooseLens(v);return run();});
-  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(chooseLens(g.lens),run(g.budget?{budget:g.budget}:{})));
+  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(chooseLens(g.lens),run(g.run??{})));
   convo.setGoals(GOALS,goal);
   convo.onAsk(text=>toolkit.askInStream(text));
   convo.ways.setItems(()=>[

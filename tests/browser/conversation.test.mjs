@@ -66,6 +66,10 @@ test('Conversation: the four goals, follow-ups, Ask and a clean screen', async (
     assert.equal(await root.locator('.convo-me').first().textContent(), 'Get the gist');
     assert.equal(await root.locator('.convo-card-title').first().textContent(), 'The gist');
     // The gist is the point and the abstract, nothing more: no sections, brief or arc.
+    const asked = await page.evaluate(() => JSON.parse(c.path.calls[0].request.task.split('\n')[1]));
+    assert.equal(asked.operation, 'gist');
+    assert.equal(asked.maxRecords, 2);
+    assert.match(asked.instructions, /exactly two sum records/);
     assert.equal(await root.locator('.convo-card .finding').count(), 2);
     assert.deepEqual(await root.locator('.convo-card .finding.sum').evaluateAll(cards => cards.map(c => c.dataset.level)), ['line', 'abstract']);
     assert.equal(await root.locator('.convo-card .finding.arc').count(), 0);

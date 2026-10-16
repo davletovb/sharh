@@ -2,6 +2,16 @@ import {graphRecords} from '../../src/ui/graph-layout.mjs';
 import {element,button,uid} from './dom.mjs';
 const labels={finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
 const readable=s=>String(s??'').replaceAll('_',' ');
+// Paragraph marks inside running text (¶8, ¶12–13, [¶17]) open that paragraph, like the chips under a finding. A range opens its first paragraph.
+export function linkReferences(node,text,doc,onReference) {
+  const pattern=/¶\s?(\d+)(?:\s?[–-]\s?\d+)?/g;let last=0,match;
+  for(;(match=pattern.exec(text));) {
+    const n=Number(match[1]),block=doc?.blocks.find(b=>b.n===n);if(!block)continue;
+    if(match.index>last)node.append(document.createTextNode(text.slice(last,match.index)));
+    const original=(block.source?.refs??[block.source?.n??null])[0],link=button(match[0],()=>onReference(n,original),'inline-ref');link.dataset.ref=n;link.setAttribute('aria-label',`Go to paragraph ${n}`);node.append(link);last=pattern.lastIndex;
+  }
+  if(last<text.length)node.append(document.createTextNode(text.slice(last)));
+}
 export function referenceButtons(doc,record,onReference) {
   const row=element('div','','references'),refs=(record.refs??(record.ref?[record.ref]:[])).flatMap(n=>{const block=doc?.blocks.find(b=>b.n===n);return (block?.source?.refs??[block?.source?.n??null]).map(original=>({n,original,block}));});
   // Long section spans remain fully reachable without building ten thousand buttons.
@@ -41,7 +51,7 @@ export function createAnalysisView(container,{lens='summary',gist=false,doc,onRe
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;if(r.level)card.dataset.level=r.level;
     const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
     title.append(button(name,()=>inspect(entry),'inspect-finding'));card.append(title);
-    const text=r.gist??r.gloss??r.text;if(text){const p=element('p',text,'reading-text');p.dir='auto';card.append(p);}
+    const text=r.gist??r.gloss??r.text;if(text){const p=element('p','','reading-text');p.dir='auto';linkReferences(p,text,doc,onReference);card.append(p);}
     if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
     if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
     if(r.basis)card.append(element('span',r.basis,'basis '+r.basis));

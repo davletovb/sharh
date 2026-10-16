@@ -123,3 +123,17 @@ test('failed passage acknowledgement sends nothing and panel recovery opens its 
  session.remove=async key=>session.set({[key]:undefined});let opened;const next=await acceptPassage({key,storage:session,store,engine,show:()=>workspace.setDocument(doc),onPassage:()=>{throw Error('MUST_NOT_REPLAY');},onSaved:async id=>{opened=id;await workspace.openSaved(id);}});assert.equal(opened,accepted.id);assert.equal(next.restored,true);assert.equal(path.calls.length,0);assert.equal((await session.get(key))[key],undefined);
  }finally{workspace?.dispose();store.close();d.window.close();}
 });
+test('paragraph marks inside finding text open their paragraph, and the gist view shows only the point and the abstract',async()=> {
+ const d=dom(),doc=await exampleDocument(),refs=[];
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'summary',gist:true,onReference:(n,original)=>refs.push([n,original]),workerFactory:()=>{throw Error('worker unavailable');}});
+ view.record({sequence:1,record:{t:'sum',level:'line',text:'It argues for care (¶3) and against haste (¶4–5, [¶99]).',refs:[3]},flags:[]});
+ view.record({sequence:2,record:{t:'sum',level:'abstract',text:'Short and plain.',refs:[3]},flags:[]});
+ view.record({sequence:3,record:{t:'sum',level:'section',text:'Hidden section.',refs:[3]},flags:[]});
+ view.record({sequence:4,record:{t:'arc',n:1,stage:'opening',text:'Hidden arc.',refs:[3]},flags:[]});
+ await view.settled();
+ assert.deepEqual([...document.querySelectorAll('.finding')].map(c=>c.dataset.level),['line','abstract']);assert.doesNotMatch(document.body.textContent,/Hidden/);
+ const links=[...document.querySelectorAll('.reading-text .inline-ref')];assert.deepEqual(links.map(l=>l.textContent),['¶3','¶4–5']);assert.equal(document.querySelector('.reading-text').textContent,'It argues for care (¶3) and against haste (¶4–5, [¶99]).');
+ links[1].click();await Promise.resolve();assert.deepEqual(refs,[[4,null]]);
+ view.dispose();
+ }finally{d.window.close();}
+});
