@@ -41,18 +41,62 @@ test('Library page: documents, collections, books and glossary on the full tab',
     assert.equal(await page.locator('#saved-empty').isVisible(), false);
     report.checks.documentRow = true;
 
-    // Collections: save the reading, make a collection, add it, see it in order.
+    // Collections: save two readings, start a collection, add both, put them in order, compare, delete.
     await page.getByRole('tab', {name: 'Collections'}).click();
-    await page.getByRole('button', {name: 'Save current scope to library'}).click();
-    await page.getByLabel('Saved library items').locator('option').first().waitFor({state: 'attached'});
-    await page.getByLabel('New collection name').fill('Reading list');
-    await page.getByRole('button', {name: 'Create collection'}).click();
-    // Creating a collection reloads the lists, so wait for it to be chosen before selecting an item.
-    await page.waitForFunction(() => [...document.querySelectorAll('select')].some(el => el.selectedOptions[0]?.textContent === 'Reading list'));
-    await page.getByLabel('Saved library items').selectOption({index: 0});
-    await page.getByRole('button', {name: 'Add selected items to collection'}).click();
-    await page.locator('.collection-item').first().waitFor();
-    assert.equal(await page.locator('.collection-item').count(), 1);
+    assert.equal(await page.getByLabel('Collection', {exact: true}).isVisible(), false, 'the Studio controls stay out of the page');
+    await page.getByText('No collections yet.').waitFor();
+    await page.getByRole('button', {name: 'Save what is open'}).click();
+    await page.locator('.saved-text').first().waitFor();
+    await page.locator('#open-file').setInputFiles({name: 'second.html', mimeType: 'text/html', buffer: Buffer.from('<h1>Second local file</h1><p>Second source content.</p>')});
+    await page.locator('.convo-stream').waitFor();
+    await page.locator('#open-library').click();
+    await page.getByRole('tab', {name: 'Collections'}).click();
+    await page.getByRole('button', {name: 'Save what is open'}).click();
+    await page.locator('.saved-text').nth(1).waitFor();
+    const titles = await page.locator('.saved-text-title').allTextContents();
+    assert.equal(titles.length, 2);
+    await page.getByLabel('Name for a new collection').fill('Reading list');
+    await page.getByRole('button', {name: 'Start collection'}).click();
+    await page.getByRole('heading', {name: 'Reading list', level: 4}).waitFor();
+    assert.equal(await page.getByRole('button', {name: 'Reading list 0 texts'}).getAttribute('aria-current'), 'true');
+    assert.equal(await page.getByRole('button', {name: 'Literature review of Reading list'}).isDisabled(), true, 'one text cannot be read together');
+    for (const at of [0, 1]) {
+      await page.getByLabel('Saved text to add').selectOption({index: 1});
+      await page.getByRole('button', {name: 'Add to collection'}).click();
+      await page.locator('.coll-members li').nth(at).waitFor();
+    }
+    assert.equal(await page.getByLabel('Saved text to add').isDisabled(), true, 'everything saved is already in the collection');
+    assert.equal(await page.getByRole('button', {name: 'Literature review of Reading list'}).isEnabled(), true);
+    const order = async () => page.locator('.coll-member-title').allTextContents();
+    const before = await order();
+    await page.getByRole('button', {name: `Move ${before[0]} later`}).click();
+    await page.waitForFunction(first => document.querySelector('.coll-member-title')?.textContent !== first, before[0]);
+    assert.deepEqual(await order(), [before[1], before[0]]);
+    await page.getByRole('button', {name: `Remove ${before[1]} from Reading list`}).click();
+    await page.waitForFunction(() => document.querySelectorAll('.coll-members li').length === 1);
+    assert.equal(await page.getByRole('button', {name: 'Reading list 1 text'}).count(), 1);
+    // Compare needs exactly two picked texts.
+    assert.equal(await page.getByRole('button', {name: 'Compare the two picked'}).isDisabled(), true);
+    await page.getByLabel(`Pick ${titles[0]} to compare`).check();
+    await page.getByLabel(`Pick ${titles[1]} to compare`).check();
+    assert.equal(await page.getByRole('button', {name: 'Compare the two picked'}).isEnabled(), true);
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], `collections ${scheme}`);
+    }
+    // A second collection can be ordered and the first deleted, after a confirmation.
+    await page.getByLabel('Name for a new collection').fill('Later');
+    await page.getByRole('button', {name: 'Start collection'}).click();
+    await page.getByRole('heading', {name: 'Later', level: 4}).waitFor();
+    assert.equal(await page.getByRole('button', {name: 'Move Later later in the list'}).isDisabled(), true);
+    await page.getByRole('button', {name: 'Move Later earlier in the list'}).click();
+    await page.waitForFunction(() => document.querySelector('.coll-pick strong')?.textContent === 'Later');
+    await page.getByRole('button', {name: 'Reading list 1 text'}).click();
+    await page.getByRole('button', {name: /Delete (collection|for good)/}).click();
+    assert.equal(await page.getByRole('button', {name: 'Reading list 1 text'}).count(), 1, 'one click only asks');
+    await page.getByRole('button', {name: /Delete (collection|for good)/}).click();
+    await page.waitForFunction(() => !document.querySelector('.coll-list')?.textContent.includes('Reading list'));
     assert.equal(await page.getByRole('tabpanel', {name: 'Documents'}).isVisible(), false);
     report.checks.collections = true;
 
@@ -106,14 +150,17 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await page.locator('.convo-stream').waitFor();
     await page.locator('#open-library').click();
     await page.getByRole('tab', {name: 'Documents'}).click();
-    await page.locator('#saved-documents').getByRole('button', {name: 'Open', exact: true}).click();
+    await page.locator('#saved-documents').getByRole('button', {name: 'Open', exact: true}).first().click();
     await page.locator('.convo-stream').waitFor();
     report.checks.openFromLibrary = true;
 
-    // Deleting the last document leaves an empty Library.
+    // Deleting every document leaves an empty Library.
     await page.locator('#open-library').click();
     await page.getByRole('tab', {name: 'Documents'}).click();
-    await page.locator('#saved-documents').getByRole('button', {name: 'Delete', exact: true}).click();
+    for (let left = await page.locator('#saved-documents article').count(); left > 0; left--) {
+      await page.locator('#saved-documents').getByRole('button', {name: 'Delete', exact: true}).first().click();
+      await page.waitForFunction(n => document.querySelectorAll('#saved-documents article').length === n - 1, left);
+    }
     await page.locator('#saved-empty').waitFor();
     report.checks.delete = true;
     assert.deepEqual(report.errors, []);
