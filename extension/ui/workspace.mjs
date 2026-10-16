@@ -35,7 +35,10 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   chips.append(scopeChip,modelChip,languageChip);heading.append(title,chips,size,scopeHost);
   // Settings own the theme, language and model. The controls that apply them stay out of sight but live.
   const parked=element('div'),appearanceHost=parked,modelBody=element('div','','control-grid');parked.hidden=true;parked.append(modelBody);
-  root.append(heading,parked,convo.root);container.append(root);
+  // Studio view says what it is and offers the way back; the side panel never shows it.
+  const studioBar=element('div','','studio-bar');studioBar.hidden=surface!=='tab';
+  studioBar.append(element('strong','Studio'),element('span','Every control for deliberate runs: choose the lens, scope, detail and focus yourself.','hint'),button('Back to conversation',()=>switchLayout('conversation'),'ghost'));
+  root.append(studioBar,heading,parked,convo.root);container.append(root);
   const nav=element('nav','','workspace-nav');nav.setAttribute('aria-label','Reading workspace');const areas={};
   for(const label of ['Analyze','Ask','History',...(surface==='tab'?['Library']:[])]) {
     const key=label.toLowerCase(),area=element('div','','workspace-area'),tab=button(label,()=>openArea(key));tab.id=uid('area-button');area.id=uid('area');tab.setAttribute('aria-controls',area.id);area.setAttribute('aria-labelledby',tab.id);area.setAttribute('role','region');nav.append(tab);areas[key]={area,tab};

@@ -72,3 +72,9 @@ body.dragover { outline: 5px solid var(--gold); outline-offset: -5px; }
 .reader-app:has(.workspace[data-view='library']) .reader-grid { grid-template-columns: minmax(0, 1fr); }
 .reader-app:has(.workspace[data-view='library']) .analysis-column { position: static; height: auto; overflow: visible; max-width: none; width: 100%; margin: 0; }
 .reader-app:has(.workspace[data-view='library']) .scope-host { display: none; }
+
+/* Studio view gives the workbench more room than the conversation does. */
+@media (min-width: 1100px) {
+  #reader-main[data-layout='studio'][data-has-doc='true'] .reader-grid { grid-template-columns: minmax(0, 1fr) minmax(520px, 46%); }
+}
+.saved-title { display: flex; flex-direction: column; gap: 2px; }

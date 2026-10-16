@@ -31,7 +31,7 @@ Sharh never reads a page without being asked.
    - Progress, "Continue", "Retry with default model" and problems share one strip above the input. It is hidden when there is nothing to say. With no usable model it says so once and offers *Choose a model*.
    - There is no tab bar, no model, language or token chips, and no Adjust. The header ⋯ menu holds earlier readings, exports, and in the full tab the Library and the Studio view.
 
-The full tab uses the same conversation beside the source text. **Studio view** (⋯ menu in the full tab, or `?layout=studio`) restores the complete set of controls for power use: lens list, Adjust (detail, number of findings, focus, theoretical frame), history and comparison, Second reading and the Library tools.
+The full tab uses the same conversation beside the source text. **Studio view** (⋯ menu in the full tab, or `?layout=studio`) is the workbench for deliberate runs. It gives the analysis column more room, opens with a Studio bar that explains it and returns to the conversation, and keeps every control: the lens list, Adjust (detail, number of findings, focus, theoretical frame), the scope and size line, saved readings with version comparison, Second reading, exports and the Library areas. Its tabs are Analyze, Ask, History and Library.
 
 ## Library page (full tab)
 
