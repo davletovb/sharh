@@ -26,7 +26,7 @@ function openSettingsPage(section='connection') {
 }
 export async function createWorkspace(container,{store,engine,client,storage=chrome.storage.local,changes=chrome.storage.onChanged,surface='panel',layout:initialLayout='studio',onReference=()=>{},onOpenDocument=()=>{},onControlsChanged=()=>{},onOpenSettings=openSettingsPage,onLayout=()=>{}}) {
   let doc=null,scope=null,selectedRun=null,view=null,epoch=0,controller=null,runId=null,preview=null,modelPicker,appearance,loading=0,viewDoc=null,toolkit,previewRevision=0,across,bookGlossary=[];const customMap=new Map();let sourceViewport={numbers:[],source:null};
-  const root=element('section','','workspace');root.dataset.surface=surface;let layout='studio',currentCard=null,oldViews=[],runRows=[];const convo=createConversation({surface}),cardsByRun=new Map(),studioResults=element('div','','analysis-results');let results=studioResults;
+  const root=element('section','','workspace');root.dataset.surface=surface;let askView=false,layout='studio',currentCard=null,oldViews=[],runRows=[];const convo=createConversation({surface}),cardsByRun=new Map(),studioResults=element('div','','analysis-results');let results=studioResults;
   // The header names what is being read, with what, and how. Models and languages are changed in Settings only.
   const heading=element('header','','doc-header'),title=element('h2','Choose a document','workspace-title'),size=element('p','','scope-estimate');
   const scopeHost=element('div','','scope-host'),scopeLabel=element('span','No scope selected.','scope-label');scopeHost.hidden=surface!=='tab';
@@ -44,7 +44,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const key=label.toLowerCase(),area=element('div','','workspace-area'),tab=button(label,()=>openArea(key));tab.id=uid('area-button');area.id=uid('area');tab.setAttribute('aria-controls',area.id);area.setAttribute('aria-labelledby',tab.id);area.setAttribute('role','region');nav.append(tab);areas[key]={area,tab};
   }
   root.append(nav,...Object.values(areas).map(v=>v.area));
-  function openArea(key){if(layout==='conversation'){const library=key==='library'&&!!areas.library;root.dataset.view=library?'library':'stream';for(const [name,v]of Object.entries(areas))v.area.hidden=!(library&&name==='library');if(library){libraryBack.hidden=!doc;library_().catch(fail);across?.refresh().catch(fail);}return;}if(!areas[key])key='analyze';for(const [name,v]of Object.entries(areas)){v.area.hidden=name!==key;v.tab.setAttribute('aria-pressed',String(name===key));}if(key==='library'){library_().catch(fail);across?.refresh().catch(fail);}}
+  function openArea(key){if(layout==='conversation'){if(key==='ask'&&askView)return;if(askView){askView=false;toolkit?.useStream(convo);}const library=key==='library'&&!!areas.library;root.dataset.view=library?'library':'stream';for(const [name,v]of Object.entries(areas))v.area.hidden=!(library&&name==='library');if(library){libraryBack.hidden=!doc;library_().catch(fail);across?.refresh().catch(fail);}return;}if(!areas[key])key='analyze';for(const [name,v]of Object.entries(areas)){v.area.hidden=name!==key;v.tab.setAttribute('aria-pressed',String(name===key));}if(key==='library'){library_().catch(fail);across?.refresh().catch(fail);}}
   const controls=element('div','','analysis-controls'),lens=element('select'),budget=element('input'),focus=element('textarea'),frame=element('textarea');
   const builtins=[['summary','Summary'],['structure','Structure'],['logic','Logic'],['thinking','Thinking'],['themes','Themes'],['meta-reading','Meta-reading'],['critique','Critique'],['literature','Literature'],['terms','Terms'],['questions','Questions'],['situate','Situate · web search']];options(lens,builtins);budget.type='number';budget.min=1;budget.max=200;budget.value=DETAIL.standard;focus.maxLength=frame.maxLength=4000;focus.rows=frame.rows=2;
   const lensNames=()=>new Map([...lens.options].map(o=>[o.value,o.textContent]));
@@ -86,6 +86,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   areas.history.area.append(element('h3','History'),element('p','Every reading is saved with its text, so reopening it costs nothing.','hint'),history,comparison);
   areas.ask.area.append(element('h3','Ask about your text'),element('p','Grounded conversation is coming soon. You can already select a passage and choose Explain, Translate, Logic or Define.'),button('Analyze this scope',()=>openArea('analyze')));
   const libraryBack=button('← Back to the reading',()=>openArea('analyze'),'ghost library-back');libraryBack.hidden=true;
+  const askBack=button('← Back to the reading',()=>openArea('analyze'),'ghost ask-back'),askTitle=element('h2','Conversations','ask-title');
   const documents=element('div','','library-documents');areas.library?.area.append(libraryBack,element('h2','Library','library-title'),element('h3','Saved documents'),element('p','Documents and their reading history stay on this computer. Open a document to see its saved readings.','hint'),documents);
   root.addEventListener('sharh:error',event=>{event.stopPropagation();fail(event.detail);});
   function fail(error){const text=error.hint??error.message??String(error);status.textContent=text==='Choose an available model provider.'?'Your chosen model isn’t available right now. Choose one in Settings.':text;}
@@ -265,9 +266,16 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     else{controls.append(actions);areas.analyze.area.replaceChildren(controls,status,diagnostics,resultHead,studioResults);heading.append(scopeHost);scopeHost.hidden=surface!=='tab';results=studioResults;root.append(inspection);}
     openArea('analyze');syncStrip();updatePreview();
   }
+  // The Ask page: every saved conversation about this text, and the open one in full.
+  async function openAsk() {
+    if(layout!=='conversation'){openArea('ask');return;}
+    if(!doc)throw Error('Open a text first.');
+    askView=true;toolkit.useStream(null);root.dataset.view='ask';for(const [name,v]of Object.entries(areas))v.area.hidden=name!=='ask';
+    await toolkit.refreshChats();if(toolkit.chatId)await toolkit.openChat(toolkit.chatId);
+  }
   async function switchLayout(next) {
     if(controller)throw Error('Stop the current run before changing the view.');if(next===layout)return;
-    view?.dispose();view=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();selectedRun=null;convo.reset();studioResults.replaceChildren();resultHead.hidden=true;setLayout(next);onLayout(next);
+    askView=false;view?.dispose();view=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();selectedRun=null;convo.reset();studioResults.replaceChildren();resultHead.hidden=true;setLayout(next);onLayout(next);
     if(doc)await savedRuns({display:true});
   }
   openArea('analyze');history.hidden=true;updatePreview();
@@ -288,17 +296,18 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     '-',
     {label:'Open in full tab',action:()=>toolkit.studio(),get hidden(){return surface==='tab';}}
   ]);
-  root.dataset.layout='studio';across.pageMode(false);if(initialLayout==='conversation')setLayout('conversation');
+  areas.ask.area.prepend(askBack,askTitle);root.dataset.layout='studio';across.pageMode(false);if(initialLayout==='conversation')setLayout('conversation');
   // One menu for everything that is not the conversation itself: earlier readings, exports, the library and the other view.
   function menuItems() {
     const items=[];
     if(doc&&runRows.length){for(const r of runRows.slice(0,6))items.push({label:`Earlier: ${taskTitle(r.lens,r.config?.customLens,{action:r.config?.action,scope:r.scope,operation:r.config?.operation})} · ${new Date(r.createdAt).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}`,action:()=>loadRun(r.id),get disabled(){return !!controller;}});items.push('-');}
+    if(doc)items.push({label:'Conversations',action:()=>openAsk()},'-');
     if(selectedRun){items.push({label:'Export as Markdown',action:()=>toolkit.exportRun('markdown')},{label:'Export as JSON archive',action:()=>toolkit.exportRun('json')},{label:'Export map as SVG',action:()=>toolkit.exportRun('svg'),get hidden(){return !isMap();}},{label:'Export map as PNG',action:()=>toolkit.exportRun('png'),get hidden(){return !isMap();}},'-');}
     if(surface==='tab'){items.push({label:'Library',action:()=>openArea('library')},{label:layout==='conversation'?'Studio view (all controls)':'Conversation view',action:()=>switchLayout(layout==='conversation'?'studio':'conversation')});}
     else items.push({label:'Open in full tab',action:()=>toolkit.studio()});
     return items;
   }
-  return {ready,run,scopeHost,openArea,menuItems,get documentsHost(){return across.documentsHost;},setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
+  return {ready,run,scopeHost,openArea,openAsk,menuItems,get documentsHost(){return across.documentsHost;},setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
     setScope(value){scope=value;toolkit.scopeChanged(value);updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
     async passage(action,selection,{intentId,onAccepted}={}){
       if(controller)throw Error('Stop the current run before starting another.');

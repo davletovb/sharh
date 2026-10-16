@@ -605,3 +605,22 @@ button.recent span { font-weight: 400; }
 .workspace[data-layout='studio'] .run-history select { width: 100%; max-width: none; }
 .workspace[data-layout='studio'] .version-comparison, .workspace[data-layout='studio'] .second-reader-results { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 0 0 14px; }
 .workspace[data-layout='studio'] .workspace-area > h3 { font-size: 18px; }
+
+/* ───────────────────────── Ask page (conversations) ───────────────────────── */
+.ask-back, .ask-title { display: none; }
+.chat-chips { display: none; }
+.workspace[data-layout='conversation'][data-view='ask'] > .convo { display: none; }
+.workspace[data-layout='conversation'] .workspace-area[data-key='ask'] { display: block; }
+.workspace[data-layout='conversation'][data-view='ask'] .ask-back { display: inline-flex; margin-bottom: 8px; }
+.workspace[data-layout='conversation'][data-view='ask'] .ask-title { display: block; font: 600 22px/1.2 var(--serif); margin: 0 0 10px; }
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area > h3,
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area > p:not(.chat-status),
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area > label:has(select) { display: none; }
+.workspace[data-layout='conversation'][data-view='ask'] .chat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.workspace[data-layout='conversation'][data-view='ask'] .chat-chips .chip { max-width: 100%; }
+.workspace[data-layout='conversation'][data-view='ask'] .chat-transcript { display: flex; flex-direction: column; gap: 12px; margin: 8px 0 14px; }
+.workspace[data-layout='conversation'][data-view='ask'] .chat-turn { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.workspace[data-layout='conversation'][data-view='ask'] .chat-turn h4 { margin: 0 0 8px; font: 600 15px var(--serif); }
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area label:has(textarea) { display: flex; flex-direction: column; gap: 4px; }
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area textarea { width: 100%; }
+.workspace[data-layout='conversation'][data-view='ask'] .workspace-area label { text-align: start; align-items: stretch; }

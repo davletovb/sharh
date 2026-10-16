@@ -134,3 +134,58 @@ test('Conversation: with no usable model the screen says so once and offers the 
     assert.equal(await root.locator('.convo-me').count(), 0);
   } finally { await w.close(); }
 });
+
+test('Ask page: saved conversations, the open one in full, and back to the reading', async () => {
+  const w = await setup(), report = {checks: {}};
+  try {
+    const {root, page} = w;
+    const input = root.getByRole('textbox', {name: 'Ask about this text'});
+    await input.fill('What is the claim?');
+    await input.press('Enter');
+    await page.waitForFunction(() => document.querySelector('#convo-fixture').textContent.includes('Grounded answer'));
+    await idle(page, 1);
+
+    // The header menu opens the page; the conversation just had is already there.
+    await page.evaluate(() => c.workspace.menuItems().find(i => i.label === 'Conversations').action());
+    await root.getByRole('heading', {name: 'Conversations', level: 2}).waitFor();
+    assert.equal(await root.locator('.convo-stream').isVisible(), false);
+    await root.locator('.chat-turn').first().waitFor();
+    assert.match(await root.locator('.chat-transcript').textContent(), /What is the claim\?/);
+    assert.equal(await root.getByRole('button', {name: /Open conversation: What is the claim/}).getAttribute('aria-pressed'), 'true');
+    report.checks.opensWithTheConversation = true;
+
+    // Ask again on the page, then start a new conversation and come back to the first.
+    await root.getByLabel('Question', {exact: true}).fill('What supports it?');
+    await root.getByRole('button', {name: 'Send question', exact: true}).click();
+    await page.waitForFunction(() => document.querySelectorAll('#convo-fixture .chat-turn').length === 2);
+    await idle(page, 2);
+    await root.getByRole('button', {name: 'New conversation', exact: true}).click();
+    assert.equal(await root.locator('.chat-turn').count(), 0);
+    await root.getByRole('button', {name: /Open conversation: What is the claim/}).click();
+    await page.waitForFunction(() => document.querySelectorAll('#convo-fixture .chat-turn').length === 2);
+    assert.equal(await root.locator('.chat-turn svg').count(), 0);
+    report.checks.switchesConversations = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    report.checks.accessibility = true;
+
+    await root.getByRole('button', {name: '← Back to the reading'}).first().click();
+    await root.locator('.convo-stream').waitFor();
+    // Asking from the reading goes back to the shared stream and does not open the page.
+    await input.fill('And the evidence?');
+    await input.press('Enter');
+    await page.waitForFunction(() => document.querySelectorAll('#convo-fixture .convo-card').length >= 1 && document.querySelector('#convo-fixture').textContent.includes('And the evidence?'));
+    assert.equal(await root.locator('.convo-stream').isVisible(), true);
+    report.checks.backToStream = true;
+    assert.deepEqual(w.errors, []);
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/ask-page.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});
