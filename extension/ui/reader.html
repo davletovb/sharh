@@ -56,7 +56,10 @@
     </div>
   </div>
   <section id="saved-section" class="recents" aria-labelledby="saved-heading">
-    <h2 id="saved-heading">Saved documents</h2><div id="saved-documents"></div>
+    <h2 id="saved-heading">Saved documents</h2>
+    <label class="saved-filter" hidden><span class="sr-only">Filter saved documents</span><input id="saved-filter" type="search" placeholder="Filter by title…"></label>
+    <div id="saved-documents"></div>
+    <p id="saved-empty" class="hint" hidden>Nothing is saved yet. Read a page or open a PDF and it will appear here.</p>
   </section>
 </main>
 <script type="module" src="reader.mjs"></script>

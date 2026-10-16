@@ -483,3 +483,66 @@ button.recent span { font-weight: 400; }
 .panel-body main.panel { width: 100%; margin: 0 auto; }
 .convo-card .finding.in-source-view { outline: 0; box-shadow: none; border-inline-start: 3px solid var(--gold); padding-inline-start: 10px; }
 .convo-card .analysis-view[data-lens='passage'] .record-group > h4 { display: none; }
+
+/* ───────────────────────── Library page (full tab) ───────────────────────── */
+.library-title { display: none; }
+.lib-tabs { display: none; }
+.lib-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 0 0 14px; min-width: 0; }
+.lib-card h4 { margin: 0 0 4px; font: 600 16px var(--serif); }
+.lib-card label { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 10px 0; }
+.lib-card select, .lib-card input:not([type='checkbox']) { width: 100%; max-width: none; }
+.lib-card .row { margin: 8px 0; justify-content: flex-start; }
+.lib-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
+.collection-members { margin: 10px 0; }
+.collection-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.collection-item > span { flex: 1; min-width: 160px; overflow-wrap: anywhere; font-weight: 600; }
+.collection-item button { min-height: 30px; padding: 3px 10px; font-size: 13px; }
+
+.workspace[data-layout='conversation'] .library-title { display: block; font: 600 26px/1.2 var(--serif); margin: 0 0 4px; }
+.workspace[data-layout='conversation'] .workspace-area > h3,
+.workspace[data-layout='conversation'] .workspace-area > p.hint,
+.workspace[data-layout='conversation'] .library-documents,
+.workspace[data-layout='conversation'] .toolkit-controls,
+.workspace[data-layout='conversation'] .export-controls { display: none; }
+.workspace[data-layout='conversation'] .lib-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 10px 0 18px; overflow-x: auto; }
+.lib-tab { background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 10px 16px; min-height: 0; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.lib-tab:hover { background: none; color: var(--text); }
+.lib-tab[aria-selected='true'] { color: var(--text); border-bottom-color: var(--gold); }
+.across-library[data-mode='page'] .lib-panel { display: none; }
+.across-library[data-mode='page'][data-tab='documents'] .lib-panel[data-panel='documents'],
+.across-library[data-mode='page'][data-tab='collections'] .lib-panel[data-panel='collections'],
+.across-library[data-mode='page'][data-tab='books'] .lib-panel[data-panel='books'],
+.across-library[data-mode='page'][data-tab='glossary'] .lib-panel[data-panel='glossary'] { display: block; }
+.across-library[data-mode='page'] .lib-panel > h3 { display: none; }
+.across-library[data-mode='page'] .lib-intro { margin: 0 0 14px; }
+.across-library[data-mode='page'] details > summary { display: none; }
+.across-library[data-mode='page'] details.book-jobs,
+.across-library[data-mode='page'] details.running-glossary,
+.across-library[data-mode='page'] details.failover-settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 0 0 16px; }
+.across-library[data-mode='page'] details label { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 10px 0; }
+.across-library[data-mode='page'] details select, .across-library[data-mode='page'] details input:not([type='checkbox']), .across-library[data-mode='page'] details textarea { width: 100%; max-width: none; }
+.across-library[data-mode='page'] details button { margin: 4px 8px 4px 0; }
+.across-library[data-mode='page'] .failover-settings::before { content: 'When a model is unavailable'; display: block; font: 600 16px var(--serif); margin-bottom: 4px; }
+.across-library[data-mode='page'] .book-jobs::before { content: 'Whole-book jobs'; display: block; font: 600 16px var(--serif); margin-bottom: 4px; }
+.across-library[data-mode='page'] .running-glossary::before { content: 'Glossary of the open reading'; display: block; font: 600 16px var(--serif); margin-bottom: 4px; }
+.across-status:empty { display: none; }
+.across-status { margin: 12px 0 0; color: var(--muted); }
+
+/* Saved documents as cards on the Library page */
+.saved-filter { display: block; margin: 0 0 10px; }
+.saved-filter input { width: 100%; }
+.lib-documents-slot .recents, .lib-documents-slot #saved-section { background: none; border: 0; padding: 0; margin: 0; box-shadow: none; }
+.lib-documents-slot #saved-heading { display: none; }
+.lib-documents-slot #saved-documents article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin: 0 0 10px; }
+.lib-documents-slot #saved-documents article[hidden] { display: none; }
+.lib-documents-slot #saved-documents .saved-title { display: flex; flex-direction: column; gap: 2px; }
+.lib-documents-slot #saved-documents .saved-title strong { font: 600 16px/1.35 var(--serif); overflow-wrap: anywhere; }
+.lib-link { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 560px) { .lib-documents-slot #saved-documents article { grid-template-columns: 1fr auto; } .lib-documents-slot #saved-documents article .saved-title { grid-column: 1 / -1; } }
+.glossary-list { margin: 8px 0 14px; }
+.glossary-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.glossary-item button { min-height: 30px; padding: 3px 10px; font-size: 13px; }
+.across-library[data-mode='page'] .glossary-select { display: none; }
+.glossary-list:empty { display: none; }
+.across-library:not([data-mode='page']) .glossary-note, .across-library:not([data-mode='page']) .glossary-list { display: none; }
+.workspace[data-layout='conversation'] .across-library { background: none; border: 0; padding: 0; margin: 0; box-shadow: none; }

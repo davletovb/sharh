@@ -33,6 +33,17 @@ Sharh never reads a page without being asked.
 
 The full tab uses the same conversation beside the source text. **Studio view** (⋯ menu in the full tab, or `?layout=studio`) restores the complete set of controls for power use: lens list, Adjust (detail, number of findings, focus, theoretical frame), history and comparison, Second reading and the Library tools.
 
+## Library page (full tab)
+
+The full tab's header has a **Library** button; with nothing open, the Library is the home page. It takes the whole width and has four tabs (arrow keys move between them):
+
+- **Documents:** everything read so far as cards (title, kind, date, Open, Delete), newest first, with a filter once there are four or more. Opening one returns to the reading.
+- **Collections:** *Saved items* (a document or a chosen chapter saved from the reading), *Collections* (create, reorder, add saved items, reorder or remove members) and *Read together* (literature review, meta-synthesis, compare two saved items).
+- **Books:** whole-book chapter jobs with pause, resume and the book-level lens, and the failover order for when a model is unavailable.
+- **Glossary:** the terms of the open reading, with Edit on each term and a form to add or change one.
+
+Studio view shows the same controls stacked without tabs. Custom lenses are edited in Settings.
+
 ## Settings
 
 Sections: Connection, Models, Reading, Lenses, Sites and PDFs, Appearance, Your data. Models has a default model, per-job overrides (quick passage actions, book chapters, synthesis follow the default unless overridden) and the second reader. Reading has the output language, Detail (concise, standard, thorough; 12, 24 or 60 findings), and the auto-read choice. Preferences live in `chrome.storage.local.sharhReading` (`src/ui/preferences.mjs`, validated on load).

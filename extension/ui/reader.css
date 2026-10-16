@@ -65,3 +65,10 @@ body.dragover { outline: 5px solid var(--gold); outline-offset: -5px; }
 #scope-help[data-oversize='true'] { color: var(--bad); font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) { .block.selected { transition: outline-color 0.15s; } }
 [data-has-doc='false'] .doc-header, [data-has-doc='false'] .scope-host { display: none; }
+
+/* The Library takes the whole width: no source column, no document title. */
+.reader-app:has(.workspace[data-view='library']) .source-column,
+.reader-app:has(.workspace[data-view='library']) .doc-title { display: none; }
+.reader-app:has(.workspace[data-view='library']) .reader-grid { grid-template-columns: minmax(0, 1fr); }
+.reader-app:has(.workspace[data-view='library']) .analysis-column { position: static; height: auto; overflow: visible; max-width: none; width: 100%; margin: 0; }
+.reader-app:has(.workspace[data-view='library']) .scope-host { display: none; }

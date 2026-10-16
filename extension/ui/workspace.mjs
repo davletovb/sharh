@@ -83,7 +83,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   areas.history.area.append(element('h3','History'),element('p','Every reading is saved with its text, so reopening it costs nothing.','hint'),history,comparison);
   areas.ask.area.append(element('h3','Ask about your text'),element('p','Grounded conversation is coming soon. You can already select a passage and choose Explain, Translate, Logic or Define.'),button('Analyze this scope',()=>openArea('analyze')));
   const libraryBack=button('← Back to the reading',()=>openArea('analyze'),'ghost library-back');libraryBack.hidden=true;
-  const documents=element('div','','library-documents');areas.library?.area.append(libraryBack,element('h3','Saved documents'),element('p','Documents and their reading history stay on this computer. Open a document to see its saved readings.','hint'),documents);
+  const documents=element('div','','library-documents');areas.library?.area.append(libraryBack,element('h2','Library','library-title'),element('h3','Saved documents'),element('p','Documents and their reading history stay on this computer. Open a document to see its saved readings.','hint'),documents);
   root.addEventListener('sharh:error',event=>{event.stopPropagation();fail(event.detail);});
   function fail(error){const text=error.hint??error.message??String(error);status.textContent=text==='Choose an available model provider.'?'Your chosen model isn’t available right now. Choose one in Settings.':text;}
   function targetName(target){return `${target?.provider??'No provider'} · ${target?.model || 'provider default'}${target?.effort?' · '+target.effort:''}${target?.serviceTier?' · '+target.serviceTier:''}`;}
@@ -257,7 +257,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     ...[...customMap].map(([v,d])=>({label:d.name,action:()=>lensGoal(v,d.name),get disabled(){return !canRun();}}))
   ]);
   function setLayout(next) {
-    layout=next;root.dataset.layout=next;toolkit?.useStream(next==='conversation'?convo:null);
+    layout=next;root.dataset.layout=next;toolkit?.useStream(next==='conversation'?convo:null);across?.pageMode(next==='conversation');
     if(next==='conversation'){convo.strip.replaceChildren(status,diagnostics,stripNotice,actions,stripActions);convo.scopeSlot.append(scopeHost);scopeHost.hidden=true;convo.scopeButton.setAttribute('aria-expanded','false');results=element('div');currentCard=null;}
     else{controls.append(actions);areas.analyze.area.replaceChildren(controls,status,diagnostics,resultHead,studioResults);heading.append(scopeHost);scopeHost.hidden=surface!=='tab';results=studioResults;root.append(inspection);}
     openArea('analyze');syncStrip();updatePreview();
@@ -285,17 +285,17 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     '-',
     {label:'Open in full tab',action:()=>toolkit.studio(),get hidden(){return surface==='tab';}}
   ]);
-  root.dataset.layout='studio';if(initialLayout==='conversation')setLayout('conversation');
+  root.dataset.layout='studio';across.pageMode(false);if(initialLayout==='conversation')setLayout('conversation');
   // One menu for everything that is not the conversation itself: earlier readings, exports, the library and the other view.
   function menuItems() {
     const items=[];
     if(doc&&runRows.length){for(const r of runRows.slice(0,6))items.push({label:`Earlier: ${taskTitle(r.lens,r.config?.customLens,{action:r.config?.action,scope:r.scope,operation:r.config?.operation})} · ${new Date(r.createdAt).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}`,action:()=>loadRun(r.id),get disabled(){return !!controller;}});items.push('-');}
     if(selectedRun){items.push({label:'Export as Markdown',action:()=>toolkit.exportRun('markdown')},{label:'Export as JSON archive',action:()=>toolkit.exportRun('json')},{label:'Export map as SVG',action:()=>toolkit.exportRun('svg'),get hidden(){return !isMap();}},{label:'Export map as PNG',action:()=>toolkit.exportRun('png'),get hidden(){return !isMap();}},'-');}
-    if(surface==='tab'){items.push({label:'Library and tools',action:()=>openArea('library')},{label:layout==='conversation'?'Studio view (all controls)':'Conversation view',action:()=>switchLayout(layout==='conversation'?'studio':'conversation')});}
+    if(surface==='tab'){items.push({label:'Library',action:()=>openArea('library')},{label:layout==='conversation'?'Studio view (all controls)':'Conversation view',action:()=>switchLayout(layout==='conversation'?'studio':'conversation')});}
     else items.push({label:'Open in full tab',action:()=>toolkit.studio()});
     return items;
   }
-  return {ready,run,scopeHost,openArea,menuItems,setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
+  return {ready,run,scopeHost,openArea,menuItems,get documentsHost(){return across.documentsHost;},setLayout:switchLayout,get layout(){return layout;},openStudio:()=>toolkit.studio(),async setDocument(value){epoch++;loading++;controller?.abort();doc=value;bookGlossary=[];scope=value?buildScope(value):null;selectedRun=null;runRows=[];title.textContent=value?.title??'Choose a document';convo.reset();convo.setTitle(value?.title??'');currentCard=null;for(const v of oldViews)v.dispose();oldViews=[];cardsByRun.clear();if(layout==='conversation')results=element('div');inspection.hidden=true;comparison.hidden=true;diagnostics.hidden=true;for(const v of compareViews)v.dispose();compareViews=[];view?.dispose();view=null;studioResults.replaceChildren();runMeta.textContent='';resultHead.hidden=true;resume.hidden=freshResume.hidden=retry.hidden=true;updatePreview();if(value)await savedRuns({display:true});else history.hidden=true;await toolkit.setDocument();await across.setDocument();},
     setScope(value){scope=value;toolkit.scopeChanged(value);updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
     async passage(action,selection,{intentId,onAccepted}={}){
       if(controller)throw Error('Stop the current run before starting another.');

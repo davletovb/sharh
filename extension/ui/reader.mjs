@@ -10,7 +10,7 @@ import {createAnalysisEngine} from './analysis.mjs';
 import {PathClient} from './client.mjs';
 import {createWorkspace} from './workspace.mjs';
 import {installSelectionToolbar} from './passage-toolbar.mjs';
-import {brand,iconButton} from './icons.mjs';
+import {brand,icon,iconButton} from './icons.mjs';
 import {menuButton} from './components.mjs';
 const $=id=>document.getElementById(id), store=await openDocumentStore(), params=new URL(location.href).searchParams;
 // E binds lens controls to this page-owned engine; parsing never runs on the worker's native port.
@@ -62,7 +62,9 @@ const preferredLayout=(()=>{try{return params.get('layout')||localStorage.getIte
 {
   const header=$('app-header'),spacer=document.createElement('span'),menu=menuButton({label:'Sharh menu',iconName:'more'});spacer.className='spread';
   menu.setItems(()=>[...(workspace?workspace.menuItems():[]),'-',{label:'Open a document…',action:()=>{$('source-bar').scrollIntoView({block:'start'});$('open-file').focus();}}]);
-  header.append(brand(),spacer,menu.root,iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage()));
+  const library=document.createElement('button');library.type='button';library.className='ghost lib-link';library.id='open-library';library.append(icon('library',{size:16}),document.createTextNode('Library'));
+  library.addEventListener('click',()=>workspace?.openArea('library'));
+  header.append(brand(),spacer,library,menu.root,iconButton('gear','Settings',()=>chrome.runtime.openOptionsPage()));
 }
 async function operate(action) {
   await workspaceReady;
@@ -140,7 +142,7 @@ async function showDocument(value) {
   }
   $('text-blocks').hidden=doc.kind==='pdf';
   $('show-text').hidden=doc.kind!=='pdf'; $('show-text').textContent='Show numbered text';
-  await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();
+  await workspace.setDocument(doc);await picker.setDocument(doc); await savedList();if(workspace.layout==='conversation')workspace.openArea('analyze');
   bindSourceViewport();
   state(`Saved locally. ${doc.warnings?.length ? `${doc.warnings.length} extraction warning(s).` : 'Choose a scope or a paragraph.'}`);
 }
@@ -246,15 +248,27 @@ async function reopen(id,version) {
     try{await commitDocument(value,{pdf:candidate});}catch(error){if(pdf!==candidate)await candidate.loadingTask.destroy().catch(()=>{});throw error;}
   } else await commitDocument(value,{localHTML:source?.html?{text:source.html,name:value.fileName,identity:value.identity}:null});
 }
+// Saved documents belong on the Library page in the conversation view, and under the reading in Studio view.
+function placeSaved(layout=workspace?.layout??preferredLayout) {
+  if(layout==='conversation'&&workspace?.documentsHost)workspace.documentsHost.append($('saved-section'));
+  else $('reader-main').append($('saved-section'));
+  $('reader-main').dataset.layout=layout;
+  savedList().catch(fail);
+}
+const filterSaved=()=>{const query=$('saved-filter').value.trim().toLowerCase();for(const row of $('saved-documents').children)row.hidden=!!query&&!row.textContent.toLowerCase().includes(query);};
+$('saved-filter').addEventListener('input',filterSaved);
 async function savedList() {
-  const rows=await store.listDocuments(); $('saved-documents').replaceChildren();$('saved-section').hidden=!rows.length;
+  const library=(workspace?.layout??preferredLayout)==='conversation',all=await store.listDocuments(),rows=library?all.filter(d=>!d.derived).sort((a,b)=>(b.updatedAt??0)-(a.updatedAt??0)):all; $('saved-documents').replaceChildren();$('saved-section').hidden=!rows.length&&!library;$('saved-empty').hidden=!!rows.length;$('saved-filter').closest('label').hidden=rows.length<4;
   for (const item of rows) {
-    const row=document.createElement('article'), title=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
-    title.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; open.textContent='Open'; remove.textContent='Delete';
+    const row=document.createElement('article'), info=document.createElement('span'), title=document.createElement('strong'), sub=document.createElement('span'), open=document.createElement('button'), remove=document.createElement('button');
+    info.className='saved-title'; title.textContent=`${item.title}${item.fileName && item.fileName!==item.title ? ` · ${item.fileName}` : ''}`; sub.className='hint';
+    sub.textContent=[item.kind?.toUpperCase(),Number.isInteger(item.pageCount)&&item.pageCount>0?`${item.pageCount} pages`:null,item.updatedAt?new Date(item.updatedAt).toLocaleDateString():null].filter(Boolean).join(' · ');info.append(title,sub);
+    open.textContent='Open'; open.className='primary'; remove.textContent='Delete'; remove.className='ghost';
     open.addEventListener('click',()=>operate(()=>reopen(item.id)));
     remove.addEventListener('click',()=>operate(async()=> { await store.deleteDocument(item.id); maintenanceClient.call('maintenance').catch(()=>{}); if(doc?.id===item.id) { await resetPDF(); doc=null; await workspace.setDocument(null);picker.clear(); $('text-blocks').hidden=true; $('show-text').hidden=true; $('chrome-viewer').hidden=true; $('outline').replaceChildren(); $('document-title').textContent='Open a text'; $('document-detail').textContent='Choose a document.'; } await savedList(); state('Document and its saved data deleted.'); }));
-    row.append(title,open,remove); $('saved-documents').append(row);
+    row.append(info,open,remove); $('saved-documents').append(row);
   }
+  filterSaved();
 }
 $('read-current').addEventListener('click',()=>operate(async()=> {
     const tabs=await chrome.tabs.query({lastFocusedWindow:true});
@@ -282,9 +296,9 @@ document.addEventListener('dragleave',()=>document.body.classList.remove('dragov
 document.addEventListener('drop',event=>{ event.preventDefault(); document.body.classList.remove('dragover'); const file=event.dataTransfer.files[0]; operate(()=>openFile(file)); });
 // Register source controls before asynchronous workspace/preferences initialization.
 // A file chosen during startup waits for the workspace rather than losing its change event.
-workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',layout:preferredLayout,onLayout:value=>{try{localStorage.setItem('sharh:layout',value);}catch{/* A remembered view is a convenience. */}},
+workspaceReady=createWorkspace($('analysis-workspace'),{store,engine:analysisEngine,client:maintenanceClient,surface:'tab',layout:preferredLayout,onLayout:value=>{try{localStorage.setItem('sharh:layout',value);}catch{/* A remembered view is a convenience. */}placeSaved(value);},
   onReference:reference,
-  onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;workspace.scopeHost.append($('scope-picker'));});
+  onOpenDocument:(id,version,scope)=>operate(async()=>{await reopen(id,version);if(scope)await picker.restore(scope);}),onControlsChanged:()=>{if(doc)picker.refresh();}}).then(value=>{workspace=value;workspace.scopeHost.append($('scope-picker'));placeSaved(preferredLayout);});
 await workspaceReady;
 await savedList();
 await operate(async()=> {
