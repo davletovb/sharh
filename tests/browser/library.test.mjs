@@ -130,9 +130,13 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await page.getByRole('button', {name: 'Edit dalil'}).click();
     assert.equal(await page.getByLabel('Term in the text').inputValue(), 'dalil');
     await page.getByLabel('Term in the text').fill('daleel');
+    // Saving re-renders the list. It is swapped in whole, so it is never seen empty while terms exist.
+    await page.evaluate(() => { window.__emptied = false; const list = document.querySelector('.terms'); new MutationObserver(() => { if (!list.querySelector('.glossary-item')) window.__emptied = true; }).observe(list, {childList: true}); });
     await page.getByRole('button', {name: 'Save term'}).click();
     await page.locator('.terms .glossary-item').filter({hasText: 'daleel'}).waitFor();
+    await page.waitForTimeout(400);
     assert.equal(await page.locator('.terms .glossary-item').count(), 2);
+    assert.equal(await page.evaluate(() => window.__emptied), false, 'the term list never flashes empty');
     await page.getByRole('button', {name: 'Delete sharh'}).click();
     await page.getByRole('button', {name: 'Delete sharh'}).click();
     await page.waitForFunction(() => document.querySelectorAll('.terms .glossary-item').length === 1);

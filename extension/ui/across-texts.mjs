@@ -129,24 +129,27 @@ export async function createAcrossTexts({library:host,analyze,modelHost,dialogHo
  glossaryPage.append(element('p','Terms from the Terms lens are added here by themselves. Fix a translation once and every reading of this book uses it.','hint'),layout);
  function resetForm(){editingTerm=null;formTitle.textContent='Add a term';formTerm.value=formTranslation.value=formAliases.value=formNote.value='';cancel.hidden=true;termState.textContent='';}
  const bookTitle=new Map();
+ let glossaryRenders=0;
  async function renderGlossaryPage(){
   const docs=(await store.listDocuments()).filter(d=>!d.derived).sort((a,b)=>(b.updatedAt??0)-(a.updatedAt??0));bookTitle.clear();for(const d of docs)bookTitle.set(d.id,d.title);
   options(bookSelect,docs.map(d=>[d.id,d.title]));
   if(!docs.some(d=>d.id===activeBook))activeBook=docs.find(d=>d.id===api.state?.()?.doc?.id)?.id??docs[0]?.id??null;
   bookSelect.value=activeBook??'';bookSelect.disabled=!docs.length;for(const control of [formTerm,formTranslation,formAliases,formNote,save])control.disabled=!activeBook;
-  termList.replaceChildren();
-  if(!activeBook){termList.append(element('p','Read or open a book first. Its glossary is kept here.','hint'));return;}
+  // The list is built off-screen and swapped in once, so it never shows empty while a newer render is under way.
+  const nodes=[],ticket=++glossaryRenders;
+  if(!activeBook){termList.replaceChildren(element('p','Read or open a book first. Its glossary is kept here.','hint'));return;}
   const rows=await glossary.list(activeBook),query=termFilter.value.trim().toLowerCase(),shown=rows.filter(r=>!query||[r.term,r.translation,...(r.aliases??[]),r.note??''].join(' ').toLowerCase().includes(query));
-  if(rows.some(isSuggested))termList.append(element('p','Suggested terms came from a reading. They are not used in any reading until you keep them.','hint'));
-  if(!rows.length)termList.append(element('p',`No terms yet for “${bookTitle.get(activeBook)}”. Add one, or run Learn the terms on a passage.`,'hint'));
-  else if(!shown.length)termList.append(element('p','No term matches that filter.','hint'));
+  if(rows.some(isSuggested))nodes.push(element('p','Suggested terms came from a reading. They are not used in any reading until you keep them.','hint'));
+  if(!rows.length)nodes.push(element('p',`No terms yet for “${bookTitle.get(activeBook)}”. Add one, or run Learn the terms on a passage.`,'hint'));
+  else if(!shown.length)nodes.push(element('p','No term matches that filter.','hint'));
   for(const r of shown){
    const item=element('article','','glossary-item'),main=element('div','','gi-main'),meta=[r.aliases?.length?'also '+r.aliases.join(', '):null,r.note||null].filter(Boolean).join(' · ');
    main.append(element('strong',r.term),document.createTextNode(' → '),element('span',r.translation));if(isSuggested(r))main.append(element('span','Suggested','chip suggested'));if(meta)main.append(element('p',meta,'hint'));
    let sure=false;const del=button(`Delete ${r.term}`,async()=>{if(!sure){sure=true;del.textContent='Delete for good?';setTimeout(()=>{sure=false;del.textContent='Delete';},3000);return;}await glossary.remove(activeBook,r.term);if(editingTerm===r.term)resetForm();await afterChange();},'ghost danger');del.textContent='Delete';del.setAttribute('aria-label',`Delete ${r.term}`);
    const edit=button(`Edit ${r.term}`,()=>{editingTerm=r.term;formTitle.textContent=`Edit “${r.term}”`;formTerm.value=r.term;formTranslation.value=r.translation;formAliases.value=(r.aliases??[]).join(', ');formNote.value=r.note??'';cancel.hidden=false;termState.textContent='';formTerm.focus();},'ghost');edit.textContent='Edit';edit.setAttribute('aria-label',`Edit ${r.term}`);
-   const actions=element('div','','row');if(isSuggested(r)){const keepIt=button(`Keep ${r.term}`,async()=>{await glossary.keep(activeBook,r);await afterChange();},'ghost');keepIt.textContent='Keep';keepIt.setAttribute('aria-label',`Keep ${r.term}`);actions.append(keepIt);}actions.append(edit,del);item.append(main,actions);termList.append(item);
+   const actions=element('div','','row');if(isSuggested(r)){const keepIt=button(`Keep ${r.term}`,async()=>{await glossary.keep(activeBook,r);await afterChange();},'ghost');keepIt.textContent='Keep';keepIt.setAttribute('aria-label',`Keep ${r.term}`);actions.append(keepIt);}actions.append(edit,del);item.append(main,actions);nodes.push(item);
   }
+  if(ticket===glossaryRenders)termList.replaceChildren(...nodes);
  }
  async function afterChange(){await renderGlossaryPage();if(activeBook===api.state?.()?.doc?.id)await refreshGlossary();}
  bookSelect.addEventListener('change',()=>{activeBook=bookSelect.value||null;resetForm();renderGlossaryPage().catch(api.fail);});
