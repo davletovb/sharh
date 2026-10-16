@@ -46,6 +46,8 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await page.getByLabel('Saved library items').locator('option').first().waitFor({state: 'attached'});
     await page.getByLabel('New collection name').fill('Reading list');
     await page.getByRole('button', {name: 'Create collection'}).click();
+    // Creating a collection reloads the lists, so wait for it to be chosen before selecting an item.
+    await page.waitForFunction(() => [...document.querySelectorAll('select')].some(el => el.selectedOptions[0]?.textContent === 'Reading list'));
     await page.getByLabel('Saved library items').selectOption({index: 0});
     await page.getByRole('button', {name: 'Add selected items to collection'}).click();
     await page.locator('.collection-item').first().waitFor();
