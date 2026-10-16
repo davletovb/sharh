@@ -145,7 +145,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
       if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
+      view=createAnalysisView(results,{gist:true,lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }
@@ -252,7 +252,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
   const lensGoal=(v,label)=>start(label,()=>{chooseLens(v);return run();});
-  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(chooseLens(g.lens),run()));
+  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(chooseLens(g.lens),run(g.budget?{budget:g.budget}:{})));
   convo.setGoals(GOALS,goal);
   convo.onAsk(text=>toolkit.askInStream(text));
   convo.ways.setItems(()=>[

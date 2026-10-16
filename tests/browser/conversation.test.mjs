@@ -65,7 +65,10 @@ test('Conversation: the four goals, follow-ups, Ask and a clean screen', async (
     await idle(page, 1);
     assert.equal(await root.locator('.convo-me').first().textContent(), 'Get the gist');
     assert.equal(await root.locator('.convo-card-title').first().textContent(), 'The gist');
-    assert.ok(await root.locator('.convo-card .finding').count());
+    // The gist is the point and the abstract, nothing more: no sections, brief or arc.
+    assert.equal(await root.locator('.convo-card .finding').count(), 2);
+    assert.deepEqual(await root.locator('.convo-card .finding.sum').evaluateAll(cards => cards.map(c => c.dataset.level)), ['line', 'abstract']);
+    assert.equal(await root.locator('.convo-card .finding.arc').count(), 0);
     assert.equal(await goals.isVisible(), false);
     assert.deepEqual(await root.locator('.follow-ups button').allTextContents(), ['Check the argument', 'Learn the terms']);
     await root.locator('.card-details summary').first().click();

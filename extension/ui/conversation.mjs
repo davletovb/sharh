@@ -4,7 +4,7 @@ import {icon} from './icons.mjs';
 import {menuButton} from './components.mjs';
 
 export const GOALS = [
-  {id: 'gist', label: 'Get the gist', lens: 'summary', hint: 'One line, an abstract and a section-by-section summary.'},
+  {id: 'gist', label: 'Get the gist', lens: 'summary', budget: 2, hint: 'The point of the text in one line, and a short abstract.'},
   {id: 'argument', label: 'Check the argument', lens: 'logic', hint: 'How the argument moves, and where its gaps are.'},
   {id: 'terms', label: 'Learn the terms', lens: 'terms', hint: 'The terms you need, with a translation and the meaning here.'},
   {id: 'deep', label: 'Study it deeply', deep: true, hint: 'Structure, argument and thinking together. This takes a few minutes.'}
