@@ -5,13 +5,13 @@ import {menuButton} from './components.mjs';
 
 export const GOALS = [
   {id: 'gist', label: 'Get the gist', lens: 'summary', run: {operation: 'gist', budget: 2}, hint: 'The point of the text in one line, and a short abstract.'},
-  {id: 'argument', label: 'Check the argument', lens: 'logic', hint: 'How the argument moves, and where its gaps are.'},
+  {id: 'argument', label: 'Check the argument', lens: 'check', direct: true, run: {lens: 'check', budget: 10}, hint: 'What is claimed, why, how strong it is and where it is weakest.'},
   {id: 'terms', label: 'Learn the terms', lens: 'terms', run: {operation: 'learn', budget: 8}, hint: 'Up to eight terms you need, each with a translation and its meaning here.'},
   {id: 'deep', label: 'Study it deeply', deep: true, hint: 'Structure, argument and thinking together. This takes a few minutes.'}
 ];
 // Plain names for the lenses that are not one of the four goals.
 export const PLAIN = {
-  summary: 'The gist', structure: 'How it is built', logic: 'The argument', thinking: 'How it thinks', themes: 'Themes',
+  summary: 'The gist', structure: 'How it is built', logic: 'The argument', check: 'The argument', thinking: 'How it thinks', themes: 'Themes',
   'meta-reading': 'What kind of text this is', critique: 'Strengths and weak points', literature: 'Who it cites',
   terms: 'Terms to learn', questions: 'Questions to check yourself', situate: 'Where it sits (web search)'
 };

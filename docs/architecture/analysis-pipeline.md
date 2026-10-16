@@ -164,6 +164,7 @@ Every lens answers in JSON Lines: one JSON object per line. The format streams w
 | `cite` | `who`, `work`?, `role`, `text`, `refs` | A cited author or work and how the text uses it |
 | `term` | `src`, `tr`, `text`, `refs` | A glossary entry: source term, translation, meaning here |
 | `q` | `level`, `text`, `refs` | A study question |
+| `chk` | `part`, `text`, `refs`, `basis`? | One part of an argument check: `claim`, `reason`, `strength`, `weakness`, `assumption`, `objection` or `assessment` |
 | `note` | `text`, `refs`? | Anything a lens needs to say that fits no other type |
 | `finding` | `kind`, `text`, `support`, `refs` | A cross-text finding with a qualitative support note and item-mapped evidence |
 | `cell` | `item`, `criterion`, `text`, `refs` | A texts-by-criteria matrix cell; every reference must belong to that library item |
@@ -200,6 +201,7 @@ An unknown value becomes `other` where the field allows it. Otherwise the record
 | Literature | `cite`, `facet`, `note` |
 | Terms | `term` |
 | Questions | `q` |
+| Argument check | `chk` (at most one `claim`, three `reason`, one `strength`, one `weakness`, two `assumption`, one `objection` and one `assessment`; the parser drops the rest) |
 | Passage actions | `note`, `term`, `node` |
 | Chapter digest (internal) | `sum` (section level), `node` (key claims), `concept`, `cite`, `facet` (`question`, `reasoning_mode`) |
 

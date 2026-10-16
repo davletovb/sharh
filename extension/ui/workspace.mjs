@@ -156,7 +156,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   function metadata(run){return `${run.config?.customLens?.name??run.config?.operation??run.lens} · v${run.version} · ${run.status}${run.stale?' · older extraction':''}${run.config?.digests&&new Set(run.config.digests.map(d=>targetKey(d.target))).size>1?' · mixed digest targets':''} · ${targetName(run.target)} · ${run.scope.label}${run.config?.frame?' · frame: '+run.config.frame:''} · ${new Date(run.createdAt).toLocaleString()}`;}
   const friendlyMeta=run=>`${targetName(run.target)} · ${new Date(run.createdAt).toLocaleString()}${run.status!=='completed'?' · '+run.status:''}${run.stale?' · older extraction':''}`;
   function showMeta(run){runMeta.textContent=metadata(run);currentCard?.setDetails(friendlyMeta(run));if(currentCard)cardsByRun.set(run.id,currentCard);}
-  const FOLLOW={summary:'gist',logic:'argument',terms:'terms'};
+  const FOLLOW={summary:'gist',logic:'argument',check:'argument',terms:'terms'};
   function suggest(run){
     if(layout!=='conversation')return;const done=FOLLOW[run.lens];
     convo.followUps(GOALS.filter(g=>!g.deep&&g.id!==done).slice(0,2).map(g=>({label:g.label,hint:g.hint,action:()=>goal(g)})));
@@ -255,12 +255,12 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
   const lensGoal=(v,label)=>start(label,()=>{chooseLens(v);return run();});
-  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(chooseLens(g.lens),run(g.run??{})));
+  const goal=g=>start(g.label,()=>g.deep?toolkit.deepRead():(g.direct||chooseLens(g.lens),run(g.run??{})));
   convo.setGoals(GOALS,goal);
   convo.onAsk(text=>toolkit.askInStream(text));
   convo.ways.setItems(()=>[
     ...GOALS.map(g=>({label:g.label,action:()=>goal(g),get disabled(){return !canRun();}})),'-',
-    ...['structure','thinking','themes','meta-reading','critique','literature','questions','situate'].map(v=>({label:PLAIN[v],action:()=>lensGoal(v,PLAIN[v]),get disabled(){return !canRun();}})),
+    ...['structure','thinking','themes','meta-reading','literature','questions','situate'].map(v=>({label:PLAIN[v],action:()=>lensGoal(v,PLAIN[v]),get disabled(){return !canRun();}})),
     ...[...customMap].map(([v,d])=>({label:d.name,action:()=>lensGoal(v,d.name),get disabled(){return !canRun();}}))
   ]);
   function setLayout(next) {

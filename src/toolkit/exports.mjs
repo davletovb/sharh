@@ -2,10 +2,11 @@ import {portableRow,encodeBytes} from '../documents/archive.mjs';
 import {safeURL} from '../analysis/contract.mjs';
 import {STORE_KEYS,validateArchive} from '../documents/store.mjs';
 const md=value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replace(/([\\`*_[\]#|])/g,'\\$1');
+const CHECK_PARTS={claim:'Main claim',reason:'Reason',strength:'Strongest point',weakness:'Weakest link',assumption:'Assumption',objection:'Strongest objection',assessment:'What the text establishes'};
 export function markdown(saved,doc){
   const source=safeURL(doc.address),link=n=>{const original=doc.blocks?.find(b=>b.n===n)?.source,url=safeURL(original?.address??source);return (original?.refs??[original?.n??n]).map(ref=>{const label=original?`${md(original.title)} · ¶${ref}`:`¶${n}`;return url?`[${label}](${url.replaceAll('(','%28').replaceAll(')','%29')})`:label;}).join(' · ');};
   const blocks=saved.records.map(({record:r,flags=[]})=>[
-    `## ${md(r.title??r.label??r.term??r.who??r.kind??r.level??r.t)}`,md(r.gist??r.gloss??r.text??''),
+    `## ${md(r.title??r.label??r.term??r.who??r.kind??r.level??CHECK_PARTS[r.part]??r.t)}`,md(r.gist??r.gloss??r.text??''),
     r.src?`Original: ${md(r.src)}`:'',r.tr?`Translation: ${md(r.tr)}`:'',r.quote?`> ${md(r.quote)}`:'',r.basis?`Basis: ${r.basis}`:'',
     (r.refs??(r.ref?[r.ref]:[])).map(link).join(' · '),r.url&&flags.includes('source_verified')?`Search source: <${safeURL(r.url)}>`:'',
     flags.length?`Validation: ${md(flags.join(', '))}`:''

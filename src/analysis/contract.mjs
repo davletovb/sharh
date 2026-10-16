@@ -19,7 +19,8 @@ export const ENUMS = Object.freeze({
   question: ['comprehension','analysis','evaluation','debate'],
   across: ['theme','agreement','debate','method','gap','disagreement','concept_usage','reciprocal_reading'],
   criterion: ['question','method','data','findings','concepts','stance'],
-  basis: ['stated','inferred']
+  basis: ['stated','inferred'],
+  part: ['claim','reason','strength','weakness','assumption','objection','assessment']
 });
 // A trailing ? means optional. Only these fields survive validation.
 export const FIELDS = Object.freeze({
@@ -42,6 +43,7 @@ export const FIELDS = Object.freeze({
   term: {src:'text',tr:'text',text:'text',refs:'refs'},
   q: {level:'enum:question',text:'text',refs:'refs'},
   note: {text:'text',refs:'refs?'},
+  chk: {part:'enum:part',text:'text',refs:'refs',basis:'enum:basis?'},
   finding: {kind:'enum:across',text:'text',support:'text',refs:'refs'},
   cell: {item:'short',criterion:'enum:criterion',text:'text',refs:'refs'},
   end: {}
@@ -51,7 +53,7 @@ export const LENSES = Object.freeze({
   thinking:['facet','concept','edge','node','note'], themes:['theme','code','excerpt','tension','memo'],
   'meta-reading':['facet','note'], critique:['facet','note'], literature:['cite','facet','note'],
   'literature-review':['finding','note'], 'meta-synthesis':['cell','finding','note'],compare:['cell','finding','note','concept'],
-  terms:['term'], questions:['q'], passage:['note','term','node'], digest:['sum','node','concept','cite','facet']
+  terms:['term'], questions:['q'], check:['chk'], passage:['note','term','node'], digest:['sum','node','concept','cite','facet']
 });
 export function customDefinition(value) {
   if(!value || value.version!==1 || typeof value.id!=='string' || !/^[a-zA-Z0-9_-]{1,48}$/.test(value.id) || typeof value.name!=='string' || !value.name.trim() || value.name.length>80 || typeof value.instructions!=='string' || !value.instructions.trim() || value.instructions.length>8000 || !['quick','analysis','book','synthesis'].includes(value.tier) || !Array.isArray(value.types) || !value.types.length || new Set(value.types).size!==value.types.length || value.types.some(t=>!Object.hasOwn(FIELDS,t) || ['meta','end'].includes(t)))throw Error('INVALID_CUSTOM_LENS');

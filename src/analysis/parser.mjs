@@ -2,6 +2,8 @@ import {allowedTypes,validateFields,assertCanonicalRecords} from './contract.mjs
 import {QuotationIndex} from './quotes.mjs';
 import {bytes} from '../paths/limits.mjs';
 
+// An argument check has one claim and one assessment, and a few of the rest.
+const CHK_LIMITS=Object.freeze({claim:1,reason:3,strength:1,weakness:1,assumption:2,objection:1,assessment:1});
 const deferred = r => ['edge','gap','code','excerpt','tension'].includes(r.t) || r.parent!==undefined || r.sec!==undefined;
 export class RecordParser {
   constructor({lens,blocks,sections=[],onRecord=()=>{},now=()=>performance.now(),maxBytes=524288,maxLineBytes=65536,customLens=null,sources=new Map()}) {
@@ -54,6 +56,7 @@ export class RecordParser {
       this.meta=r;this.metrics.recordLines--;return;
     }
     if(r.t==='end') {this.endReceived=true;this.metrics.recordLines--;return;}
+    if(r.t==='chk'&&this.entries.filter(e=>e.record.t==='chk'&&e.record.part===r.part).length>=CHK_LIMITS[r.part]){this.count('dropped','limit');return;}
     const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags};
     if(r.refs) {
       const before=r.refs.length;r.refs=r.refs.filter(n=>this.scope.has(n));

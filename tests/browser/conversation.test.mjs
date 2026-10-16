@@ -63,7 +63,7 @@ test('Conversation: the four goals, follow-ups, Ask and a clean screen', async (
 
     // More ways to read lists the rest in plain words.
     await root.getByRole('button', {name: 'More ways to read'}).click();
-    for (const name of ['How it is built', 'How it thinks', 'Themes', 'What kind of text this is', 'Strengths and weak points', 'Who it cites', 'Questions to check yourself']) await root.getByRole('menuitem', {name, exact: true}).waitFor();
+    for (const name of ['How it is built', 'How it thinks', 'Themes', 'What kind of text this is', 'Who it cites', 'Questions to check yourself']) await root.getByRole('menuitem', {name, exact: true}).waitFor();
     await page.keyboard.press('Escape');
     report.checks.moreWays = true;
     assert.deepEqual(w.errors, []);

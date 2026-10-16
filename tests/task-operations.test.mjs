@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
-import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {RecordParser} from '../src/analysis/parser.mjs';
+import {markdown} from '../src/toolkit/exports.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
 import {exampleDocument} from './helpers/document.mjs';
 
@@ -22,4 +24,33 @@ test('learn the terms asks for at most eight ranked terms, only on the Terms len
  assert.match(task.instructions,/at most eight/);assert.match(task.instructions,/most useful first/);assert.match(task.instructions,/Skip ordinary words/);
  assert.notEqual(taskOf(plain).instructions,LEARN_INSTRUCTIONS,'the Terms lens keeps its own instructions');assert.notEqual(learn.promptKey,plain.promptKey);
  for(const lens of ['summary','logic','questions'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'learn'}),/INVALID_TASK/);
+});
+
+const row=(part,text='A plain sentence.',extra={})=>JSON.stringify({t:'chk',part,text,refs:[3],basis:'inferred',...extra})+'\n';
+
+test('the argument check is its own lens with its own record, instruction and limits',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ const prompt=assemblePrompt(doc,scope,{lens:'check',budget:10}),task=taskOf(prompt);
+ assert.equal(task.instructions,LENS_INSTRUCTIONS.check);assert.equal(task.maxRecords,10);
+ for(const phrase of [/one claim/,/two or three reason/,/only when the text shows one/,/relevance and strength of the evidence/,/whether the conclusion follows/,/plausible alternatives/,/not a check of the facts/,/do not give a score/,/never invent a flaw/])assert.match(task.instructions,phrase);
+ const contract=JSON.parse(prompt.request.task.split('\n')[3]);
+ assert.deepEqual(Object.keys(contract.types),['meta','chk','end']);
+ assert.deepEqual(contract.types.chk.part.values,['claim','reason','strength','weakness','assumption','objection','assessment']);
+ assert.deepEqual(Object.keys(contract.types.chk),['t','part','text','refs','basis']);
+ // The Logic and Critique lenses are untouched, so Studio keeps them.
+ assert.notEqual(LENS_INSTRUCTIONS.logic,LENS_INSTRUCTIONS.check);assert.ok(LENS_INSTRUCTIONS.critique);
+ const entries=[],parser=new RecordParser({lens:'check',blocks:scope.blocks,onRecord:e=>entries.push(e)});
+ parser.push(['claim','claim','reason','reason','reason','reason','strength','weakness','weakness','assumption','assumption','assumption','objection','objection','assessment','assessment'].map(part=>row(part)).join('')+JSON.stringify({t:'note',text:'Not allowed here.'})+'\n'+JSON.stringify({t:'chk',part:'verdict',text:'Unknown part.',refs:[3]})+'\n');
+ parser.finish();
+ const count=part=>entries.filter(e=>e.record.part===part).length;
+ assert.deepEqual(Object.fromEntries(['claim','reason','strength','weakness','assumption','objection','assessment'].map(p=>[p,count(p)])),{claim:1,reason:3,strength:1,weakness:1,assumption:2,objection:1,assessment:1});
+ assert.equal(entries.length,10);assert.equal(parser.metrics.dropped.limit,6);assert.ok(parser.metrics.dropped.type,'a note is not an argument-check record');assert.ok(parser.metrics.dropped.enum,'an unknown part is refused');
+ // References outside the scope are removed, and an optional basis may be left out.
+ const lone=[],p2=new RecordParser({lens:'check',blocks:scope.blocks,onRecord:e=>lone.push(e)});p2.push(JSON.stringify({t:'chk',part:'claim',text:'A claim.',refs:[3,999]})+'\n');p2.finish();
+ assert.deepEqual(lone[0].record,{t:'chk',part:'claim',text:'A claim.',refs:[3]});
+});
+
+test('an argument check exports with plain part names',async()=> {
+ const doc=await exampleDocument(),saved={run:{lens:'check',version:1,config:{}},records:[{record:{t:'chk',part:'claim',text:'The claim.',refs:[3]}},{record:{t:'chk',part:'assessment',text:'Established so far.',refs:[3]}}]};
+ const text=markdown(saved,doc);assert.match(text,/## Main claim/);assert.match(text,/## What the text establishes/);assert.doesNotMatch(text,/## chk/);
 });

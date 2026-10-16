@@ -147,3 +147,21 @@ test('critique keeps strengths, limitations and the quality of the evidence in t
  view.dispose();
  }finally{d.window.close();}
 });
+test('an argument check reads in a fixed order, folds assumptions, and conversation cards use plain facet names',async()=> {
+ const d=dom(),doc=await exampleDocument(),refs=[];
+ try{const view=createAnalysisView(document.getElementById('host'),{doc,lens:'check',compact:true,onReference:n=>refs.push(n),workerFactory:()=>{throw Error('worker unavailable');}});
+ // Parts arrive out of order. The reader still gets the claim first and the assessment last.
+ [['assessment','Established so far.'],['objection','Repetition is not evidence.'],['reason','First ground.'],['claim','The claim (¶3).'],['reason','Second ground.'],['assumption','That repeating adds support.'],['weakness','The second ground is unexplained.'],['strength','The grounds are plain.']].forEach(([part,text],i)=>view.record({sequence:i+1,record:{t:'chk',part,text,refs:[3],basis:i%2?'stated':'inferred'},flags:[]}));
+ await view.settled();
+ const parts=[...document.querySelectorAll('.check-part')];assert.deepEqual(parts.map(p=>p.dataset.part),['claim','reason','strength','weakness','assessment','detail']);
+ assert.equal(parts.at(-1).tagName,'DETAILS');assert.equal(parts.at(-1).open,false);assert.deepEqual([...parts.at(-1).querySelectorAll('.finding h5')].map(h=>h.textContent),['Strongest objection','Assumption']);
+ assert.equal(document.querySelectorAll('.check-part[data-part="reason"] .finding').length,2);assert.equal(document.querySelector('.check-part[data-part="claim"] .finding h5'),null,'the main parts carry no card title');
+ document.querySelector('.reading-text .inline-ref').click();await Promise.resolve();assert.deepEqual(refs,[3]);
+ view.dispose();
+ const second=createAnalysisView(document.getElementById('host'),{doc,lens:'critique',compact:true,workerFactory:()=>{throw Error('worker unavailable');}});
+ ['strength','weakness','evidence_quality','counterargument','silence'].forEach((kind,i)=>second.record({sequence:i+1,record:{t:'facet',kind,text:`A ${kind}.`,refs:[3],basis:'inferred'},flags:[]}));
+ await second.settled();
+ assert.deepEqual([...document.querySelectorAll('.finding h5')].map(h=>h.textContent),['Strength','Weakness','A counterargument','What is left unsaid','Quality of the evidence']);
+ second.dispose();
+ }finally{d.window.close();}
+});

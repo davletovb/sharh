@@ -1,11 +1,15 @@
 import {graphRecords} from '../../src/ui/graph-layout.mjs';
 import {element,button,uid} from './dom.mjs';
-const labels={finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
+const labels={chk:'Argument check',finding:'Cross-text findings',cell:'Evidence matrix',sum:'Summary',arc:'Arc timeline',sec:'Outline',node:'Argument',edge:'Connections',step:'Reasoning steps',gap:'Gaps',concept:'Concepts',facet:'Reading facets',note:'Notes',term:'Terms',theme:'Themes',code:'Codes',excerpt:'Excerpts',tension:'Tensions',memo:'Analytic memos',cite:'Citations',q:'Questions'};
 const readable=s=>String(s??'').replaceAll('_',' ');
 // In the conversation, kinds and levels get plain names, and the cards stand alone: no table repeats them and no map opens uninvited.
 const PLAIN_KIND=Object.freeze({genre:'Genre',audience:'Who it is for',purpose:'What it is for',position:'Where the author stands',context:'Context',framing:'How it is framed',silence:'What is left unsaid',strength:'Strength',weakness:'Weakness',evidence_quality:'Quality of the evidence',counterargument:'A counterargument',debate:'The debate',contribution:'What it adds',question:'The question it asks',evidence_standard:'What counts as evidence',reasoning_mode:'How it reasons',assumption:'An assumption',worldview:'Worldview',lineage:'Influences',normative:'Values',blind_spot:'Blind spot',falsifier:'What could change the conclusion',other:'Other'});
 const PLAIN_LEVEL=Object.freeze({comprehension:'Did you follow it?',analysis:'Look closer',evaluation:'Weigh it',debate:'Argue about it'});
 const PLAIN_BASIS=Object.freeze({stated:'Stated in the text',inferred:'Inferred'});
+// An argument check reads top to bottom whatever order the parts arrive in.
+const CHECK_ORDER=Object.freeze(['claim','reason','strength','weakness','assessment','detail']);
+const CHECK_NAME=Object.freeze({assumption:'Assumption',objection:'Strongest objection'});
+const CHECK_HEADING=Object.freeze({claim:'Main claim',reason:'Reasons and support',strength:'Strongest point',weakness:'Weakest link',assessment:'What the text establishes',detail:'Assumptions and the strongest objection'});
 // Paragraph marks inside running text (¶8, ¶12–13, [¶17]) open that paragraph, like the chips under a finding. A range opens its first paragraph.
 export function linkReferences(node,text,doc,onReference) {
   const pattern=/¶\s?(\d+)(?:\s?[–-]\s?\d+)?/g;let last=0,match;
@@ -44,6 +48,15 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
     try{worker=workerFactory();worker.onmessage=({data})=>{mapBusy=false;if(disposed)return;if(data.id===ticket){if(data.error)mapStatus.textContent=data.error;else draw(data.layout);}if(layoutPending){layoutPending=false;scheduleLayout();}};worker.onerror=()=>{mapBusy=false;mapStatus.textContent='Map layout is unavailable. Use the text outline.';};}catch{mapStatus.textContent='Map layout is unavailable. Use the text outline.';}
   }
   function group(type,record) {
+    if(type==='chk') {
+      const key=['assumption','objection'].includes(record.part)?'detail':record.part,rank=CHECK_ORDER.indexOf(key);
+      if(!groups.has(key)){
+        const fold=key==='detail',section=element(fold?'details':'section','',`record-group check-part${fold?' record-fold':''}`),list=element('div','','record-list');
+        section.dataset.part=key;section.dataset.order=rank;section.append(element(fold?'summary':'h4',CHECK_HEADING[key]),list);
+        outline.insertBefore(section,[...outline.children].find(el=>Number(el.dataset.order)>rank)??null);groups.set(key,list);
+      }
+      return groups.get(key);
+    }
     const key=lens==='critique'&&type==='facet'?({strength:'strengths',evidence_quality:'evidence'}[record.kind]??'limitations'):type;
     if(!groups.has(key)){const section=element('section','','record-group'),heading=element('h4',key==='strengths'?'Strengths':key==='limitations'?'Limitations and counterarguments':key==='evidence'?'Quality of the evidence':type==='edge' && lens==='thinking'?'Causal chain and relations':labels[type]??readable(type)),list=element(type==='arc' || type==='step' || type==='sec'?'ol':'div','','record-list');section.append(heading,list);outline.append(section);groups.set(key,list);}
     return groups.get(key);
@@ -54,13 +67,13 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
   function append(entry) {
     records.push(entry);if(onlyGist&&!(entry.record.t==='sum'&&['line','abstract'].includes(entry.record.level)))return;const r=entry.record,ordered=['arc','step','sec'].includes(r.t),card=element(ordered?'li':'article','','finding '+r.t),title=element('h5');
     card.dataset.sequence=entry.sequence;if(r.id)card.dataset.recordId=r.id;if(r.level)card.dataset.level=r.level;
-    const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:labels[r.t]??readable(r.t));
+    const name=r.title??r.label??r.term??(r.t==='term'?r.src:null)??r.who??(r.level?readable(r.level):r.kind?readable(r.kind):r.stage?`${r.n}. ${readable(r.stage)}`:r.n?`Step ${r.n}`:r.part?CHECK_NAME[r.part]??readable(r.part):labels[r.t]??readable(r.t));
     const plain=compact?(r.t==='q'?PLAIN_LEVEL[r.level]:r.t==='facet'?PLAIN_KIND[r.kind]:null):null;
-    title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));card.append(title);
+title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t!=='chk'||['assumption','objection'].includes(r.part))card.append(title);else card.dataset.part=r.part;
     const text=r.gist??r.gloss??r.text;if(text){const p=element('p','','reading-text');p.dir='auto';linkReferences(p,text,doc,onReference);card.append(p);}
     if(r.support){const supporting=new Set((r.refs??[]).map(n=>doc?.blocks.find(b=>b.n===n)?.source?.itemId).filter(Boolean));card.append(element('p',`${supporting.size} supporting text${supporting.size===1?'':'s'} · ${r.support}`,'support-note'));}if(r.criterion)card.append(element('p',r.criterion));
     if(r.src&&r.src!==name)card.append(element('p',r.src,'source-term'));if(r.tr&&r.tr!==r.src)card.append(element('p',r.tr,'translation'));
-    if(r.basis)card.append(element('span',compact?PLAIN_BASIS[r.basis]??r.basis:r.basis,'basis '+r.basis));
+    if(r.basis)card.append(element('span',compact||lens==='check'?PLAIN_BASIS[r.basis]??r.basis:r.basis,'basis '+r.basis));
     if(r.t==='edge'){const named=id=>{const found=records.find(e=>e.record.id===id)?.record,label=found?.label??found?.term??found?.text??id;return [...label].length>60?[...label].slice(0,57).join('')+'…':label;};card.append(element('p',compact?`${named(r.from)} → ${named(r.to)} · ${readable(r.rel)}`:`${r.from} → ${r.to} · ${readable(r.rel)}`));}
     if(r.parent)card.append(element('p',`Part of ${r.parent}`,'note'));
     if(r.theme || r.code)card.append(element('p',`Linked to ${r.theme??r.code}`,'note'));if(r.a)card.append(element('p',`${r.a} ↔ ${r.b}`));if(r.work)card.append(element('p',r.work));
