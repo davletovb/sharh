@@ -29,13 +29,14 @@ export async function createAcrossTexts({library:host,analyze,modelHost,dialogHo
  collections.addEventListener('change',()=>showMembers().catch(api.fail));
  const jobs=element('details','','book-jobs'),jobList=element('select'),jobStatus=element('p','Chapter progress is saved after every turn. Keep this page open while a job runs; reopen and Resume after closing.','note');jobs.append(element('summary','Whole-book jobs'),field('Saved book jobs',jobList),button('Start chapter digests',()=>startDigests()),button('Resume selected book job',()=>runJob(jobList.value)),button('Pause book job',()=>abort?.abort()),jobStatus);
  const restart=button('Restart interrupted chapter (may repeat usage)',()=>restartChapter(jobList.value));restart.hidden=true;jobs.append(restart);
- const bookLens=element('select');options(bookLens,['summary','structure','logic','thinking'].map(s=>[s,s[0].toUpperCase()+s.slice(1)]));jobs.append(field('Book-level lens',bookLens),button('Analyze book digests',()=>analyzeDigests(jobList.value,bookLens.value)));panels.books.append(startCard,jobCards,jobs);
+ const bookLens=element('select');options(bookLens,['summary','structure','logic','thinking'].map(s=>[s,s[0].toUpperCase()+s.slice(1)]));jobs.append(field('Book-level lens',bookLens),button('Analyze book digests',()=>analyzeDigests(jobList.value,bookLens.value)));panels.books.append(jobs);
  async function startDigests(){if(abort)throw Error('Pause the active job first.');const config=await tierConfig('book'),policy=await preferences.load('book'),job=await books.create(config,{policy});await refreshJobs(job.id);await runJob(job.id);}
  async function restartChapter(id){const job=await books.get(id);if(job.error?.code!=='AMBIGUOUS_CHAPTER')throw Error('Resume this job first to check its saved chapter.');await runJob(job.id,{restartInterruptedRunId:job.error.runId});}
  async function analyzeDigests(id,lens){if(api.active())throw Error('Stop the current reading first.');const {job}=await books.digests(id),config=await tierConfig('synthesis'),doc=await store.getDocument(job.docId,job.extractionVersion);await api.openDocument(doc.id,doc.version,job.scope);await api.work(opts=>books.synthesize(id,{...config,lens,policy:config.policy},{...opts,approveFailover}),lens,doc);}
  // The Books page shows each job as a card. The select and buttons above stay as the same controls in Studio view.
  const jobCards=element('div','','job-cards'),startCard=element('div','','lib-card job-start'),jobTitles=new Map();let jobRows=[];
  const STATE={created:'Ready',running:'Running',paused:'Paused',completed:'Done'};
+ jobs.before(startCard,jobCards);
  async function titleOf(job){const key=job.docId+'|'+job.extractionVersion;if(!jobTitles.has(key))jobTitles.set(key,(await store.getDocument(job.docId,job.extractionVersion).catch(()=>null))?.title??'Removed document');return jobTitles.get(key);}
  function renderStart(){
   const {doc}=api.state(),go=button('Start chapter digests',()=>startDigests());go.classList.add('primary');go.disabled=!doc||!!doc?.derived;

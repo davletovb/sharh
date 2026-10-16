@@ -515,7 +515,7 @@ button.recent span { font-weight: 400; }
 .across-library[data-mode='page'][data-tab='glossary'] .lib-panel[data-panel='glossary'] { display: block; }
 .across-library[data-mode='page'] .lib-panel > h3 { display: none; }
 .across-library[data-mode='page'] .lib-intro { margin: 0 0 14px; }
-.across-library[data-mode='page'] details > summary { display: none; }
+.across-library[data-mode='page'] details.book-jobs > summary, .across-library[data-mode='page'] details.running-glossary > summary, .across-library[data-mode='page'] details.failover-settings > summary { display: none; }
 .across-library[data-mode='page'] details.book-jobs,
 .across-library[data-mode='page'] details.running-glossary,
 .across-library[data-mode='page'] details.failover-settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 0 0 16px; }
