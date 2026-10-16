@@ -83,3 +83,59 @@ test('Study it deeply shows three readings and no empty card', async () => {
     assert.deepEqual(w.errors, []);
   } finally { await w.close(); }
 });
+
+test('Learn the terms: a short list, each term can be kept, and only kept terms are used', async () => {
+  const w = await setup(), {page, root} = w, report = {checks: {}};
+  try {
+    await root.locator('.goals').getByRole('button', {name: 'Learn the terms'}).click();
+    await root.locator('.convo-card').first().waitFor();
+    await idle(page, 1);
+    const card = root.locator('.convo-card').first();
+    // One presentation, at most eight terms, each with Keep.
+    assert.equal(await card.locator('table').count(), 0);
+    const terms = await card.locator('.finding.term').count();
+    assert.ok(terms >= 2 && terms <= 8);
+    assert.equal(await card.getByRole('button', {name: /^Keep in glossary: /}).count(), terms);
+    const asked = await page.evaluate(() => JSON.parse(c.path.calls[0].request.task.split('\n')[1]));
+    assert.equal(asked.operation, 'learn');
+    assert.equal(asked.maxRecords, 8);
+    assert.match(asked.instructions, /at most eight/);
+    report.checks.shortList = true;
+
+    // The reading saved its terms as suggestions. None is used yet.
+    const states = () => page.evaluate(async () => (await new SharhTest.Glossary(c.store).list(c.doc.id)).map(r => [r.term, r.status]));
+    const before = await states();
+    assert.equal(before.length, terms);
+    assert.ok(before.every(([, status]) => status === 'suggested'));
+    report.checks.suggested = true;
+
+    // Keep one. It says so, and the glossary holds it as the reader's own.
+    const first = await card.locator('.finding.term h5').first().textContent();
+    await card.getByRole('button', {name: `Keep in glossary: ${first}`, exact: true}).click();
+    await card.getByRole('button', {name: `${first} is in your glossary`, exact: true}).waitFor();
+    assert.equal(await card.getByRole('button', {name: `${first} is in your glossary`, exact: true}).isDisabled(), true);
+    const after = await states();
+    assert.equal(after.filter(([, status]) => status === 'kept').length, 1);
+    assert.equal(after.filter(([, status]) => status === 'suggested').length, terms - 1);
+    report.checks.kept = true;
+
+    // The next reading is told about the kept term and nothing else.
+    await root.locator('.follow-ups').getByRole('button', {name: 'Check the argument'}).click();
+    await idle(page, 2);
+    const sent = await page.evaluate(() => JSON.parse(c.path.calls.at(-1).request.task.split('\n')[1]).glossary?.map(g => g.term));
+    assert.deepEqual(sent, [first]);
+    report.checks.onlyKeptIsUsed = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    assert.deepEqual(w.errors, []);
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/readings-terms.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});

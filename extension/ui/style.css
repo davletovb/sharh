@@ -478,6 +478,9 @@ button.recent span { font-weight: 400; }
 .convo-card .finding .inspect-finding:hover { color: var(--text); background: none; }
 .convo-card .finding .reading-text { margin: 0 0 6px; }
 .convo-card .map-toggle { margin: 0 0 8px; }
+.convo-card .keep-term { margin: 6px 0 0; min-height: 28px; padding-block: 2px; font-size: 13px; }
+.convo-card .keep-term.kept { color: var(--muted); }
+.glossary-item .chip.suggested { margin-inline-start: 8px; }
 button.inline-ref { display: inline; min-height: 0; padding: 0 1px; margin: 0; border: 0; border-radius: 3px; background: none; color: var(--link); font: inherit; font-weight: 600; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
 button.inline-ref:hover:not(:disabled) { background: var(--surface-2); text-decoration-style: solid; }
 .convo-card .finding.sum:first-child h5 { display: none; }

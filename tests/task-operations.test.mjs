@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
-import {GIST_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
 import {exampleDocument} from './helpers/document.mjs';
 
@@ -13,4 +13,13 @@ test('the gist asks for a one-line point and a short abstract, and only on the S
  assert.equal(gist.request.kind,'analysis');assert.notEqual(gist.promptKey,plain.promptKey);assert.equal(gist.promptVersion,plain.promptVersion);
  assert.notEqual(taskOf(plain).instructions,GIST_INSTRUCTIONS,'the Summary lens keeps its own instructions');
  for(const lens of ['logic','structure','thinking'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'gist'}),/INVALID_TASK/);
+});
+
+test('learn the terms asks for at most eight ranked terms, only on the Terms lens',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ const learn=assemblePrompt(doc,scope,{lens:'terms',operation:'learn',budget:8}),plain=assemblePrompt(doc,scope,{lens:'terms'}),task=taskOf(learn);
+ assert.equal(task.instructions,LEARN_INSTRUCTIONS);assert.equal(task.operation,'learn');assert.equal(task.maxRecords,8);
+ assert.match(task.instructions,/at most eight/);assert.match(task.instructions,/most useful first/);assert.match(task.instructions,/Skip ordinary words/);
+ assert.notEqual(taskOf(plain).instructions,LEARN_INSTRUCTIONS,'the Terms lens keeps its own instructions');assert.notEqual(learn.promptKey,plain.promptKey);
+ for(const lens of ['summary','logic','questions'])assert.throws(()=>assemblePrompt(doc,scope,{lens,operation:'learn'}),/INVALID_TASK/);
 });

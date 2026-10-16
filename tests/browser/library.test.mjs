@@ -136,6 +136,22 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await page.getByRole('button', {name: 'Delete sharh'}).click();
     await page.getByRole('button', {name: 'Delete sharh'}).click();
     await page.waitForFunction(() => document.querySelectorAll('.terms .glossary-item').length === 1);
+    // A term a reading suggested is marked, is not used until kept, and Keep makes it the reader's own.
+    await installBrowserTestAPI(page);
+    await page.evaluate(async () => {
+      const store = await SharhTest.openDocumentStore(), [doc] = (await store.listDocuments()).filter(d => !d.derived);
+      await new SharhTest.Glossary(store).capture({run: {docId: doc.id, status: 'completed', config: {language: 'en'}}, records: [{record: {t: 'term', src: 'wasila', tr: 'means', text: 'A way to an end.', refs: [1]}}]});
+    });
+    await page.getByLabel('Filter terms').fill('was');
+    const suggested = page.locator('.terms .glossary-item').filter({hasText: 'wasila'});
+    await suggested.waitFor();
+    assert.match(await suggested.textContent(), /Suggested/);
+    assert.match(await page.locator('.terms').textContent(), /not used in any reading until you keep them/);
+    await page.getByRole('button', {name: 'Keep wasila'}).click();
+    await page.waitForFunction(() => !document.querySelector('.terms .glossary-item .suggested'));
+    assert.doesNotMatch(await page.locator('.terms').textContent(), /Suggested/);
+    assert.equal(await page.getByRole('button', {name: 'Keep wasila'}).count(), 0);
+    await page.getByLabel('Filter terms').fill('');
     report.checks.glossary = true;
 
     for (const scheme of ['light', 'dark']) {

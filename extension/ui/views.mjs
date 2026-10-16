@@ -25,7 +25,7 @@ export function referenceButtons(doc,record,onReference) {
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
 }
-export function createAnalysisView(container,{lens='summary',gist=false,compact=false,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
+export function createAnalysisView(container,{lens='summary',gist=false,compact=false,keep=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
   const records=[],groups=new Map(),cards=new Map(),collapsed=new Set(),queue=[];let frame=null,disposed=false,ticket=0,layoutTimer=null,worker,mapBusy=false,layoutPending=false,pan={x:0,y:0,zoom:1},lastLayout=null,maxRenderMs=0,visible=new Set();
   const root=element('div','','analysis-view'),mapLens=['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
@@ -68,6 +68,12 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
     if(r.quote){const quote=element('blockquote',r.quote);quote.dir='auto';card.append(quote);}
     if(entry.flags?.length)card.append(element('p',entry.flags.map(readable).join(' · '),'validation-flags'));
     card.append(referenceButtons(doc,r,onReference));
+    // A term on a card can be kept in the book's glossary. Until it is kept it is only a suggestion.
+    if(compact&&keep&&r.t==='term'){
+      const mark=()=>{kept.textContent='In your glossary';kept.disabled=true;kept.classList.add('kept');kept.setAttribute('aria-label',`${r.src} is in your glossary`);};
+      const kept=button('Keep in glossary',async()=>{await keep.save(r);mark();},'ghost keep-term');kept.setAttribute('aria-label',`Keep in glossary: ${r.src}`);
+      Promise.resolve(keep.state(r.src)).then(state=>{if(state==='kept')mark();}).catch(()=>{});card.append(kept);
+    }
     if(r.t==='sec') {
       const fold=button('Collapse branch',()=>{if(collapsed.has(r.id))collapsed.delete(r.id);else collapsed.add(r.id);fold.setAttribute('aria-expanded',String(!collapsed.has(r.id)));fold.textContent=collapsed.has(r.id)?'Expand branch':'Collapse branch';updateVisibility();scheduleLayout();});fold.setAttribute('aria-expanded','true');card.append(fold);
     }

@@ -18,6 +18,7 @@ import {scopeDescriptor} from '../../src/analysis/prompts.mjs';
 import {safeURL} from '../../src/analysis/contract.mjs';
 import {targetKey} from '../../src/paths/targets.mjs';
 import {createConversation,GOALS,PLAIN} from './conversation.mjs';
+import {Glossary} from '../../src/across/glossary.mjs';
 export {PASSAGE_ACTIONS};
 const LENS_HINTS={summary:'What it says: one line, an abstract and a section-by-section summary.',structure:'How it is built, and what each part does.',logic:'How the argument moves, and where its gaps are.',thinking:'The model of thinking behind it: assumptions, concepts and worldview.',themes:'Themes and codes with excerpts and notes. Add a theoretical frame under Adjust.','meta-reading':'What kind of text this is, and where it stands.',critique:'How strong it is: strengths, weak points and counterarguments.',literature:'Whom the text cites and how, and the debate it enters.',terms:'The terms you need, each with a translation and its meaning here.',questions:'Questions to check you could explain it back.',situate:'Where it sits in the wider conversation. Uses web search and links its sources.'};
 function openSettingsPage(section='connection') {
@@ -142,10 +143,12 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     if(customLens?.name)return customLens.name;if(lensName?.startsWith('custom:'))return customMap.get(lensName)?.name??'Custom lens';
     if(operation==='situate')return PLAIN.situate;return PLAIN[lensName]??lensNames().get(lensName)??lensName;
   };
+  // Terms on a conversation card are kept in the book's glossary, which is the reader's own list.
+  const bookGlossaryStore=new Glossary(store),keeper=source=>source?.derived?null:{state:term=>bookGlossaryStore.state(source.id,term),async save(r){await bookGlossaryStore.keep(source.id,{term:r.src,translation:r.tr,note:r.text,refs:r.refs,aliases:[],language:appearance.value.language});await across?.refreshGlossary();}};
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
       if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{gist:true,compact:true,lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
+      view=createAnalysisView(results,{gist:true,compact:true,keep:keeper(source),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }

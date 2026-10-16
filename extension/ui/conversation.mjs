@@ -6,7 +6,7 @@ import {menuButton} from './components.mjs';
 export const GOALS = [
   {id: 'gist', label: 'Get the gist', lens: 'summary', run: {operation: 'gist', budget: 2}, hint: 'The point of the text in one line, and a short abstract.'},
   {id: 'argument', label: 'Check the argument', lens: 'logic', hint: 'How the argument moves, and where its gaps are.'},
-  {id: 'terms', label: 'Learn the terms', lens: 'terms', hint: 'The terms you need, with a translation and the meaning here.'},
+  {id: 'terms', label: 'Learn the terms', lens: 'terms', run: {operation: 'learn', budget: 8}, hint: 'Up to eight terms you need, each with a translation and its meaning here.'},
   {id: 'deep', label: 'Study it deeply', deep: true, hint: 'Structure, argument and thinking together. This takes a few minutes.'}
 ];
 // Plain names for the lenses that are not one of the four goals.

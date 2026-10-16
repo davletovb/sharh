@@ -101,3 +101,28 @@ test('an interrupted zero-output chapter refuses ordinary resume and requires a 
 test('derived reports cannot become library sources through save, direct projection or archive import',async()=>{
  const w=await world(),lib=new Library(w.store);try{const first=await lib.save(w.doc),second=await lib.save(w.doc,buildScope(w.doc,{kind:'chapter',id:w.doc.sections[1].id})),report=await collectionDocument(w.store,[first,second],{kind:'compare'}),nested={id:crypto.randomUUID(),docId:report.id,version:report.version,title:report.title,scope:scopeDescriptor(buildScope(report))};await assert.rejects(lib.save(report),/original document/);await assert.rejects(collectionDocument(w.store,[first,nested],{kind:'compare'}),/original document/);assert.equal((await lib.items()).length,2);const archive=await w.store.exportData();archive.stores.collections.find(c=>c.kind==='library').items.push(nested);assert.throws(()=>validateArchive(archive),/INVALID_LIBRARY_ITEM/);}finally{w.close();}
 });
+
+test('terms a reading suggests are shown but not used until the reader keeps them',async()=>{
+ const w=await world(),glossary=new Glossary(w.store),sent=()=>JSON.parse(w.path.calls.at(-1).request.task.split('\n')[1]).glossary,digest=()=>w.engine.start({...w.config,lens:'digest',glossary:undefined});
+ try{
+  const record=(src,tr)=>({record:{t:'term',src,tr,text:'Meaning here.',refs:[2]}});
+  await glossary.capture({run:{docId:w.doc.id,status:'completed',config:{language:'en'}},records:[record('Evidence','proof'),record('chapter','part')]});
+  assert.deepEqual((await glossary.list(w.doc.id)).map(r=>[r.term,r.status]),[['chapter','suggested'],['Evidence','suggested']]);
+  assert.equal(await glossary.state(w.doc.id,'evidence'),'suggested');assert.equal(await glossary.state(w.doc.id,'Nothing'),null);
+  await digest();assert.equal(sent(),undefined,'a suggestion reaches no prompt');
+  // The reader keeps one. Only that one is sent, with the suggested wording.
+  await glossary.keep(w.doc.id,{term:'Evidence',translation:'ignored',aliases:[]});
+  assert.equal(await glossary.state(w.doc.id,'Evidence'),'kept');assert.equal((await glossary.list(w.doc.id)).find(r=>r.term==='Evidence').translation,'proof');
+  await digest();assert.deepEqual(sent().map(r=>r.term),['Evidence']);
+  // A term kept straight from a card is added, and a manual entry is the reader's own.
+  await glossary.keep(w.doc.id,{term:'meaning',translation:'sense',note:'How it is used.',refs:[2],aliases:[],language:'en'});
+  await glossary.save({bookId:w.doc.id,term:'considered',translation:'weighed'});
+  assert.deepEqual((await glossary.list(w.doc.id)).map(r=>[r.term,r.status]),[['chapter','suggested'],['considered','kept'],['Evidence','kept'],['meaning','kept']]);
+  await digest();assert.deepEqual(sent().map(r=>r.term).sort(),['Evidence','considered','meaning']);
+  // A later reading never overwrites what the reader kept or turns it back into a suggestion.
+  await glossary.capture({run:{docId:w.doc.id,status:'completed',config:{language:'en'}},records:[record('evidence','changed')]});
+  assert.equal((await glossary.list(w.doc.id)).find(r=>r.term==='Evidence').status,'kept');assert.equal((await glossary.list(w.doc.id)).find(r=>r.term==='Evidence').translation,'proof');
+  const {glossarySnapshot}=await import('../src/across/glossary.mjs');
+  assert.equal(glossarySnapshot([{term:'Older',translation:'saved before suggestions existed'},{term:'New',translation:'x',status:'suggested'}]).length,1,'rows from before suggestions count as the reader\'s own');
+ }finally{w.close();}
+});
