@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {chromium} from 'playwright';
 import {browserOptions} from '../../scripts/lib/browser-fixtures.mjs';
+import {installBrowserTestAPI} from '../helpers/browser-api-loader.mjs';
 const id = 'npmhefooiolfpmhicinblelaideeejcm', base = `chrome-extension://${id}`;
 async function axe(page) {
   const cdp = await page.context().newCDPSession(page);
@@ -101,5 +102,70 @@ test('Library page: documents, collections, books and glossary on the full tab',
     await rm(profile, {recursive: true, force: true});
     await mkdir('test-results', {recursive: true});
     await writeFile('test-results/library.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});
+
+test('Books page: a card per job with progress and the right next action', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'sharh-books-')), extension = resolve('dist/sharh'), report = {checks: {}, errors: []};
+  const context = await chromium.launchPersistentContext(profile, {...browserOptions(), channel: 'chromium', args: ['--no-sandbox', `--disable-extensions-except=${extension}`, `--load-extension=${extension}`], ignoreDefaultArgs: ['--disable-extensions']});
+  context.setDefaultTimeout(20000);
+  try {
+    const page = await context.newPage();
+    page.on('pageerror', e => report.errors.push(e.message));
+    await page.goto(base + '/ui/reader.html');
+    await page.getByRole('tablist', {name: 'Library'}).waitFor();
+    await page.getByRole('tab', {name: 'Books'}).click();
+    // Nothing open and no jobs yet.
+    await page.getByText('No book jobs yet.').waitFor();
+    assert.equal(await page.getByRole('button', {name: 'Start chapter digests'}).isDisabled(), true);
+    // With a reading open, the first job can be started from here.
+    await page.locator('#open-file').setInputFiles({name: 'book.html', mimeType: 'text/html', buffer: Buffer.from('<h1>A small book</h1><p>One.</p><h2>Part</h2><p>Two.</p>')});
+    await page.waitForFunction(() => document.querySelector('#reader-state').textContent.startsWith('Saved locally.'));
+    await page.locator('#open-library').click();
+    await page.getByRole('tab', {name: 'Books'}).click();
+    assert.equal(await page.getByRole('button', {name: 'Start chapter digests'}).isEnabled(), true);
+    report.checks.startCard = true;
+
+    // Two saved jobs: one paused part-way with a message, one finished.
+    await installBrowserTestAPI(page);
+    await page.evaluate(async () => {
+      const store = await SharhTest.openDocumentStore(), [doc] = (await store.listDocuments()).filter(d => !d.derived);
+      const chapters = n => Array.from({length: 3}, (_, i) => ({title: `Chapter ${i + 1}`, span: [i + 1, i + 1], completed: i < n, runId: 'r' + i}));
+      const base = {kind: 'book', docId: doc.id, extractionVersion: doc.version, scope: {kind: 'document', label: 'Whole document'}, policy: {mode: 'ask', targets: []}};
+      await store.put('jobs', {...base, id: 'job-paused', state: 'paused', chapters: chapters(1), next: 1, createdAt: 2, error: {code: 'JOB_FAILED', message: 'The model stopped answering.'}});
+      await store.put('jobs', {...base, id: 'job-done', state: 'completed', chapters: chapters(3), next: 3, createdAt: 1});
+      store.close();
+    });
+    await page.reload();
+    await page.getByRole('tablist', {name: 'Library'}).waitFor();
+    await page.getByRole('tab', {name: 'Books'}).click();
+    const cards = page.locator('.job-card');
+    await cards.nth(1).waitFor();
+    assert.equal(await cards.count(), 2);
+    const paused = cards.filter({hasText: 'Paused'}), done = cards.filter({hasText: 'Done'});
+    assert.match(await paused.textContent(), /1 of 3 chapters/);
+    assert.match(await paused.textContent(), /The model stopped answering\./);
+    assert.equal(await paused.getByRole('button', {name: 'Resume'}).isVisible(), true);
+    assert.equal(await paused.getByRole('button', {name: 'Analyze digests'}).count(), 0);
+    assert.match(await done.textContent(), /3 of 3 chapters/);
+    assert.equal(await done.getByRole('button', {name: 'Analyze digests'}).isVisible(), true);
+    await done.getByLabel('Read the digests as').selectOption('logic');
+    await done.locator('.job-chapters summary').click();
+    assert.equal(await done.locator('.job-chapters li').count(), 3);
+    report.checks.jobCards = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    report.checks.accessibility = true;
+    assert.deepEqual(report.errors, []);
+    report.passed = true;
+  } finally {
+    await context.close();
+    await rm(profile, {recursive: true, force: true});
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/books.json', JSON.stringify(report, null, 2) + '\n');
   }
 });

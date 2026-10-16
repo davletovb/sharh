@@ -546,3 +546,19 @@ button.recent span { font-weight: 400; }
 .glossary-list:empty { display: none; }
 .across-library:not([data-mode='page']) .glossary-note, .across-library:not([data-mode='page']) .glossary-list { display: none; }
 .workspace[data-layout='conversation'] .across-library { background: none; border: 0; padding: 0; margin: 0; box-shadow: none; }
+
+/* Books page: one card per job */
+.across-library:not([data-mode='page']) .job-cards, .across-library:not([data-mode='page']) .job-start { display: none; }
+.across-library[data-mode='page'] details.book-jobs { display: none; }
+.job-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.job-card h4 { margin: 0; overflow-wrap: anywhere; }
+.state-chip { flex: none; }
+.job-card[data-state='completed'] .state-chip { border-color: var(--ok); color: var(--ok); }
+.job-card[data-state='running'] .state-chip { border-color: var(--gold); color: var(--gold); }
+.job-progress { width: 100%; height: 10px; accent-color: var(--gold); }
+.job-card p { margin: 8px 0; }
+.job-note { border-inline-start: 3px solid var(--warn); padding-inline-start: 10px; }
+.job-card label { max-width: 360px; }
+.job-chapters { margin-top: 10px; color: var(--muted); font-size: 13px; }
+.job-chapters ol { margin: 8px 0 0; padding-inline-start: 22px; }
+.job-start .primary:disabled { opacity: 0.5; }
