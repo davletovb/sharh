@@ -3,11 +3,12 @@ import {element,button} from './dom.mjs';
 import {icon} from './icons.mjs';
 import {menuButton} from './components.mjs';
 
+import {TASKS,taskRun} from '../../src/analysis/tasks.mjs';
 export const GOALS = [
-  {id: 'gist', label: 'Get the gist', lens: 'summary', run: {operation: 'gist', budget: 2}, hint: 'The point of the text in one line, and a short abstract.'},
-  {id: 'argument', label: 'Check the argument', lens: 'check', direct: true, run: {lens: 'check', budget: 10}, hint: 'What is claimed, why, how strong it is and where it is weakest.'},
-  {id: 'terms', label: 'Learn the terms', lens: 'terms', run: {operation: 'learn', budget: 8}, hint: 'Up to eight terms you need, each with a translation and its meaning here.'},
-  {id: 'deep', label: 'Study it deeply', lens: 'deep', direct: true, deep: true, run: {lens: 'deep', budget: 22}, hint: 'One reading: what it says, how it is built, how it argues and what it assumes. This takes a few minutes.'}
+  {id: 'gist', label: TASKS.gist.label, run: taskRun('gist'), hint: 'The point of the text in one line, and a short abstract.'},
+  {id: 'argument', label: TASKS.argument.label, run: taskRun('argument'), hint: 'What is claimed, why, how strong it is and where it is weakest.'},
+  {id: 'terms', label: TASKS.terms.label, run: taskRun('terms'), hint: 'Up to eight terms you need, each with a translation and its meaning here.'},
+  {id: 'deep', label: TASKS.deep.label, deep: true, run: taskRun('deep'), hint: 'One reading: what it says, how it is built, how it argues and what it assumes. This takes a few minutes.'}
 ];
 // Plain names for the lenses that are not one of the four goals.
 export const PLAIN = {

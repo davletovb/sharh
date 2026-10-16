@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
 import {PASSAGE_ACTIONS,OFFERED_ACTIONS,passageLens,GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,QUIZ_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {TASKS,TASK_TIERS,taskRun} from '../src/analysis/tasks.mjs';
+import {LENSES} from '../src/analysis/contract.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
 import {markdown} from '../src/toolkit/exports.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
@@ -110,4 +112,17 @@ test('Argument on a selection is a short check of those lines, and the old Logic
  assert.deepEqual(entries.map(e=>e.record.part),['claim','reason','reason','weakness']);assert.equal(parser.metrics.dropped.limit,7);
  // The same parser without the action keeps the full argument check.
  const whole=[],other=new RecordParser({lens:'check',blocks:selected.blocks,onRecord:e=>whole.push(e)});other.push(['claim','strength','assessment'].map(part=>line(part)).join(''));other.finish();assert.equal(whole.length,3);
+});
+
+test('every conversation task is a real lens or operation with a budget and a tier, and the table says which runs on Quick',async()=> {
+ const doc=await exampleDocument(),scope=buildScope(doc);
+ assert.deepEqual(Object.keys(TASKS),['gist','argument','terms','deep','outline','ideas','kind','cites','questions']);
+ assert.deepEqual(Object.fromEntries(Object.entries(TASKS).map(([id,t])=>[id,t.tier])),{gist:'analysis',argument:'analysis',terms:'quick',deep:'analysis',outline:'quick',ideas:'analysis',kind:'quick',cites:'quick',questions:'quick'});
+ for(const [id,task] of Object.entries(TASKS)){
+  assert.ok(Object.hasOwn(LENSES,task.lens),id+' names a lens');assert.ok(TASK_TIERS.includes(task.tier),id+' has a tier');assert.ok(task.label);
+  const run=taskRun(id);assert.equal(run.lens,task.lens);assert.equal(run.useTier,task.tier);assert.equal(run.operation,task.operation);assert.equal(run.budget,task.budget);
+  const prompt=assemblePrompt(doc,scope,{lens:run.lens,operation:run.operation??null,...(run.budget?{budget:run.budget}:{})});
+  assert.equal(JSON.parse(prompt.request.task.split('\n')[1]).lens,task.lens,id+' assembles into a prompt');
+ }
+ assert.throws(()=>taskRun('nothing'),/UNKNOWN_TASK/);assert.ok(Object.values(TASKS).every(t=>t.budget===undefined||t.budget>=1&&t.budget<=200));
 });

@@ -45,6 +45,33 @@ Automatic scores use the **raw original answer**, not the repaired or filtered d
 
 Lens/action shape diagnostics additionally require Summary's four levels/arc, Structure sections, Logic nodes/steps (and edges for multi-node arguments), Thinking concepts/facets, and passage term pairs where required. Prompts permit omitting unsupported gaps/facets instead of fabricating them. Inferred-only Logic and unquoted stated nodes can pass; expert review decides whether a safe quotation was unjustifiably omitted. Valid context references remain allowed alongside a selected-paragraph citation. Scope offsets use JavaScript/DOM UTF-16 units, including astral/combining text. Reports retain record/facet kinds for corpus-level review. Actual language/script, translated meaning, introducing-paragraph accuracy, insight and faithfulness require expert review; compatible `meta.lang` is not proof.
 
+## Conversation tasks and tiers
+
+The conversation's readings are defined once in `src/analysis/tasks.mjs`: each task is a lens, optionally an operation of it, a record budget and a tier. The interface, the tests and this evaluation all read that table, so they cannot disagree.
+
+| Task | Runs as | Records | Tier |
+| --- | --- | --- | --- |
+| Get the gist | Summary, `gist` operation | 2 | Analysis |
+| Check the argument | `check` lens | 10 | Analysis |
+| Learn the terms | Terms, `learn` operation | 8 | Quick |
+| Study it deeply | `deep` lens | 22 | Analysis |
+| How it is built | Structure, `outline` operation | 12 | Quick |
+| Main ideas | `ideas` lens | 5 | Analysis |
+| What kind of text this is | Meta-reading | the Detail setting | Quick |
+| Who it cites | Literature | the Detail setting | Quick |
+| Questions to check yourself | Questions, `quiz` operation | 5 | Quick |
+
+The selection actions (Explain, Translate, Argument, Define) all run on the Quick tier. Quick is for descriptive help; Analysis is for a judgment (the argument check) or a composition (the gist, the main ideas, the deep reading). The assignments are a starting point and each person can still choose the model behind each tier in Settings.
+
+```sh
+npm run evaluate -- --fixture --tasks                  # scripted: the matrix and the task-level checks
+npm run evaluate -- --companion PATH --tasks --compare-tiers --quick-model haiku --analysis-model opus
+```
+
+`--tasks` runs every task (or the ones named with `--task`) on its declared tier and writes `test-results/task-evaluation.json`. Its task-level checks are floors a machine can count, not a quality claim: the gist has exactly two records, a line of at most 25 words and an abstract of at most 70, with no paragraph marks inside the text; the argument check has one claim, two or three reasons and one assessment; Learn the terms returns one to eight terms; the outline has at most twelve flat sections; Main ideas has three to five themes and nothing else; the questions are three to five with at least one that tests understanding; the deep reading has one brief synthesis, up to eight flat sections, the argument check and up to three questions.
+
+`--compare-tiers` runs each task on both tiers, with `--quick-model` and `--analysis-model` choosing the model behind each, and adds a `comparison` table: for every item, provider and task, whether each tier passed, what it missed, how many records it returned, how long it took, and a verdict (`both_pass`, `quick_falls_short`, `only_quick_passes`, `both_fail`). Run it live before moving a task to the Quick tier. A scripted fixture proves the harness and the checks; only a live run says whether a cheaper model is good enough, and a reader still has to judge the answers themselves, which the review form below is for.
+
 ## Expert review and acceptance
 
 Review every run against its captured scope and raw/canonical findings. The form records faithfulness, structural accuracy, argument accuracy, insight and usefulness (1–5), reviewer, date, notes and accepted/revise disposition. Source/run/prompt identities must match; stale forms, duplicate rows, missing scores and invalid ratings are refused. To validate a completed form **without new model calls**:

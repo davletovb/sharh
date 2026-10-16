@@ -18,6 +18,7 @@ import {scopeDescriptor} from '../../src/analysis/prompts.mjs';
 import {safeURL} from '../../src/analysis/contract.mjs';
 import {targetKey} from '../../src/paths/targets.mjs';
 import {createConversation,GOALS,PLAIN} from './conversation.mjs';
+import {taskRun} from '../../src/analysis/tasks.mjs';
 import {Glossary} from '../../src/across/glossary.mjs';
 export {PASSAGE_ACTIONS};
 const LENS_HINTS={summary:'What it says: one line, an abstract and a section-by-section summary.',structure:'How it is built, and what each part does.',logic:'How the argument moves, and where its gaps are.',thinking:'The model of thinking behind it: assumptions, concepts and worldview.',themes:'Themes and codes with excerpts and notes. Add a theoretical frame under Adjust.','meta-reading':'What kind of text this is, and where it stands.',critique:'How strong it is: strengths, weak points and counterarguments.',literature:'Whom the text cites and how, and the debate it enters.',terms:'The terms you need, each with a translation and its meaning here.',questions:'Questions to check you could explain it back.',situate:'Where it sits in the wider conversation. Uses web search and links its sources.'};
@@ -97,7 +98,8 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       tier:outputTier(modelPicker.tier),persistent:modelPicker.info?.capabilities?.sessions===true,...extra};
   }
   async function runConfiguration(extra={}) {
-    const config=configuration(extra),tier=extra.tier===undefined?(config.customLens?.tier??(['terms','questions'].includes(config.lens)||config.operation==='outline'?'quick':null)):null;
+    // useTier is the tier a conversation task runs on. A Studio lens run keeps its lens's own tier.
+    const {useTier,...rest}=extra,config=configuration(rest),tier=rest.tier===undefined?(useTier??config.customLens?.tier??(['terms','questions'].includes(config.lens)?'quick':null)):null;
     if(!tier)return config;
     const picked=await modelPicker.forTier(tier);return {...config,target:picked.target,tier:outputTier(tier),persistent:picked.info.capabilities?.sessions===true};
   }
@@ -271,7 +273,7 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     const cards=()=>convo.stream.querySelectorAll('.convo-card').length,before=cards(),bubble=convo.bubble(label);
     try{return await job();}catch(error){if(cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
   }
-  const goal=g=>start(g.label,()=>{if(!g.direct)chooseLens(g.lens);return run(g.run??{});});
+  const goal=g=>start(g.label,()=>run(g.run));
   convo.setGoals(GOALS,goal);
   convo.onAsk(async text=>{
     const about=pendingAbout;if(!about)return toolkit.askInStream(text);
@@ -284,13 +286,14 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
   convo.ways.setItems(()=>[
     ...GOALS.map(g=>({label:g.label,action:()=>goal(g),get disabled(){return !canRun();}})),
     '-',{heading:'Understand'},
-    task(PLAIN.structure,()=>run({lens:'structure',operation:'outline',budget:12})),
-    task(PLAIN.ideas,()=>run({lens:'ideas',budget:5})),
+    task(PLAIN.structure,()=>run(taskRun('outline'))),
+    task(PLAIN.ideas,()=>run(taskRun('ideas'))),
     '-',{heading:'Place it'},
-    ...['meta-reading','literature'].map(v=>task(PLAIN[v],()=>{chooseLens(v);return run();})),
+    task(PLAIN['meta-reading'],()=>run(taskRun('kind'))),
+    task(PLAIN.literature,()=>run(taskRun('cites'))),
     task(searchable()?PLAIN.situate:'Where it sits · needs a model with web search',()=>{chooseLens('situate');return run();},{get disabled(){return !ready_()||!searchable();},title:searchable()?'':'The chosen model does not offer web search. Choose one that does in Settings.'}),
     '-',{heading:'Test yourself'},
-    task(PLAIN.questions,()=>run({lens:'questions',operation:'quiz',budget:5})),
+    task(PLAIN.questions,()=>run(taskRun('questions'))),
     ...(customMap.size?['-',{heading:'Your lenses'}]:[]),
     ...[...customMap].map(([v,d])=>task(d.name,()=>{chooseLens(v);return run();}))
   ]);

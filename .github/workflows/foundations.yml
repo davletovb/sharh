@@ -30,6 +30,8 @@ jobs:
         run: npm run evaluate -- --fixture
       - name: Scholar toolkit lens matrix (scripted, not live)
         run: npm run evaluate -- --fixture --phase-two
+      - name: Conversation tasks and their task-level checks (scripted, not live)
+        run: npm run evaluate -- --fixture --tasks
       - name: Across texts workflow matrix (scripted, not live)
         run: node scripts/verify-across-texts.mjs --fixture
       - name: Reproducible extension package

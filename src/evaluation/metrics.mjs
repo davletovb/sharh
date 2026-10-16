@@ -1,11 +1,12 @@
 import {validateFields,ENUMS} from '../analysis/contract.mjs';
 import {QuotationIndex} from '../analysis/quotes.mjs';
 import {normalizeText} from '../documents/model.mjs';
+import {taskChecks} from './tasks.mjs';
 export const AUTOMATIC_TARGETS=Object.freeze({parseRate:.95,referenceValidity:.98,headingCoverage:.9});
 export function languageCompatible(requested,reported){
   try{const expected=new Intl.Locale(requested),actual=new Intl.Locale(reported);return expected.language===actual.language && (!expected.script || !actual.script || expected.script===actual.script) && (!expected.region || !actual.region || expected.region===actual.region);}catch{return false;}
 }
-export function measureOutput(output,{lens,action=null,language='en',budget=24,doc,scope,expectedHeadings=[],canary=null,truncated=false}) {
+export function measureOutput(output,{lens,action=null,operation=null,taskId=null,language='en',budget=24,doc,scope,expectedHeadings=[],canary=null,truncated=false}) {
   const rows=[],failures={},numbers=new Set(scope.blocks.map(b=>b.n)),selected=new Set(scope.blocks.filter(b=>b.selected?.length).map(b=>b.n)),quotes=new QuotationIndex(scope.blocks);
   let lines=0,valid=0,refs=0,validRefs=0,selectedRefs=0,quotations=0,verified=0,statedVerified=0,end=false,afterEnd=false,meta=null,unanchored=0;
   const fail=key=>{failures[key]=(failures[key]??0)+1;};
@@ -37,7 +38,7 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
   const available=new Map();for(const b of scope.blocks.filter(b=>b.kind==='heading' && sections.some(r=>r.span[0]===b.n && normalizeText(r.title)===normalizeText(b.text)))){const key=normalizeText(b.text);available.set(key,(available.get(key)??0)+1);}
   let covered=0;for(const text of headings){const key=normalizeText(text),count=available.get(key)??0;if(count){covered++;available.set(key,count-1);}}
   const byType=type=>rows.filter(r=>r.t===type),missing=[];
-  if(!action && lens==='summary'){for(const level of ENUMS.level)if(!byType('sum').some(r=>r.level===level))missing.push('sum:'+level);if(!byType('arc').length)missing.push('arc');}
+  if(!action && !operation && lens==='summary'){for(const level of ENUMS.level)if(!byType('sum').some(r=>r.level===level))missing.push('sum:'+level);if(!byType('arc').length)missing.push('arc');}
   if(lens==='structure' && !sections.length)missing.push('sec');
   if(lens==='logic'){if(!byType('node').length)missing.push('node');if(!byType('step').length)missing.push('step');if(byType('node').length>1 && !byType('edge').length)missing.push('edge');}
   if(lens==='thinking'){if(!byType('concept').length)missing.push('concept');if(!byType('facet').length)missing.push('facet');}
@@ -48,13 +49,14 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
   if(!action && ['meta-reading','critique'].includes(lens) && !byType('facet').length)missing.push('facet');
   if(!action && lens==='literature' && !byType('cite').length)missing.push('cite');
   if(!action && lens==='terms' && !byType('term').length)missing.push('term');
-  if(!action && lens==='questions')for(const level of ENUMS.question)if(!byType('q').some(r=>r.level===level))missing.push('q:'+level);
+  if(!action && !operation && lens==='questions')for(const level of ENUMS.question)if(!byType('q').some(r=>r.level===level))missing.push('q:'+level);
+  if(taskId)missing.push(...taskChecks(taskId,rows));
   if(!rows.length)missing.push('findings');
   return {lines,validLines:valid,parseRate:lines?valid/lines:0,references:refs,validReferences:validRefs,referenceValidity:refs?validRefs/refs:null,
     selectedReferences:selectedRefs,selectionRequired:action!==null,findingRecords:rows.length,recordBudget:budget,overBudget:rows.length>budget,
     quotations,verifiedQuotations:verified,verifiedStatedQuotations:statedVerified,quotationVerification:quotations?verified/quotations:null,unanchoredRecords:unanchored,
     danglingIdentifiers:dangling,duplicateIdentifiers:duplicates.length,parentCycles:cycles,
-    headingCoverage:lens==='structure' && headings.length?covered/headings.length:null,annotatedHeadings:headings.length,coveredHeadings:covered,
+    headingCoverage:lens==='structure' && !operation && headings.length?covered/headings.length:null,annotatedHeadings:headings.length,coveredHeadings:covered,
     completed:end && !afterEnd && !truncated,truncated:truncated || !end,canaryObserved:!!(canary && output.includes(canary)),
     languageMetadata:meta?.lang??null,missing,recordTypes:[...new Set(rows.map(r=>r.t))],facetKinds:[...new Set(byType('facet').map(r=>r.kind))],failures};
 }

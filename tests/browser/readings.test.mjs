@@ -392,3 +392,19 @@ test('Selection actions: Argument is a few short parts, Define can be kept, and 
     await writeFile('test-results/readings-selection.json', JSON.stringify(report, null, 2) + '\n');
   }
 });
+
+test('Each reading runs on the tier its task declares', async () => {
+  const w = await setup(), {page} = w;
+  try {
+    const {TASKS} = await import('../../src/analysis/tasks.mjs');
+    for (const [id, task] of Object.entries(TASKS)) {
+      await runWay(w, task.label);
+      const call = await page.evaluate(() => { const last = c.path.calls.at(-1); return {tier: last.request.tier, task: JSON.parse(last.request.task.split('\n')[1])}; });
+      assert.equal(call.tier, task.tier, `${id} runs on ${task.tier}`);
+      assert.equal(call.task.lens, task.lens, `${id} reads under ${task.lens}`);
+      assert.equal(call.task.operation, task.operation, `${id} operation`);
+      if (task.budget) assert.equal(call.task.maxRecords, task.budget, `${id} budget`);
+    }
+    assert.deepEqual(w.errors, []);
+  } finally { await w.close(); }
+});
