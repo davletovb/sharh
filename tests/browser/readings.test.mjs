@@ -336,3 +336,59 @@ test('Questions connect to Ask: try an answer, a suggested answer, and asking ab
     await writeFile('test-results/readings-ask.json', JSON.stringify(report, null, 2) + '\n');
   }
 });
+
+test('Selection actions: Argument is a few short parts, Define can be kept, and an old Logic request reads as Argument', async () => {
+  const w = await setup(), {page, root} = w, report = {checks: {}};
+  const settle = async count => { await page.waitForFunction(n => document.querySelectorAll('#convo-fixture .convo-card').length >= n && !c.workspace.active, count); await page.evaluate(() => c.workspace.view?.settled()); };
+  const lastCall = () => page.evaluate(() => { const call = c.path.calls.at(-1); return {tier: call.request.tier, task: JSON.parse(call.request.task.split('\n')[1])}; });
+  const select = {spans: [{n: 5, start: 0, end: 8}]};
+  try {
+    await page.evaluate(sel => c.workspace.passage('Argument', sel), select);
+    await settle(1);
+    const argument = root.locator('.convo-card').first();
+    const asked = await lastCall();
+    assert.equal(asked.task.action, 'Argument');
+    assert.equal(asked.task.lens, 'check');
+    assert.equal(asked.task.maxRecords, 4);
+    assert.equal(asked.tier, 'quick', 'selection actions run on the quick tier');
+    assert.match(asked.task.instructions, /what the selected lines do/);
+    assert.match(await argument.locator('.convo-card-title').textContent(), /^Argument · /);
+    assert.deepEqual(await argument.locator('.check-part > h4').allTextContents(), ['What these lines do', 'How they connect', 'A weakness here']);
+    assert.equal(await argument.locator('svg.analysis-map').count(), 0);
+    assert.equal(await argument.getByRole('button', {name: 'Show map'}).count(), 0);
+    assert.ok(await argument.getByRole('button', {name: /^Ask about this: /}).count());
+    report.checks.argument = true;
+
+    // An open page that still has the older toolbar sends Logic. It is read as Argument.
+    await page.evaluate(sel => c.workspace.passage('Logic', sel), select);
+    await settle(2);
+    const old = await lastCall();
+    assert.equal(old.task.action, 'Argument');
+    assert.equal(old.task.lens, 'check');
+    report.checks.logicReadAsArgument = true;
+
+    // Define is one term that can be kept in the glossary.
+    await page.evaluate(sel => c.workspace.passage('Define', sel), select);
+    await settle(3);
+    const define = root.locator('.convo-card').nth(2);
+    assert.equal(await define.locator('.finding.term').count(), 1);
+    const keep = define.getByRole('button', {name: /^Keep in glossary: /});
+    await keep.click();
+    await define.getByRole('button', {name: /is in your glossary$/}).waitFor();
+    const kept = await page.evaluate(async () => (await new SharhTest.Glossary(c.store).list(c.doc.id)).filter(r => r.status === 'kept').length);
+    assert.equal(kept, 1);
+    report.checks.defineKept = true;
+
+    for (const scheme of ['light', 'dark']) {
+      await page.emulateMedia({colorScheme: scheme, reducedMotion: 'reduce'});
+      await page.waitForTimeout(150);
+      assert.deepEqual(await axe(page), [], scheme);
+    }
+    assert.deepEqual(w.errors, []);
+    report.passed = true;
+  } finally {
+    await w.close();
+    await mkdir('test-results', {recursive: true});
+    await writeFile('test-results/readings-selection.json', JSON.stringify(report, null, 2) + '\n');
+  }
+});

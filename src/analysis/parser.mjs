@@ -5,12 +5,14 @@ import {bytes} from '../paths/limits.mjs';
 // An argument check has one claim and one assessment, and a few of the rest.
 // A deep reading has one synthesis, a short outline and a few open questions beside its argument check.
 const DEEP_LIMITS=Object.freeze({sum:1,sec:8,q:3});
+// Argument on a selection has one claim, up to two ways it connects, and a weakness only when the text supports one.
+const CHK_LIMITS_LOCAL=Object.freeze({claim:1,reason:2,weakness:1});
 const CHK_LIMITS=Object.freeze({claim:1,reason:3,strength:1,weakness:1,assumption:2,objection:1,assessment:1});
 const deferred = r => ['edge','gap','code','excerpt','tension'].includes(r.t) || r.parent!==undefined || r.sec!==undefined;
 export class RecordParser {
-  constructor({lens,blocks,sections=[],onRecord=()=>{},now=()=>performance.now(),maxBytes=524288,maxLineBytes=65536,customLens=null,sources=new Map()}) {
+  constructor({lens,action=null,blocks,sections=[],onRecord=()=>{},now=()=>performance.now(),maxBytes=524288,maxLineBytes=65536,customLens=null,sources=new Map()}) {
     allowedTypes(lens,customLens);
-    Object.assign(this,{lens,blocks,sections,onRecord,now,maxBytes,maxLineBytes,customLens,sources});
+    Object.assign(this,{lens,action,blocks,sections,onRecord,now,maxBytes,maxLineBytes,customLens,sources});
     this.started=now(); this.buffer=''; this.entries=[]; this.ids=new Map(); this.pending=[];
     this.scope=new Set(blocks.map(b=>b.n)); this.numbers=[...this.scope].sort((a,b)=>a-b);
     this.quotes=new QuotationIndex(blocks); this.endReceived=false; this.afterEnd=false; this.finished=false;
@@ -60,6 +62,7 @@ export class RecordParser {
     if(r.t==='end') {this.endReceived=true;this.metrics.recordLines--;return;}
     if(this.lens==='deep'&&DEEP_LIMITS[r.t]&&this.entries.filter(e=>e.record.t===r.t).length>=DEEP_LIMITS[r.t]){this.count('dropped','limit');return;}
     if(this.lens==='ideas'&&r.t==='theme'&&this.entries.filter(e=>e.record.t==='theme').length>=5){this.count('dropped','limit');return;}
+    if(this.action==='Argument'&&(CHK_LIMITS_LOCAL[r.part]===undefined||this.entries.filter(e=>e.record.part===r.part).length>=CHK_LIMITS_LOCAL[r.part])){this.count('dropped','limit');return;}
     if(r.t==='chk'&&this.entries.filter(e=>e.record.t==='chk'&&e.record.part===r.part).length>=CHK_LIMITS[r.part]){this.count('dropped','limit');return;}
     const entry={sequence:this.sequenceBase+this.metrics.lines,record:r,flags};
     if(r.refs) {

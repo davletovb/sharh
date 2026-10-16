@@ -120,7 +120,7 @@ export class AnalysisEngine {
       preflightRequest(run.target,request);
       let raw='',streamed='',result=null,error=null,contextLost=false,lostBeforeOutput=false;
       const turnController=new AbortController(),turnSignal=AbortSignal.any([combined,turnController.signal]);
-      const createParser=()=>new RecordParser({lens:run.lens,blocks:scope.blocks,sections:doc.sections,now:this.now,customLens:run.config.customLens,sources,onRecord:entry=> {
+      const createParser=()=>new RecordParser({lens:run.lens,action:run.config.action??null,blocks:scope.blocks,sections:doc.sections,now:this.now,customLens:run.config.customLens,sources,onRecord:entry=> {
         if(!entry.retained)firstRecordMs??=this.now()-started;
         if(index===0){enqueue({},[entry]);notify(onEvent,{type:'record',runId:run.id,attempt:index,entry});}
       }});

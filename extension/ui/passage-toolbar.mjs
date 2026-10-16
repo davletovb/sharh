@@ -37,7 +37,7 @@ export function installSelectionToolbar({document,selection,resolveSelection,onA
     const hint=document.createElement('p');hint.className='passage-context';
     const brand=icon('star',{size:18,className:'passage-brand',doc:document});bar.append(brand);
     toast=document.createElement('div');toast.className='passage-toast';toast.setAttribute('role','status');toast.hidden=true;
-    for(const action of ['Explain','Translate','Logic','Define','Ask about this']) {
+    for(const action of ['Explain','Translate','Argument','Define','Ask about this']) {
       const b=document.createElement('button');b.type='button';b.textContent=action;if(action==='Explain')b.className='primary';
       b.addEventListener('pointerdown',e=>e.preventDefault());
       b.addEventListener('click',()=>{const chosen=saved,snapshot=shown;dismiss();if(chosen){toast.textContent='Sent to Sharh. The answer opens in the side panel.';toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.hidden=true;},2200);}if(chosen)Promise.resolve().then(async()=>{

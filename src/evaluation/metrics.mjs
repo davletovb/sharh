@@ -20,7 +20,7 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
     valid++;if(raw.t==='end'){end=true;continue;}rows.push(raw);
     const cited=raw.span?[raw.span[0],raw.span[1]]:raw.refs??(raw.ref===undefined?[]:[raw.ref]);refs+=cited.length;validRefs+=cited.filter(n=>numbers.has(n)).length;
     selectedRefs+=cited.filter(n=>selected.has(n)).length;
-    if(['sum','arc','sec','node','step','gap','facet','concept','term','note','theme','cite','q'].includes(raw.t) && !cited.some(n=>numbers.has(n)))unanchored++;
+    if(['sum','arc','sec','node','step','gap','facet','concept','term','note','theme','cite','q','chk'].includes(raw.t) && !cited.some(n=>numbers.has(n)))unanchored++;
     if(raw.quote){quotations++;if(quotes.verify(raw.quote,cited)){verified++;if(raw.t==='node' && raw.basis==='stated')statedVerified++;}else fail('quotation');}
   }
   const ids=new Map(),duplicates=[];for(const r of rows)if(r.id){if(ids.has(r.id))duplicates.push(r.id);else ids.set(r.id,r);}
@@ -43,6 +43,7 @@ export function measureOutput(output,{lens,action=null,language='en',budget=24,d
   if(lens==='thinking'){if(!byType('concept').length)missing.push('concept');if(!byType('facet').length)missing.push('facet');}
   if(action==='Translate' || action==='Define'){if(!byType('term').some(r=>r.src && r.tr))missing.push('source/translated term');}
   if(action==='Explain' || action==='Translate'){if(!byType('note').length)missing.push('note');}
+  if(action==='Argument'){if(!byType('chk').some(r=>r.part==='claim'))missing.push('claim');}
   if(!action && lens==='themes')for(const type of ['theme','code','excerpt','memo'])if(!byType(type).length)missing.push(type);
   if(!action && ['meta-reading','critique'].includes(lens) && !byType('facet').length)missing.push('facet');
   if(!action && lens==='literature' && !byType('cite').length)missing.push('cite');

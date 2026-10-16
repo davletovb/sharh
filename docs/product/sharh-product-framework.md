@@ -63,7 +63,7 @@ Jobs it should do well:
 | Capability | First usable release (Phase 1) | Later |
 | --- | --- | --- |
 | Sources | Web pages (main text), local HTML, PDFs with a text layer, with or without an outline | EPUB, scanned PDFs (OCR) |
-| Passage help | Explain, Translate, Logic, Define on a selection | Custom passage actions |
+| Passage help | Explain, Translate, Argument, Define on a selection | Custom passage actions |
 | Chapter lenses | Summary (with synopsis), Structure, Logic, Thinking | Themes, Meta-reading, Critique, Literature, Terms, Questions, Situate, custom lenses |
 | Interaction | Scope picker, streaming views, jump to ¶, saved runs | Ask, Deep read, You-are-here, Second reader, exports, full-tab studio |
 | Across texts | — | Library, collections, literature review, meta-synthesis, compare, whole-book jobs |
@@ -75,7 +75,7 @@ Jobs it should do well:
 
 ### Passage
 
-Selecting text on a page or in the PDF reader shows a small toolbar with four actions: Explain, Translate, Logic and Define, plus *Ask about this*. Results open in the side panel.
+Selecting text on a page or in the PDF reader shows a small toolbar with four actions: Explain, Translate, Argument and Define, plus *Ask about this*. Results open in the side panel.
 
 Each request carries the selection and its surroundings: the section heading and the neighbouring paragraphs (by default two before and one after). Explanations are therefore about this text, not about the words in isolation.
 
@@ -351,7 +351,7 @@ Latency targets will be set after live measurement.
   - streaming views;
   - jump-to-¶ highlights;
   - saved runs.
-- **Passage toolbar:** Explain, Translate, Logic and Define.
+- **Passage toolbar:** Explain, Translate, Argument and Define.
 - **Lenses:** Summary (with synopsis), Structure, Logic and Thinking.
 
 Acceptance:

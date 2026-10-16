@@ -64,10 +64,10 @@ test('workspace runs, saves, continues, restores and compares actual engine vers
 });
 test('passage actions send selected spans with neighbouring context in the requested language using the Quick tier',async()=> {
  const d=dom(),storage=memory(),store=await openDocumentStore({indexedDB:new IDBFactory()}),doc=await exampleDocument();await store.saveDocument(doc);await storage.set({sharhReading:{language:'uz',tiers:{}}});
- const path=new FakePath({scripts:Array.from({length:4},()=>({text:jsonl({t:'note',text:'Explanation',refs:[5]},end)})),wait:async()=>{}}),engine=new AnalysisEngine({store,paths:{fake:path}}),client={call:async method=>method==='discover'?path.discover():null};let workspace;
+ const path=new FakePath({scripts:Array.from({length:4},(_,i)=>({text:jsonl(i===2?{t:'chk',part:'claim',text:'Explanation',refs:[5],basis:'stated'}:{t:'note',text:'Explanation',refs:[5]},end)})),wait:async()=>{}}),engine=new AnalysisEngine({store,paths:{fake:path}}),client={call:async method=>method==='discover'?path.discover():null};let workspace;
  try{workspace=await createWorkspace(document.getElementById('host'),{store,engine,client,storage,changes});await workspace.ready;await workspace.setDocument(doc);
- for(const action of ['Explain','Translate','Logic','Define'])await workspace.passage(action,{spans:[{n:5,start:0,end:8}]});
- for(const [i,call] of path.calls.entries()){const data=JSON.parse(call.request.document),task=JSON.parse(call.request.task.split('\n')[1]);assert.deepEqual(data.blocks.map(b=>b.n),[2,3,4,5,6]);assert.equal(call.request.tier,'quick');assert.equal(task.outputLanguage,'uz');assert.equal(task.action,['Explain','Translate','Logic','Define'][i]);assert.ok(task.instructions.length>200);assert.ok(data.blocks.find(b=>b.n===5).selected);}
+ for(const action of ['Explain','Translate','Argument','Define'])await workspace.passage(action,{spans:[{n:5,start:0,end:8}]});
+ for(const [i,call] of path.calls.entries()){const data=JSON.parse(call.request.document),task=JSON.parse(call.request.task.split('\n')[1]);assert.deepEqual(data.blocks.map(b=>b.n),[2,3,4,5,6]);assert.equal(call.request.tier,'quick');assert.equal(task.outputLanguage,'uz');assert.equal(task.action,['Explain','Translate','Argument','Define'][i]);assert.ok(task.instructions.length>200);assert.ok(data.blocks.find(b=>b.n===5).selected);}
  }finally{workspace?.dispose();store.close();d.window.close();}
 });
 

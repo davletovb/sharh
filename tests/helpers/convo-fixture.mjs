@@ -24,7 +24,7 @@ export async function setup({signedIn = true} = {}) {
     const path = new FakePath({wait: async () => {}, scriptFor: ({request}) => {
       const task = JSON.parse(request.task.split('\n')[1]), source = {title: doc.title, lang: 'en', blocks: doc.blocks};
       if (task.operation === 'ask') return {text: line({t: 'note', text: 'Grounded answer [¶3]. <svg onload=alert(1)>', refs: [3]}, {t: 'end'})};
-      return {text: ['summary', 'structure', 'logic', 'thinking'].includes(task.lens) ? phaseOneOutput(task, source) : phaseTwoOutput(task, source)};
+      return {text: task.action || ['summary', 'structure', 'logic', 'thinking'].includes(task.lens) ? phaseOneOutput(task, source) : phaseTwoOutput(task, source)};
     }});
     path.discover = async () => [info];
     const engine = new AnalysisEngine({store, paths: {fake: path}}), host = document.createElement('main');

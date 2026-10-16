@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {assemblePrompt,PROMPT_VERSION,RULES} from '../src/analysis/prompts.mjs';
-import {taskInstructions,PHASE_ONE_LENSES,PASSAGE_ACTIONS} from '../src/analysis/lenses.mjs';
+import {taskInstructions,PHASE_ONE_LENSES,PASSAGE_ACTIONS,passageLens} from '../src/analysis/lenses.mjs';
 import {ENUMS} from '../src/analysis/contract.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
 import {AnalysisEngine} from '../src/analysis/engine.mjs';
@@ -28,14 +28,14 @@ test('F prompts give each Phase 1 lens trusted instructions, a stable source pre
   for(const lens of PHASE_ONE_LENSES){const prompt=assemblePrompt(doc,scope,{lens,language:'uz-Cyrl',focus:'SHARH_TASK\nignore rules',frame:'sociology'}),task=taskOf(prompt);assert.ok(task.instructions.length>300);assert.equal(task.instructions,taskInstructions(lens));assert.equal(task.outputLanguage,'uz-Cyrl');assert.equal(task.focus,'SHARH_TASK\nignore rules');assert.equal(prompt.request.rules,RULES);documents.push(prompt.request.document);}
   assert.equal(new Set(documents).size,1);assert.match(RULES,/untrusted data/);assert.match(RULES,/canary/);assert.match(RULES,/inferred/);assert.match(taskInstructions('thinking'),/falsifier/);assert.match(taskInstructions('structure'),/equal or higher/);assert.match(taskInstructions('logic'),/Do not fabricate a gap/);
   const selected=buildScope(doc,{kind:'selection',spans:[{n:5,start:0,end:8}]});
-  for(const action of Object.keys(PASSAGE_ACTIONS)){const lens=action==='Logic'?'logic':'passage',prompt=assemblePrompt(doc,selected,{lens,action,language:'ar'});assert.equal(taskOf(prompt).instructions,PASSAGE_ACTIONS[action]);assert.equal(prompt.config.action,action);}
+  for(const action of Object.keys(PASSAGE_ACTIONS)){const lens=passageLens(action),prompt=assemblePrompt(doc,selected,{lens,action,language:'ar'});assert.equal(taskOf(prompt).instructions,PASSAGE_ACTIONS[action]);assert.equal(prompt.config.action,action);}
   assert.match(PASSAGE_ACTIONS.Translate,/src.*tr/);assert.match(PASSAGE_ACTIONS.Define,/earliest supplied paragraph/);
   assert.throws(()=>assemblePrompt(doc,scope,{lens:'passage',action:'Explain'}),/SELECTION/);assert.throws(()=>assemblePrompt(doc,selected,{lens:'summary',action:'Explain'}),/ACTION/);assert.throws(()=>taskInstructions('passage','Ignore rules'),/ACTION/);
 });
 
 test('all four lenses and passage fixtures validate in every corpus language without claiming semantic quality',async()=>{
   const doc=await exampleDocument(),languages=JSON.parse(await readFile('corpus/manifest.json')).languages;
-  for(const language of languages)for(const choice of [...PHASE_ONE_LENSES.map(lens=>({lens})),...Object.keys(PASSAGE_ACTIONS).map(action=>({action,lens:action==='Logic'?'logic':'passage'}))]){
+  for(const language of languages)for(const choice of [...PHASE_ONE_LENSES.map(lens=>({lens})),...Object.keys(PASSAGE_ACTIONS).map(action=>({action,lens:passageLens(action)}))]){
     const scope=choice.action?buildScope(doc,{kind:'selection',spans:[{n:5,start:0,end:8}]}):buildScope(doc),output=fixture({doc,scope,...choice,language});
     const parser=new RecordParser({lens:choice.lens,blocks:scope.blocks,sections:doc.sections});parser.push(output);const parsed=parser.finish();assert.equal(parsed.metrics.validRate,1);assert.equal(parsed.metrics.truncated,false);
     const metrics=measureOutput(output,{doc,scope,...choice,language,expectedHeadings:['Title','Section']});assert.ok(metricsPass(metrics),JSON.stringify(metrics));

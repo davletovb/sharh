@@ -17,7 +17,7 @@ import {isolatedCompanion} from './lib/isolated-companion.mjs';
 import {phaseOneOutput} from './lib/phase-one-fixtures.mjs';
 import {phaseTwoOutput} from './lib/phase-two-fixtures.mjs';
 import {evaluationFiles,protectInputs,writeEvaluationJSON,cleanupEvaluation} from './lib/evaluation-lifecycle.mjs';
-import {PHASE_ONE_LENSES,PHASE_TWO_LENSES,PASSAGE_ACTIONS} from '../src/analysis/lenses.mjs';
+import {PHASE_ONE_LENSES,PHASE_TWO_LENSES,PASSAGE_ACTIONS,OFFERED_ACTIONS} from '../src/analysis/lenses.mjs';
 const {values}=parseArgs({options:{'phase-two':{type:'boolean'},fixture:{type:'boolean'},companion:{type:'string'},'fake-provider':{type:'string'},provider:{type:'string',multiple:true},lens:{type:'string',multiple:true},action:{type:'string',multiple:true},item:{type:'string',multiple:true},manifest:{type:'string',default:'corpus/manifest.json'},model:{type:'string'},language:{type:'string'},'no-passages':{type:'boolean'},'allow-gemini-cloud':{type:'boolean'},out:{type:'string'},report:{type:'string'},reviews:{type:'string'},'review-out':{type:'string'}}});
 if(values['phase-two'] && !values.out && !values.report)values.out='test-results/g-evaluation.json';
 const files=evaluationFiles(values);
@@ -31,7 +31,7 @@ if(values.report){
 if(!!values.fixture===!!values.companion || values['fake-provider'] && !values.companion)throw Error('Use --fixture OR --companion PATH [--fake-provider PATH for isolated stand-ins].');
 if(values.reviews)throw Error('Use --report FILE --reviews FILE to review existing output without new generation.');
 const contract=JSON.parse(await readFile('config/seatline-contract.json')),manifest=JSON.parse(await readFile(values.manifest));
-const providers=values.provider??['claude','codex'],items=manifest.items.filter(i=>!values.item || values.item.includes(i.id)),lenses=values.lens??(values['phase-two']?PHASE_TWO_LENSES:PHASE_ONE_LENSES),actions=values['no-passages']?[]:values.action??(values['phase-two']?[]:Object.keys(PASSAGE_ACTIONS));
+const providers=values.provider??['claude','codex'],items=manifest.items.filter(i=>!values.item || values.item.includes(i.id)),lenses=values.lens??(values['phase-two']?PHASE_TWO_LENSES:PHASE_ONE_LENSES),actions=values['no-passages']?[]:values.action??(values['phase-two']?[]:[...OFFERED_ACTIONS]);
 if(!items.length || values.item?.some(id=>!items.some(i=>i.id===id)) || providers.some(p=>!contract.providers.includes(p)) || new Set(providers).size!==providers.length || lenses.some(l=>!(values['phase-two']?PHASE_TWO_LENSES:PHASE_ONE_LENSES).includes(l)) || actions.some(a=>!Object.hasOwn(PASSAGE_ACTIONS,a)) || values['no-passages'] && values.action || values['phase-two'] && values.action)throw Error('Invalid provider/item/lens/action filter.');
 await protectInputs([files.out,files.form],[values.manifest,...items.map(i=>i.path)]);
 const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();

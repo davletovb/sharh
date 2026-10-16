@@ -8,6 +8,7 @@ export function phaseOneOutput(task,source){
     {t:'node',id:'c1',kind:'claim',text,refs,basis:'inferred'},{t:'edge',from:'p1',to:'c1',rel:'supports'},
     {t:'step',n:1,text,refs},{t:'gap',kind:'unstated_premise',at:['c1'],text,refs});
   if(action==='Logic')logic();
+  else if(action==='Argument')rows.push(...[['claim','stated'],['reason','inferred'],['weakness','inferred']].map(([part,basis])=>({t:'chk',part,text,refs,basis})));
   else if(action){rows.push({t:'note',text,refs});if(action==='Translate' || action==='Define')rows.push({t:'term',src:first.text.slice(first.selected?.[0]?.start??0,first.selected?.[0]?.end??40),tr:text,text,refs});}
   else if(lens==='summary'){for(const level of ENUMS.level)rows.push({t:'sum',level,text,refs});ENUMS.stage.forEach((stage,i)=>rows.push({t:'arc',n:i+1,stage,text,refs}));}
   else if(lens==='structure'){

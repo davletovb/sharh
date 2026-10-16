@@ -6,7 +6,7 @@ import {createModelPicker} from './model-picker.mjs';
 import {bindAppearance} from './theme.mjs';
 import {createAnalysisView,referenceButtons} from './views.mjs';
 import {element,button,field,options,uid} from './dom.mjs';
-import {PASSAGE_ACTIONS} from '../../src/analysis/lenses.mjs';
+import {PASSAGE_ACTIONS,passageLens} from '../../src/analysis/lenses.mjs';
 import {resultMessage,responseDetails} from '../../src/ui/run-feedback.mjs';
 import {createToolkit} from './toolkit.mjs';
 import {icon} from './icons.mjs';
@@ -158,12 +158,14 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
       pendingAbout={runId:link.runId,sequence:entry.sequence,kind:'finding',text,title};convo.setQuote(`${title}: ${clip(text,60)}`,()=>{pendingAbout=null;});convo.focusInput();
     }
   });
+  // An Argument on a few selected lines reads in three short parts.
+  const ARGUMENT_HEADINGS={claim:'What these lines do',reason:'How they connect',weakness:'A weakness here'};
   // Terms on a conversation card are kept in the book's glossary, which is the reader's own list.
   const bookGlossaryStore=new Glossary(store),keeper=source=>source?.derived?null:{state:term=>bookGlossaryStore.state(source.id,term),async save(r){await bookGlossaryStore.keep(source.id,{term:r.src,translation:r.tr,note:r.text,refs:r.refs,aliases:[],language:appearance.value.language});await across?.refreshGlossary();}};
   function newView(lensName,source,customLens=null,info={}) {
     if(layout==='conversation') {
       const link={runId:null};if(view)oldViews.push(view);viewDoc=source;const card=convo.card({title:taskTitle(lensName,customLens,info)});currentCard=card;results=card.body;
-      view=createAnalysisView(results,{gist:true,compact:true,flat:info.operation==='outline',keep:keeper(source),ask:askLinks(link),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});view.link=link;applyViewport(view);return view;
+      view=createAnalysisView(results,{gist:true,compact:true,flat:info.operation==='outline',headings:info.action==='Argument'?ARGUMENT_HEADINGS:null,keep:keeper(source),ask:askLinks(link),lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source,card)});view.link=link;applyViewport(view);return view;
     }
     view?.dispose();viewDoc=source;results.replaceChildren();view=createAnalysisView(results,{lens:viewLens(lensName,customLens),doc:source,onReference:(n,original)=>reference(n,source,original),onInspect:entry=>inspect(entry,source)});applyViewport(view);return view;
   }
@@ -343,12 +345,13 @@ export async function createWorkspace(container,{store,engine,client,storage=chr
     setScope(value){scope=value;toolkit.scopeChanged(value);updatePreview();},measureScope(value,chosen){try{return engine.preview({...configuration(),doc:value,scope:chosen});}catch{return null;}},
     async passage(action,selection,{intentId,onAccepted}={}){
       if(controller)throw Error('Stop the current run before starting another.');
+      if(action==='Logic')action='Argument';
       if(action==='Ask about this'){await ready;return toolkit.askSelection({...configuration(),scope:buildScope(doc,{kind:'selection',spans:selection.spans})},{intentId,onAccepted});}
       if(!Object.hasOwn(PASSAGE_ACTIONS,action))throw Error('Unknown passage action.');await ready;
-      const passageScope=buildScope(doc,{kind:'selection',spans:selection.spans}),quick=await modelPicker.forTier('quick'),lensName=action==='Logic'?'logic':'passage';
+      const passageScope=buildScope(doc,{kind:'selection',spans:selection.spans}),quick=await modelPicker.forTier('quick'),lensName=passageLens(action);
       const cards=()=>convo.stream.querySelectorAll('.convo-card').length,before=cards(),bubble=layout==='conversation'?convo.bubble(`${action} · ${passageScope.label.replace(/^Selection · ?/,'')}`):null;
       try{
-        return await run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:24,lens:lensName,action,focus:'',operation:null,customLens:null},
+        return await run({scope:passageScope,target:quick.target,tier:'quick',persistent:quick.info.capabilities?.sessions===true,budget:action==='Argument'?4:24,lens:lensName,action,focus:'',operation:null,customLens:null},
           {providerInfo:quick.info,allowSavedExtraction:true,onBegin:async run=>{if(intentId)await engine.repository.write(run.id,{passageIntentId:intentId});await onAccepted?.(run);}});
       }catch(error){if(bubble&&cards()===before&&bubble.isConnected){bubble.remove();convo.recount();}throw error;}
     },

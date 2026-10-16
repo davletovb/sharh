@@ -20,7 +20,7 @@ function dom(){const d=new JSDOM('<!doctype html><body><p id="source"></p><main 
 function shaped(shape,values){return Object.fromEntries(Object.entries(shape).filter(([key,spec])=>!spec.type.endsWith('?')).map(([key,spec])=>[key,spec.type==='literal'?spec.value:values[key]]));}
 function answer(request){
   const task=JSON.parse(request.task.split('\n')[1]),contract=JSON.parse(request.task.split('SHARH_OUTPUT_CONTRACT\n')[1]),data=JSON.parse(request.document),block=data.blocks.find(b=>b.selected),n=block.n;
-  const type=task.lens==='logic'?'node':'note',values={id:'n1',kind:'claim',text:block.selected.map(s=>s.text).join(' / '),refs:[n],basis:'inferred'};
+  const type=task.lens==='logic'?'node':task.lens==='check'?'chk':'note',values={id:'n1',kind:'claim',part:'claim',text:block.selected.map(s=>s.text).join(' / '),refs:[n],basis:'inferred'};
   const record=shaped(contract.types[type],values);if(type==='note')record.refs=[n];return {text:[record,shaped(contract.types.end,{})].map(JSON.stringify).join('\n')+'\n'};
 }
 async function fixture(scriptFor=({request})=>answer(request)){
@@ -49,7 +49,7 @@ test('selection requests contain exact source text for each UTF-16 span while re
 test('mouse-clicking all four passage actions completes through the Quick target using the advertised contract',async()=>{
   const w=await fixture();let done;
   const toolbar=installSelectionToolbar({document,selection:range=>({spans:[{n:5,start:range.startOffset,end:range.endOffset}]}),onAction:(action,selection)=>{done=w.workspace.passage(action,selection);return done;}});
-  try{for(const [i,action]of ['Explain','Translate','Logic','Define'].entries()){
+  try{for(const [i,action]of ['Explain','Translate','Argument','Define'].entries()){
     done=null;select(w.d,i,i+8);await tick();document.querySelectorAll('[role=toolbar] button')[i].click();await tick();assert.ok(done);const saved=await done;
     assert.equal(saved.run.status,'completed');assert.equal(saved.run.config.action,action);assert.equal(saved.run.target.model,'haiku');assert.equal(saved.run.config.tier,'quick');assert.equal(saved.records[0].record.text,w.doc.blocks[4].text.slice(i,i+8).trim());
   }assert.equal(w.path.calls.length,4);assert.match(document.querySelector('.run-state').textContent,/Completed/);

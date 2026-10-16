@@ -9,7 +9,7 @@ Sharh has four surfaces. There is no popup. The toolbar button opens the side pa
 | Side panel | Read the page in the current tab and analyze it. |
 | Full tab (`ui/reader.html`) | Open PDFs, files and addresses, read the source beside the analysis, and use the Library and the heavy tools. |
 | Settings (`ui/settings.html`) | Connection, models, reading defaults, site access, appearance and data. Nothing about models or tiers is chosen anywhere else. |
-| Selection toolbar | Explain, Translate, Logic, Define and Ask about a selected passage, on a page and in the PDF reader. |
+| Selection toolbar | Explain, Translate, Argument, Define and Ask about a selected passage, on a page and in the PDF reader. **Argument** (the `check` lens run on the selection as the `Argument` action, on the Quick tier) reads in three short parts, *What these lines do*, *How they connect* and *A weakness here* (only when the text supports one), with no graph; the parser keeps one claim, up to two connections and one weakness. It replaces Logic, which stays in the action table so a saved Logic run can still be retried and which a page still showing the older toolbar sends as Argument. A **Define** card has a **Keep in glossary** button. |
 
 ## The consent rule
 

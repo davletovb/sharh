@@ -29,7 +29,7 @@ export function referenceButtons(doc,record,onReference) {
   if(refs.length>12)row.append(element('span',`${refs.length} paragraphs in this span`,'note'));
   return row;
 }
-export function createAnalysisView(container,{lens='summary',gist=false,compact=false,flat=false,keep=null,ask=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
+export function createAnalysisView(container,{lens='summary',gist=false,compact=false,flat=false,keep=null,ask=null,headings=null,doc,onReference=()=>{},onInspect=()=>{},workerFactory=()=>new Worker(new URL('./graph-worker.mjs',location.href),{type:'module'})}={}) {
   const records=[],groups=new Map(),cards=new Map(),collapsed=new Set(),queue=[];let frame=null,disposed=false,ticket=0,layoutTimer=null,worker,mapBusy=false,layoutPending=false,pan={x:0,y:0,zoom:1},lastLayout=null,maxRenderMs=0,visible=new Set();
   const root=element('div','','analysis-view'),mapLens=!flat&&['structure','logic','thinking'].includes(lens),map=element('div','','map-shell'),mapStatus=element('p','','note'),outline=element('div','','text-outline');
   const outlineTitle=element('h3',mapLens?'Text outline':'Reading');outline.id=uid('text-outline');
@@ -53,7 +53,7 @@ export function createAnalysisView(container,{lens='summary',gist=false,compact=
       const key=deepKey??(['assumption','objection'].includes(record.part)?'detail':record.part),rank=CHECK_ORDER.indexOf(key);
       if(!groups.has(key)){
         const fold=key==='detail',section=element(fold?'details':'section','',`record-group check-part${fold?' record-fold':''}`),list=element(key==='outline'?'ol':'div','','record-list');
-        section.dataset.part=key;section.dataset.order=rank;section.append(element(fold?'summary':'h4',fold&&lens==='deep'?'Assumptions and open questions':CHECK_HEADING[key]),list);
+        section.dataset.part=key;section.dataset.order=rank;section.append(element(fold?'summary':'h4',fold&&lens==='deep'?'Assumptions and open questions':headings?.[key]??CHECK_HEADING[key]),list);
         outline.insertBefore(section,[...outline.children].find(el=>Number(el.dataset.order)>rank)??null);groups.set(key,list);
       }
       return groups.get(key);
@@ -95,7 +95,7 @@ title.append(button(plain??name,()=>inspect(entry),'inspect-finding'));if(r.t===
       tryIt.setAttribute('aria-expanded','false');tryIt.setAttribute('aria-label',`Try an answer to: ${r.text}`);show.setAttribute('aria-label',`Show a suggested answer to: ${r.text}`);
       const row=element('div','','question-actions');row.append(tryIt,show);card.append(row,form);
     } else if(compact&&ask&&!['sum','term'].includes(r.t)&&(r.text||r.gist||r.gloss)) {
-      const about=button('Ask about this',()=>ask.finding(entry,{title:r.t==='chk'?CHECK_NAME[r.part]??CHECK_HEADING[r.part]:plain??name}),'ghost ask-about');
+      const about=button('Ask about this',()=>ask.finding(entry,{title:r.t==='chk'?CHECK_NAME[r.part]??headings?.[r.part]??CHECK_HEADING[r.part]:plain??name}),'ghost ask-about');
       about.setAttribute('aria-label',`Ask about this: ${[...(r.text??r.gist??r.gloss)].slice(0,60).join('')}`);card.append(about);
     }
     // A term on a card can be kept in the book's glossary. Until it is kept it is only a suggestion.

@@ -21,14 +21,14 @@ test('passage clicks use the contract and saved selection; invalid Quick respons
    const info={path:'seatline',provider:'claude',available:true,signedIn:true,accepted:true,models:[],capabilities:{streaming:true,sessions:false,toolIsolation:true,effort:['low','medium']}},data={sharhReading:{language:'uz-Latn',tiers:{analysis:{path:'seatline',provider:'claude',model:'sonnet',effort:'medium'}}}},storage={async get(k){return {[k]:structuredClone(data[k])};},async set(v){Object.assign(data,structuredClone(v));}};
    const path=new FakePath({sessions:false,wait:async()=>{},scriptFor:({target,request})=>{
     if(window.p.fail && target.model==='haiku')return {text:'{"text":"Missing record tag","refs":[5]}\n{"t":"end"}\n'};
-    const task=JSON.parse(request.task.split('\n')[1]),contract=JSON.parse(request.task.split('SHARH_OUTPUT_CONTRACT\n')[1]),scope=JSON.parse(request.document),block=scope.blocks.find(b=>b.selected),type=task.lens==='logic'?'node':'note',values={id:'n1',kind:'claim',text:block.selected.map(s=>s.text).join(' / '),refs:[block.n],basis:'inferred'};
+    const task=JSON.parse(request.task.split('\n')[1]),contract=JSON.parse(request.task.split('SHARH_OUTPUT_CONTRACT\n')[1]),scope=JSON.parse(request.document),block=scope.blocks.find(b=>b.selected),type=task.lens==='logic'?'node':task.lens==='check'?'chk':'note',values={id:'n1',kind:'claim',part:'claim',text:block.selected.map(s=>s.text).join(' / '),refs:[block.n],basis:'inferred'};
     const record=Object.fromEntries(Object.entries(contract.types[type]).filter(([,s])=>!s.type.endsWith('?')).map(([k,s])=>[k,s.type==='literal'?s.value:values[k]]));record.refs=[block.n];return {text:JSON.stringify(record)+'\n'+JSON.stringify({t:contract.types.end.t.value})+'\n'};
    }});path.discover=async()=>[info];const engine=new AnalysisEngine({store,paths:{seatline:path}}),workspace=await createWorkspace(host,{store,engine,client:{call:async m=>m==='discover'?[info]:null},storage,changes:{addListener(){},removeListener(){}}});await workspace.ready;await workspace.setDocument(doc);
    const toolbar=installSelectionToolbar({document,selection:range=>({spans:[{n:5,start:range.startOffset,end:range.endOffset}]}),onAction:(...args)=>workspace.passage(...args)});window.p={store,doc,path,engine,workspace,toolbar,fail:false};
   });
   const fixture=page.locator('#passage-fixture'),toolbar=page.getByRole('toolbar',{name:'Passage actions'});
   async function select(start,end){await page.evaluate(({start,end})=>{const r=document.createRange(),node=document.getElementById('passage-source').firstChild;r.setStart(node,start);r.setEnd(node,end);getSelection().removeAllRanges();getSelection().addRange(r);document.dispatchEvent(new MouseEvent('pointerup',{bubbles:true}));},{start,end});await toolbar.waitFor();}
-  for(const [i,action]of ['Explain','Translate','Logic','Define'].entries()){
+  for(const [i,action]of ['Explain','Translate','Argument','Define'].entries()){
    await select(i,i+8);await toolbar.getByRole('button',{name:action,exact:true}).click();await page.waitForFunction(count=>p.path.calls.length===count && !p.workspace.active,i+1);await page.evaluate(()=>p.workspace.view.settled());
    assert.match(await fixture.locator('.run-state').textContent(),/Completed/);const task=await page.evaluate(()=>JSON.parse(p.path.calls.at(-1).request.task.split('\n')[1]));assert.equal(task.action,action);
   }report.checks.fourClickedActions=true;
@@ -119,7 +119,7 @@ test('E: actual optional-site selection toolbar opens the panel once, carries co
   const toolbar=reader.getByRole('toolbar',{name:'Passage actions'});
   // The text layer fills in after the page is marked rendered, so select again until the toolbar answers.
   for(let attempt=0;attempt<8&&!await toolbar.isVisible();attempt++){await reader.evaluate(()=>{const p=[...document.querySelectorAll('.textLayer span')].find(el=>el.textContent==='Public partici-'),range=document.createRange();if(!p)return;range.selectNodeContents(p);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new MouseEvent('pointerup',{bubbles:true}));});await toolbar.waitFor({timeout:1500}).catch(()=>{});}
-  await toolbar.waitFor();for(const action of ['Explain','Translate','Logic','Define'])assert.ok(await toolbar.getByRole('button',{name:action,exact:true}).isVisible());
+  await toolbar.waitFor();for(const action of ['Explain','Translate','Argument','Define'])assert.ok(await toolbar.getByRole('button',{name:action,exact:true}).isVisible());
   await reader.bringToFront();await toolbar.getByRole('button',{name:'Explain',exact:true}).focus();await reader.keyboard.press('ArrowRight');assert.equal(await reader.evaluate(()=>document.activeElement.textContent),'Translate');await reader.keyboard.press('Escape');assert.equal(await toolbar.isVisible(),false);report.checks.pdfToolbarKeyboard=true;
   assert.deepEqual(report.errors,[]);report.passed=true;
  }finally{await context.close();await server.close();await rm(profile,{recursive:true,force:true});await mkdir('test-results',{recursive:true});await writeFile('test-results/e-passages.json',JSON.stringify(report,null,2)+'\n');}

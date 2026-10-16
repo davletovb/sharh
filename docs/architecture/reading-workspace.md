@@ -27,7 +27,7 @@ References use the existing C HTML/PDF anchors, including quotation fallback. A 
 
 ## Passage actions and optional access
 
-Selecting source text on an enabled site or within the PDF/local-text reader opens Explain, Translate, Logic and Define. It preserves selected spans, the section heading, two preceding paragraphs and one following paragraph. Requests use the Quick tier and chosen output language. F-06 supplies explicit versioned action prompts separately from focus data; live prompt-quality validation remains open.
+Selecting source text on an enabled site or within the PDF/local-text reader opens Explain, Translate, Argument and Define. It preserves selected spans, the section heading, two preceding paragraphs and one following paragraph. Requests use the Quick tier and chosen output language. F-06 supplies explicit versioned action prompts separately from focus data; live prompt-quality validation remains open.
 
 Version 4 supplies each selected span's exact text alongside its UTF-16 offsets and explicitly lists the required `t` field in every output record shape. Full paragraphs remain available as context. Invalid responses show a format-failure message and expandable per-attempt rejection counts instead of a generic partial-result message. Existing saved runs use their stored metrics for the same explanation; raw responses are not newly persisted.
 

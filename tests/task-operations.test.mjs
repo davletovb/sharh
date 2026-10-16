@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assemblePrompt} from '../src/analysis/prompts.mjs';
-import {GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,QUIZ_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
+import {PASSAGE_ACTIONS,OFFERED_ACTIONS,passageLens,GIST_INSTRUCTIONS,LEARN_INSTRUCTIONS,OUTLINE_INSTRUCTIONS,QUIZ_INSTRUCTIONS,LENS_INSTRUCTIONS} from '../src/analysis/lenses.mjs';
 import {RecordParser} from '../src/analysis/parser.mjs';
 import {markdown} from '../src/toolkit/exports.mjs';
 import {buildScope} from '../src/documents/scopes.mjs';
@@ -93,4 +93,21 @@ test('the deep reading is one lens with a synthesis, an outline, an argument che
  const count=(t,part)=>entries.filter(e=>e.record.t===t&&(part===undefined||e.record.part===part)).length;
  assert.deepEqual([count('sum'),count('sec'),count('chk','claim'),count('chk','reason'),count('chk','assessment'),count('q')],[1,8,1,3,1,3]);
  assert.equal(parser.metrics.dropped.limit,1+2+1+1+2,'one extra synthesis, two outline sections, one claim, one reason, two questions');assert.ok(parser.metrics.dropped.enum,'only a brief synthesis is accepted');
+});
+
+test('Argument on a selection is a short check of those lines, and the old Logic action still works for saved runs',async()=> {
+ const doc=await exampleDocument(),selected=buildScope(doc,{kind:'selection',spans:[{n:5,start:0,end:8}]}),taskOf=prompt=>JSON.parse(prompt.request.task.split('\n')[1]);
+ assert.deepEqual([...OFFERED_ACTIONS],['Explain','Translate','Argument','Define']);assert.ok(PASSAGE_ACTIONS.Logic,'Logic stays in the table so a saved Logic run can be retried');
+ assert.deepEqual(OFFERED_ACTIONS.map(passageLens),['passage','passage','check','passage']);assert.equal(passageLens('Logic'),'logic');
+ const prompt=assemblePrompt(doc,selected,{lens:'check',action:'Argument',budget:4}),task=taskOf(prompt),contract=JSON.parse(prompt.request.task.split('\n')[3]);
+ assert.equal(task.instructions,PASSAGE_ACTIONS.Argument);assert.equal(task.action,'Argument');assert.equal(task.maxRecords,4);assert.deepEqual(Object.keys(contract.types),['meta','chk','end']);
+ for(const phrase of [/what the selected lines do/,/one claim/,/one or two reason records/,/only when the text supports a local weakness/,/Do not summarize the whole text/,/never invent a flaw/])assert.match(task.instructions,phrase);
+ assert.throws(()=>assemblePrompt(doc,selected,{lens:'passage',action:'Argument'}),/INVALID_PASSAGE_ACTION/);assert.throws(()=>assemblePrompt(doc,selected,{lens:'check',action:'Explain'}),/INVALID_PASSAGE_ACTION/);
+ assert.ok(assemblePrompt(doc,selected,{lens:'logic',action:'Logic'}),'an older Logic run can still be assembled');
+ // Only a claim, up to two connections and a weakness are kept.
+ const entries=[],parser=new RecordParser({lens:'check',action:'Argument',blocks:selected.blocks,onRecord:e=>entries.push(e)}),line=(part,extra={})=>JSON.stringify({t:'chk',part,text:'Plain.',refs:[5],basis:'inferred',...extra})+'\n';
+ parser.push(['claim','claim','reason','reason','reason','weakness','weakness','strength','assessment','assumption','objection'].map(part=>line(part)).join(''));parser.finish();
+ assert.deepEqual(entries.map(e=>e.record.part),['claim','reason','reason','weakness']);assert.equal(parser.metrics.dropped.limit,7);
+ // The same parser without the action keeps the full argument check.
+ const whole=[],other=new RecordParser({lens:'check',blocks:selected.blocks,onRecord:e=>whole.push(e)});other.push(['claim','strength','assessment'].map(part=>line(part)).join(''));other.finish();assert.equal(whole.length,3);
 });

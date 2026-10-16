@@ -13,6 +13,7 @@ import {FakePath} from '../src/paths/fake.mjs';
 import {assemblePrompt,promptIdentity,RULES,PROMPT_VERSION} from '../src/analysis/prompts.mjs';
 import {turnFor} from '../src/paths/seatline.mjs';
 import {LENSES} from '../src/analysis/contract.mjs';
+import {passageLens} from '../src/analysis/lenses.mjs';
 import {runEvaluation,evaluationScope} from '../src/evaluation/run.mjs';
 import {measureOutput,metricsPass,languageCompatible} from '../src/evaluation/metrics.mjs';
 import {reviewForm,REVIEW_DIMENSIONS} from '../src/evaluation/reviews.mjs';
@@ -85,8 +86,8 @@ test('metadata defaults to English and tolerates a missing script subtag while r
 
 test('every passage action needs a selected-paragraph reference; grounded context may still supplement it',async()=>{
   const doc=await exampleDocument(),scope=buildScope(doc,{kind:'selection',spans:[{n:5,start:0,end:8}]});
-  for(const action of ['Explain','Translate','Logic','Define']){
-    const lens=action==='Logic'?'logic':'passage',records=action==='Logic'?logic([3]):[{t:'note',text:'Context only',refs:[3]},...(['Translate','Define'].includes(action)?[{t:'term',src:'Selected',tr:'Selected',text:'A definition',refs:[3]}]:[])],args={doc,scope,lens,action};
+  for(const action of ['Explain','Translate','Logic','Argument','Define']){
+    const lens=passageLens(action),records=action==='Logic'?logic([3]):action==='Argument'?[{t:'chk',part:'claim',text:'Context only',refs:[3],basis:'stated'}]:[{t:'note',text:'Context only',refs:[3]},...(['Translate','Define'].includes(action)?[{t:'term',src:'Selected',tr:'Selected',text:'A definition',refs:[3]}]:[])],args={doc,scope,lens,action};
     const context=measureOutput(lines(...records,end),args);assert.equal(context.referenceValidity,1);assert.equal(context.selectedReferences,0);assert.equal(metricsPass(context),false);
     const grounded=structuredClone(records);grounded[0].refs=[3,5];assert.equal(metricsPass(measureOutput(lines(...grounded,end),args)),true);
   }
