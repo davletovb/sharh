@@ -112,6 +112,8 @@ try {
   assert.equal(grokAnswer.text, 'Grok answer');
   assert.deepEqual(grokAnswer.usage, {input_tokens: 550, output_tokens: 25});
   report.checks.grokStreaming = {chunks: grokDeltas.length, usage: grokAnswer.usage};
+  // The browser checks below exercise the signed-out Grok state.
+  await rm(world.env.GROK_AUTH_PATH);
 
   const start = await path.run(target, {
     ...request,
