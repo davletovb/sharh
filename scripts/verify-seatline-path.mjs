@@ -99,6 +99,22 @@ try {
   assert.ok(deltas.length >= 2);
   report.checks.streaming = {chunks: deltas.length, text: answer.text};
 
+  const grok = discovered.find((provider) => provider.provider === 'grok');
+  assert.equal(grok?.capabilities.streaming, true);
+  const grokDeltas = [];
+  const grokAnswer = await path.run({...target, provider: 'grok'}, request, {
+    onEvent: (event) => {
+      if (event.type === 'delta') grokDeltas.push(event.text);
+    }
+  });
+  assert.ok(grokDeltas.length >= 2);
+  assert.equal(grokDeltas.join(''), 'Grok answer');
+  assert.equal(grokAnswer.text, 'Grok answer');
+  assert.deepEqual(grokAnswer.usage, {input_tokens: 550, output_tokens: 25});
+  report.checks.grokStreaming = {chunks: grokDeltas.length, usage: grokAnswer.usage};
+  // The browser checks below exercise the signed-out Grok state.
+  await rm(world.env.GROK_AUTH_PATH);
+
   const start = await path.run(target, {
     ...request,
     kind: 'chat',

@@ -6,11 +6,12 @@ Status: Contract pinned; A probes and B production client/path implemented ([B e
 
 | | |
 | --- | --- |
-| Seatline revision inspected | [`ba712f70eb4acd43b45b326bb4907feb9ded9c2f`](https://github.com/davletovb/seatline/tree/ba712f70eb4acd43b45b326bb4907feb9ded9c2f) (main, 2026-10-11), companion protocol 1 |
+| Original Seatline revision inspected | [`ba712f70eb4acd43b45b326bb4907feb9ded9c2f`](https://github.com/davletovb/seatline/tree/ba712f70eb4acd43b45b326bb4907feb9ded9c2f) (main, 2026-10-11), companion protocol 1 |
+| Seatline revision under test | [`2286e8b`](https://github.com/davletovb/seatline/commit/2286e8b2883cc93b25aa37994d1eb334d308c351) (2026-11-23), companion protocol 1 |
 | Client reference | Lineleaf [`extension/lib/native-seatline.mjs`](https://github.com/davletovb/Lineleaf/blob/c6403c5524a217bd1bae01f9a0a22e4b4b51b044/extension/lib/native-seatline.mjs) at `c6403c5` |
 | Live provider runs | None. No latency, quota or output-quality result for any provider is claimed here. |
 
-The audited revision is pinned in [`config/seatline-contract.json`](../../config/seatline-contract.json). It retains Lineleaf’s common contract fields; Sharh-specific generation defaults live in `reading_policy` instead of Lineleaf’s `writing_policy`. The manifest key derives development ID `npmhefooiolfpmhicinblelaideeejcm`. Re-check this document on every pin change. Facts below that are specific to a revision say so.
+The revision under test is pinned in [`config/seatline-contract.json`](../../config/seatline-contract.json). It retains Lineleaf’s common contract fields; Sharh-specific generation defaults live in `reading_policy` instead of Lineleaf’s `writing_policy`. The manifest key derives development ID `npmhefooiolfpmhicinblelaideeejcm`. Re-check this document on every pin change. Facts below that are specific to a revision say so.
 
 ## Ownership
 
@@ -167,14 +168,16 @@ Sharh's rules must therefore work as instructions inside the user turn. In Seatl
 
 ## Capability matrix
 
-At the inspected revision:
+At the current pin:
 
 | Provider | CLI | Streaming | Persistent sessions | Web search | Effort | Speed tier | Sign-in classes reported | Suggested models |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `claude` | Claude Code | Yes | Yes | Yes | `low`–`max` | No | `subscription`, `api_key`, `cloud` | `sonnet`, `opus`, `haiku` (latest of each family), or a full ID |
-| `codex` | Codex CLI | Yes | Yes | Yes | `none`–`max` | `standard`, `fast` | `subscription`, `api_key` | None listed; the default or a typed ID |
-| `gemini` | Antigravity (`agy`) | Yes | No | Yes | No | No | `cloud` | From `agy models` |
-| `grok` | Grok CLI | No; the answer arrives at the end | No | No | No | No | `subscription`, `api_key` | From `grok models` |
+| `codex` | Codex CLI | Yes | Yes | Yes | `none`–`max` | `standard`, `fast`, `ultrafast` | `subscription`, `api_key`, `cloud` | None listed; the default or a typed ID |
+| `gemini` | Antigravity (`agy`) | Yes | No | Yes | `low`–`max` | No | `cloud` | From `agy models` |
+| `grok` | Grok CLI | Yes | No | No | `none`–`max` | No | `subscription`, `api_key` | From `grok models` |
+
+Sharh offers effort controls for Claude and Codex, and Standard and Fast for Codex. Grok streams deltas and reports total token usage over the existing wire events.
 
 - **Sessions:**
   - Gemini and Grok report `continuation: true` in `status.capabilities`, yet the companion refuses persistent turns for them with `PERSISTENT_SESSION_UNSUPPORTED`. Their adapters do not support persistent sessions, and Seatline's own tests expect that refusal.

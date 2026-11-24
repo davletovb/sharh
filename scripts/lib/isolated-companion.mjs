@@ -28,7 +28,13 @@ export async function isolatedCompanion(companion, fakeProvider, {officialProvid
       await writeFile(join(providers,provider), `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(fileURLToPath(new URL('./stand-in-cli.mjs',import.meta.url)))} ${provider} "$@"\n`, {mode:0o700});
     }
     for (const provider of (officialProviders?['claude','codex','agy','grok']:['agy','grok'])) { await copyFile(fakeProvider,join(providers,provider)); await chmod(join(providers,provider),0o700); }
-    if(officialProviders){await writeFile(join(providers,'codex-scenario'),'login=subscription\nexec=by-prompt\n');await writeFile(join(providers,'claude-scenario'),'auth=subscription\nprint=two-deltas\n');}
+    if (officialProviders) {
+      await writeFile(join(providers,'codex-scenario'),'login=subscription\nexec=by-prompt\n');
+      await writeFile(join(providers,'claude-scenario'),'auth=subscription\nprint=two-deltas\n');
+      // The fake Grok reports signed in when this fixture file exists.
+      env.GROK_AUTH_PATH = join(root,'grok-auth.json');
+      await writeFile(env.GROK_AUTH_PATH,'{}\n',{mode:0o600});
+    }
     run('install'); run('authorize','sharh',contract.providers.join(','),origin,'--cache-title=Sharh');
     const installed = (await readFile(join(data,'companion-executable'),'utf8')).trim();
     server = spawn(installed,['serve'],{env,stdio:'ignore'});
