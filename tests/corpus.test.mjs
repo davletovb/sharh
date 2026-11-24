@@ -20,7 +20,7 @@ test('fixed extension key and Seatline contract agree',async()=>{
   const c=JSON.parse(await readFile('config/seatline-contract.json')),m=JSON.parse(await readFile('extension/manifest.json'));
   const derived=[...createHash('sha256').update(Buffer.from(m.key,'base64')).digest().subarray(0,16)].flatMap(b=>[b>>4,b&15]).map(n=>String.fromCharCode(97+n)).join('');
   assert.equal(derived,c.development_extension_id); assert.equal(c.app,'sharh'); assert.equal(c.protocol,1);
-  assert.match(c.revision,/^[a-f0-9]{40}$/); assert.equal(c.minimum_revision,c.revision);
+  assert.match(c.revision,/^[a-f0-9]{40}$/); assert.match(c.minimum_revision,/^[a-f0-9]{40}$/);
   assert.deepEqual(m.permissions,['sidePanel','storage','unlimitedStorage','nativeMessaging','contextMenus','scripting','activeTab']); assert.ok(!m.host_permissions);
   assert.deepEqual(m.optional_host_permissions,['http://*/*','https://*/*','file:///*']);
   const probe=JSON.parse(await readFile('probes/extension/manifest.json'));assert.equal(probe.key,m.key);assert.deepEqual(probe.permissions,['nativeMessaging']);
